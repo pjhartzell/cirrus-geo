@@ -63,10 +63,11 @@ class Lambda(Component):
             + project_reqs
         }))
 
-        if not hasattr(self.lambda_config, 'module'):
+        # if this is a non-container lambda that needs to be packaged
+        # by serverless, then we need to ensure the module points to the
+        # place in the build dir where we'll copy all the code
+        if hasattr(self.lambda_config, 'handler'):
             self.lambda_config.module = f'lambdas/{self.name}'
-        if not hasattr(self.lambda_config, 'handler'):
-            self.lambda_config.handler = 'lambda_function.lambda_handler'
 
     @property
     def enabled(self):

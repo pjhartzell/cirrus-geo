@@ -65,9 +65,10 @@ functions:
   api:
     memorySize: 128
     timeout: 10
+    handler: lambda_function.lambda_handler
     events:
       - http: GET /
-      - http: GET {proxy+}
+      - http: GET /{proxy+}
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -123,10 +124,10 @@ functions:
       include:
         - ./lambdas/api/**
     module: lambdas/api
-    handler: lambda_function.lambda_handler
   process:
     memorySize: 128
     timeout: 900
+    handler: lambda_function.lambda_handler
     events:
       - sqs:
           arn:
@@ -210,10 +211,10 @@ functions:
       include:
         - ./lambdas/process/**
     module: lambdas/process
-    handler: lambda_function.lambda_handler
   update-state:
     memorySize: 128
     timeout: 15
+    handler: lambda_function.lambda_handler
     events:
       - eventBridge:
           pattern:
@@ -279,10 +280,10 @@ functions:
       include:
         - ./lambdas/update-state/**
     module: lambdas/update-state
-    handler: lambda_function.lambda_handler
   feed-rerun:
     memorySize: 128
     timeout: 900
+    handler: lambda_function.lambda_handler
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -342,10 +343,10 @@ functions:
       include:
         - ./lambdas/feed-rerun/**
     module: lambdas/feed-rerun
-    handler: lambda_function.lambda_handler
   post-batch:
     memorySize: 128
     timeout: 15
+    handler: lambda_function.lambda_handler
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -384,10 +385,10 @@ functions:
       include:
         - ./lambdas/post-batch/**
     module: lambdas/post-batch
-    handler: lambda_function.lambda_handler
   pre-batch:
     memorySize: 128
     timeout: 15
+    handler: lambda_function.lambda_handler
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -430,10 +431,10 @@ functions:
       include:
         - ./lambdas/pre-batch/**
     module: lambdas/pre-batch
-    handler: lambda_function.lambda_handler
   publish:
     memorySize: 128
     timeout: 30
+    handler: lambda_function.lambda_handler
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -495,7 +496,6 @@ functions:
       include:
         - ./lambdas/publish/**
     module: lambdas/publish
-    handler: lambda_function.lambda_handler
 stepFunctions:
   validate: true
   stateMachines:

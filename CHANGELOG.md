@@ -6,9 +6,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### ⚠️ Breaking changes
+
+- All lambda component definitions need the `handler` populated if not already.
+  Previously cirrus was defaulting `handler` to `lambda_function.lambda_handler`
+  if it were omitted. Now the default lambda `definition.yml` includes
+  `handler: lambda_function.lambda_handler`, allowing users to remove it if not
+  compatible with their needs (i.e., specifying a container `image`).
+
+### Added
+
+- support for lambdas using container images ([#139])
+  - default serverless version bumped to ~=2.72.0
+
 ### Fixed
 
-- rerun feeder has required permissions ([#131])
+- `rerun` feeder has required permissions ([#131])
 - `update-state` lambda supports payload URLs ([#135])
 
 ### Removed
@@ -367,6 +380,7 @@ Initial release
 [#116]: https://github.com/cirrus-geo/cirrus-geo/issues/116
 [#131]: https://github.com/cirrus-geo/cirrus-geo/issues/131
 [#135]: https://github.com/cirrus-geo/cirrus-geo/issues/135
+[#139]: https://github.com/cirrus-geo/cirrus-geo/issues/139
 
 [#71]: https://github.com/cirrus-geo/cirrus-geo/pull/72
 [#72]: https://github.com/cirrus-geo/cirrus-geo/pull/72
