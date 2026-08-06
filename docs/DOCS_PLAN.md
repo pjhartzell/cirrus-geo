@@ -157,42 +157,78 @@ and a duplicated "Process definition" pair in 50_operation.
 ## Session 2 — Content correctness and the big gaps (authored in Markdown)
 
 ### Phase 2: replace stubs with real content
-- [ ] 2.1 Quickstart: port `cloudformation/README.md` (305 lines) into
+- [x] 2.1 Quickstart: port `cloudformation/README.md` (305 lines) into
       Getting Started → Quickstart, restructured: overview → prerequisites → bootstrap →
       deploy → minimal workflow test → LocalStack. Verify every command against the templates
       in `cloudformation/`. Link prominently from the landing page.
-- [ ] 2.2 Deployment guide (Guides → Deployment): CloudFormation as the canonical in-repo
+      *New page `docs/src/cirrus/15_quickstart.md`; landing card retargeted (deferred 1.4
+      item). Corrected the README's `cirrus management` to `cirrus manage` (actual Click
+      group; alias `mgmt`); documented run-workflow exit codes 0/10/11.*
+- [x] 2.2 Deployment guide (Guides → Deployment): CloudFormation as the canonical in-repo
       path (cross-link quickstart); AWS quotas/limits content salvaged from old
       `40_config-deploy` (verify numbers still current against AWS docs where cheap, else
       flag in OPEN_QUESTIONS.md); "Other deployment approaches" — one line + links to the two
       external Terraform repos, nothing more (scope rule). Delete the remaining empty
       `40_config-deploy` headers; "create new project" scaffolding-CLI section is deleted
       (that CLI no longer exists); serverless-era `cirrus.yml` instructions deleted.
-- [ ] 2.3 Monitoring guide: fill the empty sections — StateDB queries via CLI, EventDB /
+      *Deviation: the second Terraform repo is `Element84/terraform-aws-cirrus-processing`
+      (the crib-life URL in triage notes 404s; Element84 URL verified live). Dropped quota
+      numbers parked in OPEN_QUESTIONS.md; S3 bucket quota corrected 200 → 10,000; WAF line
+      deleted (unused in repo). Nav label now "Deployment".*
+- [x] 2.3 Monitoring guide: fill the empty sections — StateDB queries via CLI, EventDB /
       Timestream workflow events (verify against `lib/eventdb.py`, `lib/events.py`), Step
       Functions console patterns, CloudWatch log locations per lambda.
+      *Timestream EventDB documented as deprecated (DeprecationWarning in events.py) in
+      favor of CloudWatch metrics via EnableWorkflowMetrics. Side fix: `--since "10 d"`
+      examples on the CLI and operations pages corrected to unspaced `10d` per
+      `parse_since`'s regex.*
 
 ### Phase 3: correctness against v2.0.0
-- [ ] 3.1 State database reference: regenerate schema from `src/cirrus/lib/statedb.py`
+- [x] 3.1 State database reference: regenerate schema from `src/cirrus/lib/statedb.py`
       (add `input_payload_url`, `output_payload_url`, `claimed_at`; fix `itemids` casing;
       remove/annotate legacy `catalog` alias). Document the CLAIMED state. Trim the
       "What is DynamoDB" primer to a paragraph.
-- [ ] 3.2 Grep all docs for state enumerations; ensure CLAIMED appears wherever states are
+      *Key schema/GSIs verified against the StateTable resource in core/base.yaml, not just
+      query code. Timestream event claims moved out of this page's scope (monitoring guide
+      owns them).*
+- [x] 3.2 Grep all docs for state enumerations; ensure CLAIMED appears wherever states are
       listed (known gap: operations page).
-- [ ] 3.3 Batch guide: full line-audit of the converted batch page (712 lines pre-conversion,
+      *Operations page also had wrong rerun semantics: with `replace`, everything except
+      PROCESSING reruns (INVALID was missing); without it, only FAILED/ABORTED/CLAIMED/
+      no-record run — corrected per `lib/payload_manager.py`. Fixed `--collectons-workflow`
+      flag typo.*
+- [x] 3.3 Batch guide: full line-audit of the converted batch page (712 lines pre-conversion,
       only skimmed in triage). Remove Serverless-framework content (`${opt:stage}` and its
       explanation); re-verify every config example against `lambda_functions/pre_batch.py`,
       `post_batch.py`, and the CloudFormation workflow templates.
-- [ ] 3.4 Line-audit the payloads guide against `src/cirrus/lib/cirrus_payload.py` and
+      *All `${opt:}`/`${self:}`/`${env:}`/`#{...}` Serverless syntax replaced with
+      CloudFormation parameters/!Sub; job definition example modernized to
+      ResourceRequirements; url/url_out contract documented; ContainerOverrides
+      instance-profile claim corrected. Batch CFN snippets remain illustrative — no in-repo
+      batch template exists.*
+- [x] 3.4 Line-audit the payloads guide against `src/cirrus/lib/cirrus_payload.py` and
       stac-task's Payload model; audit workflow definitions + chaining pages against the
       CloudFormation workflow templates and update-state logic. (Skimmed in triage — treat
       as unverified.)
-- [ ] 3.5 Upgrading-to-2.0 guide from the CHANGELOG v2.0.0 breaking-changes section: payload
+      *Major corrections: `process` is an array (was documented as object);
+      `output_options` → `upload_options`; nonexistent `input_collections` and built-in
+      `publish` task removed; chaining mechanics rewritten (runs via update-state → process
+      queue → process function, not workflow-to-workflow); Fail states need
+      ErrorPath/CausePath. Addendum: `components/workflows/batch.md` (not in 3.3/3.4 scope)
+      got targeted fixes only — url_out pass-through, OutputPath on lambda:invoke steps,
+      terminology intro; its full audit is deferred.*
+- [x] 3.5 Upgrading-to-2.0 guide from the CHANGELOG v2.0.0 breaking-changes section: payload
       bucket key reorg, CLI renames, COMPLETED→SUCCEEDED, event field renames, library API
       changes. Organize by audience: operators / CLI users / library consumers.
-- [ ] 3.6 Collapse the duplicate component trees into the single Reference → Components
+      *New page `docs/src/cirrus/85_upgrading.md`, nav under Guides. Includes migrate
+      command mechanics verified against `management/migration.py`.*
+- [x] 3.6 Collapse the duplicate component trees into the single Reference → Components
       section; verify all five lambdas (api, process, update_state, pre_batch, post_batch)
       against `src/cirrus/lambda_functions/` and document each.
+      *Physical collapse: `cirrus/components/*` and `cirrus/60_components.md` moved into a
+      single `docs/src/components/` tree (functions pages were already there). All five
+      function pages rewritten from source; all five lambdas are unconditional in
+      core/functions.yaml (the old "2 required / 3 optional" split was stale).*
 
 **Session 2 exit criteria:** no stale Serverless-framework content; state docs match
 `enums.py` and `statedb.py`; quickstart executable end-to-end on paper; migration guide

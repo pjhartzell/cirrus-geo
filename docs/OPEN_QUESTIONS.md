@@ -26,5 +26,23 @@ Classic 200 rules/region (WAF is unused anywhere in `cloudformation/` or
 `src/`); "no limit on Spot vCPUs" (contradicted by current AWS docs); S3
 bucket quota corrected 200 → 10,000 in the page.
 
+## Code discrepancies surfaced by the Session 2 audits (2026-08-06)
+
+Not documentation decisions — code-side items the docs deliberately avoid
+depending on:
+
+- `src/cirrus/lambda_functions/update_state.py:21` lists
+  `"cirrus.lib.errors.InvalidInput"` in `INVALID_EXCEPTIONS`, but no such
+  class exists in `src/cirrus/lib/errors.py` (only
+  `stactask.exceptions.InvalidInput` is real). The payloads guide names no
+  specific import path for the invalid-input exception because of this.
+  Needs a code fix or an intentional-compat note.
+- stac-task's `collection_matchers` process-definition field (the
+  replacement for the deprecated `upload_options.collections`) is validated
+  for mutual exclusivity but its shape is not documented anywhere in
+  cirrus-geo and has no in-repo usage to derive from. The payloads guide
+  notes the deprecation but does not document `collection_matchers`'
+  structure — needs either a stac-task doc link or a verified example.
+
 (The pre-existing empty section headers recorded here during Session 1 were
 deleted per maintainer decision, 2026-08-06.)
