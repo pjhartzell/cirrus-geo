@@ -55,10 +55,11 @@ dev = [
     "types-python-dateutil",
 ]
 docs = [
-    "sphinx",
-    "sphinxcontrib-mermaid",
-    "sphinx-click",
-    "sphinx-rtd-theme",
+    "mike",
+    "mkdocs-click",
+    "mkdocs-material",
+    "mkdocs-mermaid2-plugin",
+    "mkdocstrings[python]",
 ]
 
 [project.urls]

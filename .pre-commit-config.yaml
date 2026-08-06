@@ -29,7 +29,7 @@ repos:
         entry: check-yaml
         language: system
         types: [yaml]
-        exclude: ^cloudformation/
+        exclude: ^(cloudformation/|mkdocs\.yml)
       - id: end-of-file-fixer
         name: Fix End of Files
         entry: end-of-file-fixer

@@ -83,11 +83,22 @@ correctness rewrites come next session, authored directly in Markdown.
       and an empty Tasks index would violate the no-empty-pages criterion.*
 
 ### Phase 1: mkdocs-material migration
-- [ ] 1.1 Scaffold: `mkdocs.yml` per Locked decisions (theme, palette, features, plugins,
+- [x] 1.1 Scaffold: `mkdocs.yml` per Locked decisions (theme, palette, features, plugins,
       nav). Move docs deps: replace the sphinx packages in the `docs` dependency group with
       `mkdocs-material`, `mike`, `mkdocs-mermaid2-plugin` (add `mkdocs-click`,
       `mkdocstrings[python]` now for Session 3). Map existing pages into the target nav —
       pages not yet rewritten slot into their future locations under their current titles.
+      *Implementation notes: nav entries for still-RST pages are present in mkdocs.yml but
+      commented out, uncommented per 1.2 batch, so every commit passes `mkdocs build
+      --strict` (nav can't reference files that don't exist yet). Files keep their current
+      paths — the nav maps them into the IA; physical moves can accompany Session 2
+      rewrites. Placeholder `index.md` added (replaced in 1.4). About section created now
+      via `pymdownx.snippets` includes of CONTRIBUTING.md/CHANGELOG.md/LICENSE; the
+      relative `./pyproject.toml` link in CONTRIBUTING.md became a GitHub URL (dangled in
+      the site). `mkdocs.yml` excluded from the check-yaml hook (can't parse the
+      `!!python/name:` tag needed by the mermaid2 fence; mkdocs validates its own config).
+      Sphinx `make -C docs build` is non-functional from this commit (deps swapped); the
+      remaining Sphinx machinery is retired in 1.3.*
 - [ ] 1.2 Convert all remaining `.rst` → `.md` (pandoc first pass; hand-fix admonitions,
       code-block languages, cross-references, images, Mermaid blocks). **Conversion commits
       are content-neutral** — no wording changes, so the diff is reviewable as pure

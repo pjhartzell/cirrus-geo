@@ -32,7 +32,8 @@ git commit -m "message" --no-verify
 
 ## Dependency management
 
-Dependencies are defined in [`pyproject.toml`](./pyproject.toml):
+Dependencies are defined in
+[`pyproject.toml`](https://github.com/cirrus-geo/cirrus-geo/blob/main/pyproject.toml):
 
 * `[project.dependencies]`: base application dependencies
 * `[project.optional-dependencies.cli]`: dependencies specific to the `cli` extra
