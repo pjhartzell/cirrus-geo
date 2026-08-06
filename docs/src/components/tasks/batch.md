@@ -1,17 +1,17 @@
 # Batch tasks
 
 Batch tasks use AWS Batch for execution. As a result, declaring such tasks
-reqequires a handful of resources to be created: a container image, a Batch Job
+requires a handful of resources to be created: a container image, a Batch Job
 Definition, a Batch Compute Environment, and a Batch Job Queue. In some cases
-additional resources, like a IAM roles/profiles, launch templates, and ECR
+additional resources, like IAM roles/profiles, launch templates, and ECR
 repositories, will be required.
 
-Here is a CloudFormation example the resources required for a fairly complex Batch task:
+Here is a CloudFormation example of the resources required for a fairly complex Batch task:
 
     ReprojectBatchJob:
       Type: "AWS::Batch::JobDefinition"
       Properties:
-        JobDefinitionName: '#{AWS::StackName}-Reproject'
+        JobDefinitionName: !Sub '${ResourcePrefix}-Reproject'
         Type: Container
         Parameters:
           url: ""
@@ -22,22 +22,22 @@ Here is a CloudFormation example the resources required for a fairly complex Bat
             - Ref::url
           Environment:
             - Name: JOB_DEF_VAR
-              Value: 1234
+              Value: "1234"
             - Name: OVERRIDDEN_VAR
               Value: last_value
           ResourceRequirements:
             - Type: VCPU
-              Value: 32
+              Value: "32"
             - Type: MEMORY
-              Value: 240000
+              Value: "240000"
             - Type: GPU
-              Value: 4
-          Image: '123456789012.dkr.ecr.#{AWS::Region}.amazonaws.com/some-image-name:${opt:stage}'
+              Value: "4"
+          Image: !Sub '123456789012.dkr.ecr.${AWS::Region}.amazonaws.com/some-image-name:latest'
 
     ReprojectLaunchTemplate500GB:
       Type: AWS::EC2::LaunchTemplate
       Properties:
-        LaunchTemplateName: '#{AWS::StackName}-Reproject-500GB'
+        LaunchTemplateName: !Sub '${ResourcePrefix}-Reproject-500GB'
         LaunchTemplateData:
           BlockDeviceMappings:
             - Ebs:
@@ -50,13 +50,13 @@ Here is a CloudFormation example the resources required for a fairly complex Bat
     ReprojectComputeEnvironment500GB:
       Type: AWS::Batch::ComputeEnvironment
       Properties:
-        ComputeEnvironmentName: '#{AWS::StackName}-Reproject-500GB'
+        ComputeEnvironmentName: !Sub '${ResourcePrefix}-Reproject-500GB'
         Type: MANAGED
         ServiceRole: !GetAtt BatchServiceRole.Arn
         ComputeResources:
           MaxvCpus: 2000
-          SecurityGroupIds: ${self:custom.batch.SecurityGroupIds}
-          Subnets: ${self:custom.batch.Subnets}
+          SecurityGroupIds: !Ref BatchSecurityGroupIds
+          Subnets: !Ref BatchSubnets
           Type: EC2
           AllocationStrategy: BEST_FIT_PROGRESSIVE
           MinvCpus: 0
@@ -64,14 +64,14 @@ Here is a CloudFormation example the resources required for a fairly complex Bat
           LaunchTemplate:
             LaunchTemplateId: !Ref ReprojectLaunchTemplate500GB
             Version: $Latest
-          Tags: {"Name": "Batch Instance - #{AWS::StackName}"}
+          Tags: {"Name": !Sub "Batch Instance - ${ResourcePrefix}"}
           DesiredvCpus: 0
         State: ENABLED
 
     ReprojectJobQueue500GB:
       Type: AWS::Batch::JobQueue
       Properties:
-        JobQueueName: '#{AWS::StackName}-Reproject-500GB'
+        JobQueueName: !Sub '${ResourcePrefix}-Reproject-500GB'
         ComputeEnvironmentOrder:
           - Order: 1
             ComputeEnvironment: !Ref ReprojectComputeEnvironment500GB
@@ -102,16 +102,8 @@ Here is a CloudFormation example the resources required for a fairly complex Bat
                   Action:
                     - s3:PutObject
                   Resource:
-                    - Fn::Join:
-                        - ''
-                        - - 'arn:aws:s3:::'
-                          - ${self:provider.environment.CIRRUS_DATA_BUCKET}
-                          - '*'
-                    - Fn::Join:
-                        - ''
-                        - - 'arn:aws:s3:::'
-                          - ${self:provider.environment.CIRRUS_PAYLOAD_BUCKET}
-                          - '*'
+                    - !Sub 'arn:aws:s3:::${CirrusDataBucket}*'
+                    - !Sub 'arn:aws:s3:::${CirrusPayloadBucket}*'
                 - Effect: Allow
                   Action:
                     - s3:ListBucket
@@ -121,12 +113,12 @@ Here is a CloudFormation example the resources required for a fairly complex Bat
                 - Effect: Allow
                   Action: secretsmanager:GetSecretValue
                   Resource:
-                    - arn:aws:secretsmanager:#{AWS::Region}:#{AWS::AccountId}:secret:cirrus*
+                    - !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:cirrus*'
                 - Effect: Allow
                   Action:
                     - lambda:GetFunction
                   Resource:
-                    - arn:aws:lambda:#{AWS::Region}:#{AWS::AccountId}:function:#{AWS::StackName}-*
+                    - !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ResourcePrefix}-*'
 
     ReprojectInstanceProfile:
       Type: AWS::IAM::InstanceProfile
@@ -157,9 +149,14 @@ in to the executed command.
 
 This is an important note: Batch has a rather low limit on the size of a job
 sent to the SubmitJob API ([30KiB at current](https://docs.aws.amazon.com/batch/latest/userguide/service_limits.html)). To mitigate impacts from this
-limit, use the `pre-batch` task immediately prior to any batch tasks to upload
-the payload to S3 and return a `url` to that payload, which can then be
-referenced when calling the batch job as the value to the `url` parameter.
+limit, run the [`pre-batch`](../functions/pre_batch.md) Lambda function
+immediately before any Batch task step to upload the payload to S3. `pre-batch`
+returns two S3 URLs:
+
+- `url`: the location of the uploaded input payload, referenced when calling
+  the Batch job as the value of the `url` parameter
+- `url_out`: the location (the input URL with an `_out.json` suffix) where
+  the Batch task must write its output payload
 
 In the `ReprojectBatchJob` example resource above, we can see that the `url`
 parameter is referenced in the executed command:
@@ -179,14 +176,17 @@ that entry point should be expecting an S3 URL to a process payload, specified
 in some manner. The `stac-task` python library provides convenience
 classes/methods to help with this common need.
 
-The Batch tasks should replace the payload in S3 at the end of execution after
-any modifications. Follow the Batch task with the `post-batch` task to resolve
-that S3 URL into a JSON payload to pass to successive tasks. `post-batch` will
-also pull any Batch errors from the logs and raise them within the workflow, in
-the event of an unsuccessful Batch execution.
+The Batch task must write the (possibly modified) payload back to S3 at the
+`url_out` location established by `pre-batch`. Both `url` and `url_out` need
+to be passed through the workflow's Batch task step so that
+[`post-batch`](../functions/post_batch.md), which runs immediately after,
+can find the output location. `post-batch` reads the payload from `url_out`
+and returns it to the state machine; if the Batch job failed, `post-batch`
+instead pulls the error from the job's CloudWatch logs and raises it within
+the workflow.
 
 See [Batch tasks in workflows](../workflows/batch.md) for an example of how a
-payload is passed to a job using this `url` parameter, how `pre-batch` and
+payload is passed to a job using the `url` parameter, how `pre-batch` and
 `post-batch` are used, and some other tips regarding Batch tasks in workflows.
 
 Job parameters can also be used for other job settings, but are most commonly
@@ -227,15 +227,15 @@ The `Image` key accepts an image name within a docker registry in the form
 Docker Hub.
 
 For Cirrus tasks, using the AWS Elastic Container Registry to store images is
-common, as is show in the example `Image` value:
+common, as shown in the example `Image` value:
 
-    123456789012.dkr.ecr.#{AWS::Region}.amazonaws.com/some-image-name:${opt:stage}
+    123456789012.dkr.ecr.us-west-2.amazonaws.com/some-image-name:latest
 
-Note the use of the Serverless parameter `${opt:stage}`, which allows
-specification of an image tag based on the stage in a multi-stage deployment
-pipeline. For example, if we have a deployment pipeline with the stages,
-`dev`, `staging`, and `prod`, we will want to ensure we have image
-versions in the ECR repo with tags of those same names.
+In a deployment with multiple environments (for example `dev`, `staging`, and
+`prod`), it is common to parameterize the image tag with a CloudFormation
+parameter (`!Sub '...${ImageTag}'`, with `ImageTag` passed in per
+environment) so each deployment pulls a distinct image version from the ECR
+repo.
 
 ## Compute environments
 
@@ -248,7 +248,7 @@ within them.
 
 Within the Cirrus context, it is recommended to use `MANAGED` compute
 environments. Whether to make use of Fargate or EC2 for job execution is highly
-dependent on the workload involved. Many geospatial processing tasks a
+dependent on the workload involved. Many geospatial processing tasks are
 compute-intensive and make heavy, constant use of instance CPUs, which often
 tips the balance in favor of EC2 for the cost savings. EC2 also allows great
 flexibility, at the expense of having more complex configuration to manage.
@@ -267,7 +267,8 @@ to prevent potentially service-impacting updates. However, for some projects,
 omitting the name may be preferable, as doing so allows updates without
 requiring explicit name changes or resource duplication.
 
-Review the Batch resource management strategies for more information.
+See [What to do about these issues](#what-to-do-about-these-issues) for more
+on managing named Batch resources through updates.
 
 ### Compute resources
 
@@ -282,13 +283,13 @@ the total number of CPUs required by all executing jobs. Instances are allocated
 to the compute environment using the specified `AllocationStrategy`. In some
 cases, the desired instance type may not be available, and more-strict
 strategies may prevent substitute instance types from being allocated, causing
-jobs to wait for instance to become available. A similar situation can happen
+jobs to wait for instances to become available. A similar situation can happen
 with large resource demands, where even less-strict allocation strategies cannot
 find a suitable instance and jobs have to wait.
 
 Specifying a `MinvCpus` value as a multiple of the number of jobs the compute
 environment should minimally accommodate without waiting can be a viable
-mechanism for dealing with instance inavailability. That is, if needing to
+mechanism for dealing with instance unavailability. That is, if needing to
 ensure ten jobs each requiring four CPUs can run without a wait then a
 `MinvCpus` value of 40 will ensure enough instances are continuously running
 to support those jobs. However, using this parameter can add significant idle
@@ -319,10 +320,10 @@ This is an example of a ComputeEnvironment that uses Spot:
     Properties:
       Type: MANAGED
       ComputeResources:
-        MinvCpus: ${env:CIRRUS_TASK_FOO_TO_STAC_BATCH_MIN_VCPUS, 0}
+        MinvCpus: !Ref FooMinvCpus
         MaxvCpus: 5000
-        SecurityGroupIds: ${self:custom.batch.SecurityGroupIds}
-        Subnets: ${self:custom.batch.Subnets}
+        SecurityGroupIds: !Ref BatchSecurityGroupIds
+        Subnets: !Ref BatchSubnets
         InstanceTypes:
           - r4.xlarge
           - r4.2xlarge
@@ -356,7 +357,7 @@ This is an example of a ComputeEnvironment that uses Spot:
           Fn::GetAtt: [EC2SpotRole, Arn]
         InstanceRole:
           Fn::GetAtt: [BatchInstanceProfile, Arn]
-        Tags: { "Name": "Batch Instance - #{AWS::StackName}" }
+        Tags: { "Name": !Sub "Batch Instance - ${ResourcePrefix}" }
         LaunchTemplate:
           LaunchTemplateId: !Ref FooComputeEnvironmentLaunchTemplate
           Version: $Latest
@@ -381,9 +382,9 @@ r4.xlarge (4 vCPUs) to r4.24xlarge (96 vCPUs), you must specify the the maximum 
 storage required (96 x 3GB = 288GB), even though the r4.xlarge instances will always have
 276GB of unused storage that incurs cost.
 
-`MinvCpus` is set to an environment variable, so we can set it to 0 in our dev environment that
-is rarely incurring load, and non-zero in our production environment so that a temporary period
-in which there is no compute required doesn't result in the deallocation of our entire compute
+`MinvCpus` is set from a CloudFormation parameter, so it can be set to 0 in a dev environment that
+is rarely incurring load, and non-zero in a production environment so that a temporary period
+in which there is no compute required doesn't result in the deallocation of the entire compute
 pool and a fresh spot request when it does start processing again.
 
 ## Launch templates
@@ -393,7 +394,7 @@ other initialization changes to EC2 instances started in a compute environment.
 Perhaps most commonly, launch templates are used to increase the root disk size
 to ensure enough space is available for running containers and any scratch space
 they may require. The `ReprojectLaunchTemplate500GB` resource in the example
-`definition.yml` is doing exactly that, increasing the root disk to 500GB from
+above is doing exactly that, increasing the root disk to 500GB from
 the default 30GB.
 
 Other common uses of launch templates for Batch tasks include mounting an EFS
@@ -404,7 +405,7 @@ a launch template will not affect any existing compute environments* referencing
 that launch template. The launch template referenced at compute environment
 creation is cached independently of the base version, and cannot be updated. If
 needing launch template changes to apply to an existing compute environment the
-compute environment must to be recreated so the new environment can pull the new
+compute environment must be recreated so the new environment can pull the new
 launch template version.
 
 Consult the [CloudFormation documentation for launch templates](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-launchtemplate.html) to learn more.
@@ -426,7 +427,7 @@ instead it expects an [IAM instance profile](https://docs.aws.amazon.com/IAM/lat
 features both the `ReprojectInstanceRole` IAM role resource and the
 `ReprojectInstanceProfile` IAM instance profile referencing the former. We
 then resolve the profile's ARN and pass that to the compute environment, and it
-can use that profile to associate the desired role and its polices to all Batch
+can use that profile to associate the desired role and its policies to all Batch
 job containers.
 
 Commands run as Batch jobs therefore get the permissions allowed by the
@@ -436,10 +437,12 @@ more, so the Batch task does not encounter any permissions errors but also
 cannot access unexpected resources. Roles/profiles can be shared between compute
 environments, but doing so is discouraged.
 
-Container overrides can be used when calling `SubmitJob` to change the profile
-used for a specific job. This feature can be useful for advanced users
-attempting to run multiple jobs are executed in the same compute environment
-(again, having unique compute environments per task is typically recommended).
+Container overrides can be used when calling `SubmitJob` to change the
+command, environment variables, or resource requirements for a specific job,
+without changing the IAM role/profile, which is fixed by the compute
+environment. This can be useful for advanced users running multiple job
+types in the same compute environment (again, having unique compute
+environments per task is typically recommended).
 
 ## Job queues
 
@@ -450,7 +453,7 @@ while waiting for available CPUs in a saturated compute environment, and can
 also provide prioritization in the case where different types of jobs share a
 single compute environment.
 
-Multiple compute environment can also be specified for a single queue. This can
+Multiple compute environments can also be specified for a single queue. This can
 be useful in the case of wanting some on-demand capacity, but pushing overflow
 into the spot market, or vice versa.
 
@@ -491,7 +494,7 @@ environments must be managed per the following guidelines, making sure that the
 chosen strategy will have enough headroom within the quotas.
 
 The AWS Batch API also limits the number of SubmitJob and DescribeJobs requests
-to 50/sec (it is unclear from the documentation if this an individual or combined quota).
+to 50/sec (it is unclear from the documentation if this is an individual or combined quota).
 This makes it critical that the rate of creating new workflows (step function executions)
 be limited so that they do not overwhelm this API with submitting jobs.
 
@@ -539,7 +542,7 @@ is deactivated. Then, on rollback, CloudFormation re-deploys the definition with
 A as revision 3, deactivating revision 2. But, like the above temporary issue
 with job definition revisions, the step function definition will not be updated
 and still points to revision 1. Unlike the above issue, this case results in a
-premanent issue, unless fixed by another deployment or manual configuration
+permanent issue, unless fixed by another deployment or manual configuration
 changes.
 
 ### Killed jobs on job queue removal
@@ -551,7 +554,7 @@ resource.
 
 ## What to do about these issues
 
-In essences, each of these issues results from trying to make updates to Batch
+In essence, each of these issues results from trying to make updates to Batch
 infrastructure while jobs are running or can be started. How best to mitigate
 these issues, therefore, depends on project uptime requirements and/or how
 constantly jobs are run as part of the pipeline.
@@ -559,8 +562,8 @@ constantly jobs are run as part of the pipeline.
 ### Downtime an issue, jobs continuously running
 
 In the case where jobs are continuously running and any pipeline downtime is
-undeserable, the best management strategy is to avoid any Batch resource
-updates, instead deferring to strategy of duplicating all changed resources.
+undesirable, the best management strategy is to avoid any Batch resource
+updates, instead deferring to a strategy of duplicating all changed resources.
 Commonly, this results in something like a blue-green deployment where every
 Batch resource has two copies, a revision A and revision B. Changes then
 alternate between the two revisions, ensuring the active revision is not updated
