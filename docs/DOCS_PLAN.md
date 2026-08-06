@@ -74,8 +74,10 @@ correctness rewrites come next session, authored directly in Markdown.
       (only click option callbacks; no `waitForTaskToken`/`SendTask*` anywhere) — deleted
       outright, plus the callback bullet in `workflows/definitions.rst` and the callback
       sentence in `workflows/chaining.rst`, which documented the nonexistent feature.*
-- [ ] 0.4 Reclassify pre/post-batch pages as functions (file moves + index fixes) so the
+- [x] 0.4 Reclassify pre/post-batch pages as functions (file moves + index fixes) so the
       conversion carries the correct taxonomy.
+      *`components/tasks/index.rst` deleted — its only entries were the two moved pages,
+      and an empty Tasks index would violate the no-empty-pages criterion.*
 
 ### Phase 1: mkdocs-material migration
 - [ ] 1.1 Scaffold: `mkdocs.yml` per Locked decisions (theme, palette, features, plugins,
