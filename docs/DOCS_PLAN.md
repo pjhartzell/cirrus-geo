@@ -139,6 +139,18 @@ correctness rewrites come next session, authored directly in Markdown.
 site in Material with the target nav; no empty pages; no CLIrrus; codespell in CI; version
 selector works.
 
+**Session 1 result (2026-08-06): complete.** Strict build clean; full target nav; no empty
+pages; CLIrrus gone from docs/src and src (remaining hits are this plan's own rule text and
+the CHANGELOG history entry); codespell runs in CI via the pre-commit hook. Version
+selector: `extra.version.provider: mike` verified in the rendered HTML; end-to-end behavior
+is only observable after the first mike deploy from CI. Verification checklist notes:
+the one `COMPLETED` doc hit (cli/04_commands.md:220, legacy-record migration) and the
+`${opt:stage}` Serverless hit (components/tasks/batch.md, task 3.3 scope) are reviewed and
+intentional; three sampled code examples (migrate `--since-days`/`--dry-run`,
+`PayloadBucket.get_*_payload_url`, `chain_filter` JSONPath) verified against source.
+Pre-existing empty *section headers* remain on pages whose rewrites are Session-2 tasks
+(2.2, 2.3); those without a covering task are recorded in `docs/OPEN_QUESTIONS.md`.
+
 ## Session 2 — Content correctness and the big gaps (authored in Markdown)
 
 ### Phase 2: replace stubs with real content
