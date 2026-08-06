@@ -1,27 +1,5 @@
 # Basic Operation
 
-## Process definition
-
-## Process definition
-
-### Workflow
-
-### upload_options
-
-### Output collections
-
-### Task parameters
-
-## Managing Secrets for Bucket access
-
-## Submit a job for processing
-
-## Check statedb
-
-## Go to workflow (Step Function execution)
-
-## Inspect output STAC Items
-
 ## Rerun tasks
 
 One of the most common actions to to re-run failed tasks. For example, it it

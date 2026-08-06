@@ -149,7 +149,10 @@ the one `COMPLETED` doc hit (cli/04_commands.md:220, legacy-record migration) an
 intentional; three sampled code examples (migrate `--since-days`/`--dry-run`,
 `PayloadBucket.get_*_payload_url`, `chain_filter` JSONPath) verified against source.
 Pre-existing empty *section headers* remain on pages whose rewrites are Session-2 tasks
-(2.2, 2.3); those without a covering task are recorded in `docs/OPEN_QUESTIONS.md`.
+(2.2, 2.3); those without a covering task were recorded in `docs/OPEN_QUESTIONS.md`, then
+deleted per maintainer decision (less is more) — 18 headings across 10_intro, 20_arch,
+50_operation, feeders/index, and tasks/batch, including parents emptied by the deletions
+and a duplicated "Process definition" pair in 50_operation.
 
 ## Session 2 — Content correctness and the big gaps (authored in Markdown)
 

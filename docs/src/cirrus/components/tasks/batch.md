@@ -508,8 +508,6 @@ these charges.
 It is highly recommended to follow [least privilege](https://docs.aws.amazon.com/wellarchitected/latest/framework/sec_permissions_least_privileges.html)
 using AWS Security Groups, especially denying SSH access (port 22).
 
-#### Managing changes to Batch resources
-
 ## Observed issues
 
 Several different service-impacting issues can result from changes to Batch

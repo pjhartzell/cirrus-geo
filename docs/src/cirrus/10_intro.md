@@ -13,8 +13,6 @@ Cirrus consists of two primary pieces:
 - `cirrus-lib`, a Python library providing a number of useful
 abstractions solving common needs for users writing their own Cirrus components.
 
-## Why Cirrus?
-
 ## Concepts
 
 ### STAC-based workflows

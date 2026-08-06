@@ -8,11 +8,3 @@ that turns external events into process payloads and publishes them to the
 Cirrus process topic.
 
 Cirrus does not include out-of-the-box feeders. Feeder design and implementation are left to users to build feeders that meet project needs.
-
-## Lambda, Batch, Local?
-
-## Anatomy of a Feeder
-
-### Process definition
-
-## Creating new feeder

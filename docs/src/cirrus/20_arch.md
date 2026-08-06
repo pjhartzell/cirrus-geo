@@ -63,5 +63,3 @@ Batch
 **workflow**: An AWS Step Function consisting of 1 or more tasks
 
 **feeder**: Anything that generates a [Cirrus Process Payload](30_payload.md) and queues it for processing.
-
-## Naming conventions
