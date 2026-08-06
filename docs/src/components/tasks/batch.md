@@ -378,7 +378,7 @@ larger instances will be running more jobs, and you need to ensure you have
 appropriate storage for these larger instances. Unfortunately, only one value can be
 set for storage, which every EC2 instance gets, no matter how many concurrent tasks it
 can support. For example, if each task requires 1vCPU and 3GB of storage and you allow
-r4.xlarge (4 vCPUs) to r4.24xlarge (96 vCPUs), you must specify the the maximum amount of
+r4.xlarge (4 vCPUs) to r4.24xlarge (96 vCPUs), you must specify the maximum amount of
 storage required (96 x 3GB = 288GB), even though the r4.xlarge instances will always have
 276GB of unused storage that incurs cost.
 
