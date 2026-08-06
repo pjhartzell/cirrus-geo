@@ -16,7 +16,7 @@ These primary types of Cirrus components are:
 There is one more component type, that while not explicitly defined in
 `cirrus-geo`, is critical to a cirrus deployment - feeders
 
-- **feeders**: Conceptually, anything that generates a [Cirrus Process Payload](30_payload.md) and queues it for processing. In practice this is open
+- **feeders**: Conceptually, anything that generates a [Cirrus Process Payload](../cirrus/30_payload.md) and queues it for processing. In practice this is open
   ended and could be anything from a user pasting JSON into the AWS console to
   an automated process that turns external events into process payloads and
   publishes them to the Cirrus process topic.

@@ -65,27 +65,27 @@ nav:
   - Guides:
       - Payloads: cirrus/30_payload.md
       - Workflows:
-          - Overview: cirrus/components/workflows/index.md
-          - Workflow definitions: cirrus/components/workflows/definitions.md
-          - Chaining workflows: cirrus/components/workflows/chaining.md
-          - Batch in workflows: cirrus/components/workflows/batch.md
-      - Batch tasks: cirrus/components/tasks/batch.md
+          - Overview: components/workflows/index.md
+          - Workflow definitions: components/workflows/definitions.md
+          - Chaining workflows: components/workflows/chaining.md
+          - Batch in workflows: components/workflows/batch.md
+      - Batch tasks: components/tasks/batch.md
       - Configuration and deployment: cirrus/40_config-deploy.md
       - Operations: cirrus/50_operation.md
       - Monitoring: cirrus/80_monitoring.md
       - Tips and tricks: cirrus/95_tips_and_tricks.md
   - Reference:
       - Components:
-          - Overview: cirrus/60_components.md
-          - Feeders: cirrus/components/feeders/index.md
+          - Overview: components/index.md
+          - Feeders: components/feeders/index.md
           - Functions:
-              - Overview: cirrus/components/functions/index.md
+              - Overview: components/functions/index.md
               - api: components/functions/api.md
               - process: components/functions/process.md
               - update-state: components/functions/update-state.md
               - pre-batch: components/functions/pre_batch.md
               - post-batch: components/functions/post_batch.md
-          - Tasks: cirrus/components/tasks/index.md
+          - Tasks: components/tasks/index.md
       - CLI:
           - Overview: cli/00_intro.md
           - Installing: cli/01_install.md

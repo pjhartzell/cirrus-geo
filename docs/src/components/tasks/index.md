@@ -2,7 +2,7 @@
 
 Tasks in Cirrus implement a unit of processing, to be composed together into a
 [Workflow](../workflows/index.md). Tasks are expected to support both input
-and output formatted as a [Cirrus Payload](../../30_payload.md). As
+and output formatted as a [Cirrus Payload](../../cirrus/30_payload.md). As
 part of it's processing, a task can make any requisite modifications to its
 input payload and/or derive any output assets, pushing them to the canonical
 storage location in S3.
@@ -75,7 +75,7 @@ ID is exposed in the Step Function execution history metadata. The
 `get-execution-events` management command with the `--with-log-metadata` flag
 retrieves this metadata, and the `get-lambda-logs` command uses the request ID to
 filter CloudWatch logs for a specific Lambda invocation. See the
-[CLI commands](../../../cli/04_commands.md) documentation for usage examples.
+[CLI commands](../../cli/04_commands.md) documentation for usage examples.
 
 ### Batch tasks
 
@@ -219,4 +219,4 @@ into a single definition.
 ## Task parameters
 
 Tasks can take arguments at runtime via process definition parameters. See the
-[Cirrus Payload](../../30_payload.md) docs for more information.
+[Cirrus Payload](../../cirrus/30_payload.md) docs for more information.

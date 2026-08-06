@@ -19,5 +19,5 @@ These `state-machine.json` files define the entire step function workflow. A non
 - error handling
 - resource ARNs
 
-The [state database](../../70_statedb.md) tracks the state of items
+The [state database](../../cirrus/70_statedb.md) tracks the state of items
 processed at the workflow level.

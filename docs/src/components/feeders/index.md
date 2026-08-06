@@ -1,6 +1,6 @@
 # Feeders
 
-Conceptually, a feeder is anything that generates a [Cirrus Process Payload](../../30_payload.md) and queues it for processing.
+Conceptually, a feeder is anything that generates a [Cirrus Process Payload](../../cirrus/30_payload.md) and queues it for processing.
 
 In practice this could be anything from a user manually building a JSON and
 pasting it into the AWS console, an AWS Lambda function, or any other process

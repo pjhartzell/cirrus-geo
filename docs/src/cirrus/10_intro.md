@@ -30,23 +30,23 @@ as needed for a given workflow.
 
 ### Cirrus Components
 
-Cirrus is organized into reusable blocks called [Components](60_components.md). There are four types of Components:
+Cirrus is organized into reusable blocks called [Components](../components/index.md). There are four types of Components:
 
-- [Feeders](components/feeders/index.md) accept arbitrary input, and
+- [Feeders](../components/feeders/index.md) accept arbitrary input, and
   output a Cirrus Payload which is enqueued for processing. These can
   be used to initiate processing from any source, for example, an SNS topic
   message indicating a new scene is available or an S3 Inventory of existing
   scenes. Cirrus does not come pre-loaded with feeders, and they must be
   set up by users.
-- [Tasks](components/tasks/index.md) are the basic unit of work in a
+- [Tasks](../components/tasks/index.md) are the basic unit of work in a
   Workflow and use a Cirrus Payload for both input and output. This is
   where specific processing, for example, transforming data to data (e.g.
   JPEG200 to COG), data to metadata (e.g., COG to STAC), or metadata to
   metadata (e.g., MTL to STAC).
-- [Workflows](components/workflows/index.md) are a composition of one or
+- [Workflows](../components/workflows/index.md) are a composition of one or
   more Tasks implementing a processing pipeline that coordinate transforming a
   given input into one or more output STAC items
-- [Functions](components/functions/index.md) provide internal services that
+- [Functions](../components/functions/index.md) provide internal services that
   are used by Tasks, and Workflows, and are less commonly extended by users.
 
 ### Horizontal and vertical scaling
@@ -128,7 +128,7 @@ necessary.
 
 *Those writing code to be run as Cirrus tasks within workflows.*
 
-- [Components](60_components.md)
-- [Tasks](components/tasks/index.md)
+- [Components](../components/index.md)
+- [Tasks](../components/tasks/index.md)
 - [Cirrus Payload format](30_payload.md)
 - `cirrus-lib` documentation
