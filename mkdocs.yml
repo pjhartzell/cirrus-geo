@@ -55,8 +55,6 @@ markdown_extensions:
           class: mermaid
           format: !!python/name:mermaid2.fence_mermaid_custom
 
-# The Upgrading-to-2.0 page is authored in Session 2 of the docs overhaul
-# (see docs/DOCS_PLAN.md).
 nav:
   - Home: index.md
   - Getting Started:
@@ -74,6 +72,7 @@ nav:
       - Deployment: cirrus/40_config-deploy.md
       - Operations: cirrus/50_operation.md
       - Monitoring: cirrus/80_monitoring.md
+      - Upgrading to 2.0: cirrus/85_upgrading.md
       - Tips and tricks: cirrus/95_tips_and_tricks.md
   - Reference:
       - Components:
