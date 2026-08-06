@@ -9,23 +9,25 @@ few more things in mind when using to Batch tasks.
 
 ## `pre-batch` and `post-batch`
 
-Because Batch tasks cannot take the input payload natively like Lambda and must
-redirect through S3, Cirrus provides a built-in Lambda task to assist. The
-`pre-batch` task takes an input payload, uploads it to S3, and returns an
-output JSON payload with a `url` key with the S3 payload URL as its value.
-`pre-batch` should always be run immediately proceeding a Batch task for this
-purpose.
+Because Batch tasks cannot take the input payload natively like Lambda and
+must redirect through S3, Cirrus provides the built-in
+[`pre-batch`](../functions/pre_batch.md) Lambda function to assist.
+`pre-batch` takes an input payload, uploads it to S3, and returns a JSON
+object with two keys: `url`, the S3 URL of the uploaded payload, and
+`url_out`, the S3 URL where the Batch task must write its output. It should
+always run immediately preceding a Batch task.
 
-Similarly, Batch does not integrate returned payloads with step functions nearly
-as well as Lambda, so Cirrus has a built-in `post-batch` task to help with,
-well, post-batch operations. Specifically, `post-batch` can pull the Batch
-payload from S3 and return that in the case of a successful Batch execution. In
-the case of a Batch error, `post-batch` will scrape the container logs for an
-exception or other error message, and raise it within the step function. This
-helps "bubble" Batch task errors up to the step function. Errors can then be
-handled within the step function semantics or used to fail the step function
-execution with error context that can ultimately be pushed into the state
-database, increasing error visibility and assisting with troubleshooting.
+Similarly, Batch does not integrate returned payloads with Step Functions
+nearly as well as Lambda, so Cirrus has a built-in
+[`post-batch`](../functions/post_batch.md) Lambda function for post-batch
+operations. `post-batch` pulls the output payload from S3 (at `url_out`) and
+returns it in the case of a successful Batch execution. In the case of a
+Batch error, `post-batch` will scrape the container logs for an exception or
+other error message, and raise it within the Step Functions execution. This
+"bubbles" Batch task errors up to the workflow, where they can be handled
+within the state machine or used to fail the execution with error context
+that is ultimately pushed into the state database, increasing error
+visibility and assisting with troubleshooting.
 
 Therefore, like `pre-batch`, a `post-batch` step should always immediately
 follow a Batch task step.
@@ -123,6 +125,7 @@ use-case perfectly.
                                 "FunctionName": "!GetAtt pre-batch.Arn",
                                 "Payload.$": "$"
                             },
+                            "OutputPath": "$.Payload",
                             "Next": "batch-task",
                             "Retry": [
                                 {
@@ -146,7 +149,8 @@ use-case perfectly.
                                 "JobQueue": "#{ExampleJobQueue}",
                                 "JobDefinition": "#{ExampleBatchJob}",
                                 "Parameters": {
-                                    "url.$": "$.url"
+                                    "url.$": "$.url",
+                                    "url_out.$": "$.url_out"
                                 }
                             },
                             "Next": "post-batch",
@@ -176,9 +180,10 @@ use-case perfectly.
                             "Type": "Task",
                             "Resource": "arn:aws:states:::lambda:invoke",
                             "Parameters": {
-                                "FunctionName": !GetAtt post-batch.Arn,
+                                "FunctionName": "!GetAtt post-batch.Arn",
                                 "Payload.$": "$"
                             },
+                            "OutputPath": "$.Payload",
                             "End": true,
                             "Retry": [
                                 {
