@@ -74,6 +74,9 @@ correctness rewrites come next session, authored directly in Markdown.
       (only click option callbacks; no `waitForTaskToken`/`SendTask*` anywhere) — deleted
       outright, plus the callback bullet in `workflows/definitions.rst` and the callback
       sentence in `workflows/chaining.rst`, which documented the nonexistent feature.*
+      *Addendum: `cirrus/65_cloudformation.rst` also deleted — title-only page (2 lines),
+      not listed in 0.3 but caught by the no-empty-pages exit criterion. Nothing referenced
+      it (main index uses globs).*
 - [x] 0.4 Reclassify pre/post-batch pages as functions (file moves + index fixes) so the
       conversion carries the correct taxonomy.
       *`components/tasks/index.rst` deleted — its only entries were the two moved pages,
