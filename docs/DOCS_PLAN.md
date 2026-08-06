@@ -65,11 +65,15 @@ correctness rewrites come next session, authored directly in Markdown.
       Rename `RoleSessionName="CLIrrus_iam_session"` in `src/cirrus/lib/utils.py` to
       `"cirrus_cli_session"`; add CHANGELOG entry under Unreleased (behavior-visible in
       CloudTrail session names).
-- [ ] 0.3 Delete dead weight before conversion: empty examples skeleton
+- [x] 0.3 Delete dead weight before conversion: empty examples skeleton
       (`cirrus/90_examples.rst`, `cirrus/examples/e2e-notebook.rst`); `96_deploying.rst`
       (content absorbed by task 2.2); callbacks placeholder **after** checking code — grep
       `src/` for callback support; if implemented, keep a one-line stub and flag task 5.4,
       else delete outright.
+      *Callback check: no hits for workflow callbacks in `src/` or `cloudformation/`
+      (only click option callbacks; no `waitForTaskToken`/`SendTask*` anywhere) — deleted
+      outright, plus the callback bullet in `workflows/definitions.rst` and the callback
+      sentence in `workflows/chaining.rst`, which documented the nonexistent feature.*
 - [ ] 0.4 Reclassify pre/post-batch pages as functions (file moves + index fixes) so the
       conversion carries the correct taxonomy.
 

@@ -56,9 +56,7 @@ This example would result in an execution chain that looks like this:
      2b --> 3b
 
 Note that chaining alone can effectively model one-to-one and one-to-many
-dependency relationships. If needing to model many-to-one or many-to-many
-relationships, see :doc:`workflow callbacks <callbacks>` for an effective way
-to consolidate the outputs of multiple workflows together.
+dependency relationships.
 
 
 Filtering output items

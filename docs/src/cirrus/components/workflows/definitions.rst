@@ -144,24 +144,13 @@ workflows. Cirrus allows several means of building such multi-stage pipelines:
 
   See the :doc:`workflow chaining documentation <chaining>` for further details.
 
-* **Workflow callbacks**: allow workflows to wait on one or more sub-workflows.
-  Callbacks can be used to model something like chains in the form of an outer
-  workflow, but can also model merging the output of multiple workflows
-  together.
-
-  Callbacks are most useful when a workflow has a dependency on the
-  output items from multiple other workflow executions.
-
-  See the :doc:`workflow callback documentation <callbacks>` for further
-  details.
-
 * **Publish topic subscriptions**: custom Lambda functions or other such
   listeners can be subscribed to the ``cirrus-<stage>-publish`` SNS topic to
   process workflow output items. These functions can be used as feeders,
   performaing any custom logic on output items before triggering any additional
   workflow executions required.
 
-  While chaining and callbacks solve most common cases where workflows need to
+  While chaining solves most common cases where workflows need to
   trigger off one another, reach for this solution when custom trigger
   conditions don't quite fit with the in-the-box approaches.
 
