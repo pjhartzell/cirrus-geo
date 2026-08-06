@@ -1,16 +1,22 @@
 # post-batch
 
-A lambda related to running Batch tasks, required to work around limitations of
-AWS Batch and facilitates batch tasks to have the same step-function API as a
-lambda-based task.
+The `post-batch` Lambda function runs immediately after a Batch task in a
+workflow, performing the inverse of [`pre-batch`](pre_batch.md): it reads the
+task's output payload from S3 (at the `url_out` location established by
+`pre-batch`) and returns it to the Step Functions state machine, so the next
+task receives it the same way it would from a Lambda task.
 
-In other words, the `post-batch` task performs a function similar to but
-opposite that of the `pre-batch` task. A completed `Batch` task must push
-its output to S3. The `post-batch` task will take said output from S3 and
-pass it along to the next task in the workflow. The combination of
-`pre-batch` and `post-batch` with a batch task emulates how a lambda task
-is able to consume and return the JSON payload directly.
+## Error handling
 
-It also handles errors that come out of the `Batch` workflow, errors that can
-be related to either the Batch job itself or cirrus task related errors, and
-re-raises these errors in the step-function context.
+When the Batch job fails, `post-batch` reconstructs the underlying error so
+it surfaces in the Step Functions execution rather than a generic Batch
+failure:
+
+1. It reads the last log event from the job's final attempt in the
+   `/aws/batch/job` CloudWatch log group.
+2. It parses the error type and message from that log line and re-raises the
+   error under the original type name (falling back to `UnknownError`).
+3. If the log stream cannot be read — typically because the container never
+   started — it raises an error carrying the Batch container reason and
+   attempt status reason instead (e.g. `DockerTimeoutError`, "Task failed to
+   start").

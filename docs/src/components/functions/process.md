@@ -1,44 +1,49 @@
 # process
 
-The `process` lambda is a core piece of Cirrus infrastructure. It
-processes messages, extracts and prepares Cirrus Payloads from these
-messages and then uses these payloads to trigger execution of
-pre-defined AWS Step Function workflows. This lambda can also involve
-simple administrative work like setting payload ids, and updating the
-state db to avoid duplicative executions.
+The `process` Lambda function is the entry point into Cirrus workflows. It
+consumes messages from the process SQS queue, extracts a Cirrus Payload from
+each message, records the payload in the state database, and starts a Step
+Functions execution of the workflow named in the payload's process
+definition.
 
 ## Trigger
 
-There are multiple ways to trigger the `process` lambda.
+The process SQS queue is the function's event source. Anything that can put a
+message on that queue can trigger processing:
 
-- Send a message to the SQS `process` queue via a feeder
-- Send a message to the SQS queue using the CLI tool `process`
-  command.
+- a [feeder](../feeders/index.md) publishing payloads to the queue (directly
+  or via the process SNS topic)
+- the Cirrus CLI `process` command, which enqueues a payload read from stdin:
 
-The SQS message can be used to send a single payload, or batch payloads to
-trigger workflows at volume with a single message (e.g. bulk image processing).
-Once the lambda has ingested a payload it begins the processing pipeline.
+        cirrus manage DEPLOYMENT_NAME process < payload.json
 
-## Payload
+A single message carries a single payload; bulk processing is a matter of
+sending many messages, which the function consumes in SQS batches.
 
-The message may contain the Cirrus Payload, have an S3 URL for a
-payload, be a Batch message containing a url link to a Cirrus Payload,
-or notification from an SNS topic that contains a Cirrus Payload.
+## Payload extraction
 
-## Workflow Kick Off
+Each message may contain a Cirrus Payload directly, an SNS notification
+wrapping a payload, or an object with a `url` field pointing to a payload in
+S3, in which case the payload is fetched from S3. Messages from which no
+payload can be extracted, or whose payload is not a valid process payload,
+are recorded as workflow events (`RECORD_EXTRACT_FAILED` or
+`NOT_A_PROCESS_PAYLOAD`), their content is uploaded to the payload bucket for
+inspection, and the batch fails so unprocessable messages fall through to the
+dead-letter queue.
 
-The core function of the `process` lambda is to handle and process
-inputs and to then trigger AWS Step Function execution of predefined
-cirrus tasks and workflows. Payloads are also stored in the cirrus
-deployment S3 bucket.
+## State management and workflow start
 
-## State Management
+For each payload, the function:
 
-The `process` lambda also updates the state table when workflows are
-initiated or fail to be initiated. This is intended to prevent duplicate
-workflows running the same payload.
+1. Claims the payload in the state database (state `CLAIMED`), which locks
+   out concurrent duplicate executions. Payloads already in `PROCESSING` are
+   skipped, as are payloads in `SUCCEEDED` or `INVALID` unless the process
+   definition sets `replace: true`. Payloads in `FAILED`, `ABORTED`, or
+   `CLAIMED` states are (re)run.
+2. Uploads the input payload to the payload bucket.
+3. Starts the Step Functions execution and transitions the state database
+   record from `CLAIMED` to `PROCESSING`.
 
-### CLI
-
-This lambda can be invoked using the included Cirrus CLI using
-either the `process` or `invoke` commands.
+If some payloads in an SQS batch fail, the successfully processed messages
+are deleted from the queue and the invocation raises an error so only the
+failed messages are retried.

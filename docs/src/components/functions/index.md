@@ -1,25 +1,21 @@
 # Functions
 
-The `function` component type refers to AWS Lambda functions. These
-functions are essential to the functioning of Cirrus by performing jobs that
-wrap around the core analysis of workflows and tasks.
+The `function` component type refers to the AWS Lambda functions built into
+Cirrus. These functions wrap the workflows and tasks: they move payloads into
+and out of workflows, track state, and expose deployment data over HTTP. All
+five are created by the CloudFormation core stack.
 
-There are currently 5 lambdas, 2 of which can be considered essential to a
-functioning Cirrus deployment, and 3 others that can be conditionally created
-for more complex use cases.
-
-## Required
-
-- `process`: Listens for payloads on the SQS queue and then transforms these payloads and kicks off a pre-defined workflows. Performs state management by updating state as workflows are claimed and begin processing to place effective locks and prevent duplicate workflows, and updates state for step function executions that fail to start
-- `update-state`: Handles step function completion events, updating state database and sending notification to downstream systems.
-
-## Optional
-
-These lambda functions offer more advanced functionality for heavier use cases
-like longer running jobs and Cirrus dashboards.
-
-- `pre-batch`: Runs only for batch tasks. Takes input payloads and send them to S3 to then pass the S3 payload URL to the Step Function
-- `post-batch`: Runs only for batch tasks. Takes batch output payloads from S3 and passes payloads to next task in the workflow. Also retrieves and errors from failed batch tasks and re-raises them in the step-functon context.
-- `api`: Offers a read-only HTTP API clients can leverage to search and fetch data from state database and event database.
-
-Additional documentation on each lambda can be found in component READMEs
+- [`process`](process.md): consumes payloads from the process SQS queue,
+  records them in the state database, and starts workflow Step Functions
+  executions.
+- [`update-state`](update-state.md): handles Step Functions execution
+  completion events, updating the state database, publishing notifications,
+  and enqueuing chained payloads.
+- [`pre-batch`](pre_batch.md): runs before a Batch task in a workflow,
+  uploading the input payload to S3 and returning its URL for the Batch job.
+- [`post-batch`](post_batch.md): runs after a Batch task in a workflow,
+  retrieving the task output payload from S3; on job failure it retrieves the
+  error from the Batch job logs and re-raises it in the Step Functions
+  context.
+- [`api`](api.md): a read-only HTTP API for querying workflow state and event
+  metrics, e.g., for monitoring dashboards.

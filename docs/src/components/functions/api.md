@@ -1,49 +1,53 @@
 # api
 
-An AWS Lambda intended to function as an HTTP API to facilitate querying
-general information about the Dynamo DB and TimeStream Event Tables. This can
-be used for building Cirrus monitoring dashboards, like hourly or daily events
-aggregate statistics.
-
-This differentiates it from the other lambdas, which are more like traffic
-managers and handlers. The `API` lambda exists outside of the standard cirrus
-workflow as laid out in the architecture diagram in [cirrus_overview](../../cirrus/10_intro.md)
-
-## Trigger
-
-Triggered by sending valid HTTTP requests.
-
-Query parameters can be included in HTTP requests to control the behavior of
-the response. A query param not in the following list will have no effect.
-
-### Query Params
-
-- State: `State` to filter the StateDB items on.
-- Since: A string field used to search the StateDB from this time forward to
-  the present. Takes the form of an integer followed by a flag to indicate the
-  time unit. Acceptable flags are “d” (days), “h” (hours), and “m” (minutes)
-
-## Response
-
-A REST-like response containing a status_code, headers, and body that
-can be parsed like any REST response.
+The `api` Lambda function serves a read-only HTTP API over the state
+database and workflow event metrics. It supports uses like monitoring
+dashboards that need aggregate event statistics, and sits outside the payload
+flow shown in the [architecture diagram](../../cirrus/20_arch.md) — unlike
+the other functions, it never modifies state.
 
 ## Endpoints
 
-### GET Root
+All endpoints are `GET` and return JSON.
 
-Return a STAC-like object with links to all the outputs from the cirrus
-S3 data bucket.
+### Root (`/`)
 
-### GET Stats
+Returns a catalog-style object describing the deployment, with `child` links
+to a state summary endpoint for each collections/workflow combination found
+in the deployment's root catalog, and a link to the STAC catalog in the data
+bucket.
 
-Return a summary statistics of events from the TimeStream database to
-get a picture of cirrus events on a daily, hourly, and hourly rolling
-basis
+### `/stats`
 
-### GET Items
+Returns aggregate workflow-event counts grouped by state, on daily (60 days),
+hourly (36 hours), and rolling-hour bases. Counts are read from CloudWatch
+metrics when workflow metrics are enabled, falling back to the Timestream
+event database; if neither is configured the endpoint returns a 404.
 
-Return items from the DynamoDB state database based on query filters.
-Can be filered on ‘state’, ‘since’, ‘limit’. The results are paginated
-and the pagination key `NextKey` can be used by passing it as one of
-the query params when making the API call to the lambda.
+### `/<collections>/workflow-<workflow>`
+
+Returns per-state record counts for the given collections/workflow
+combination, filtered by the query parameters below.
+
+### `/<collections>/workflow-<workflow>/items`
+
+Returns a page of state database records for the given collections/workflow
+combination, filtered and paginated by the query parameters below.
+
+### `/<collections>/workflow-<workflow>/<itemids>`
+
+Returns the single state database record for the given payload ID.
+
+## Query parameters
+
+- `state`: filter records on a state database state (`PROCESSING`,
+  `SUCCEEDED`, `FAILED`, `INVALID`, `ABORTED`, `CLAIMED`)
+- `since`: look-back window relative to now — an integer followed by a unit
+  suffix `d` (days), `h` (hours), or `m` (minutes), e.g. `10 d`
+- `limit`: maximum number of records to return (default 100000)
+- `nextkey`: pagination key from a previous `items` response, returned when
+  more results are available
+- `sort_ascending`: `1` to sort oldest-first (default `0`, newest-first)
+- `sort_index`: index to sort by (default `updated`)
+
+Unrecognized query parameters have no effect.

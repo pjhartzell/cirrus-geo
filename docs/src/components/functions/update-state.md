@@ -1,41 +1,46 @@
 # update-state
 
-Updates the dynamoDB state database with the State Function execution
-results.
-
-Completion of a State Function execution can also be used to chain
-additional workflow steps with pushing messages to SQS or SNS for
-additional steps beyond the core cirrus workflow, like triggering a
-lambda to push an output STAC Item to a STAC API.
+The `update-state` Lambda function records the results of Step Functions
+workflow executions in the DynamoDB state database, and drives the
+post-workflow actions: publishing output items to SNS and enqueuing chained
+payloads.
 
 ## Trigger
 
-The `update-state` lambda listens for terminal events output by a
-State Function that is executing a cirrus workflow/task. These terminal
-states are not an exclusive list of possible states in the StateDB.
+An EventBridge rule invokes `update-state` whenever a workflow Step Functions
+execution reaches a terminal status. The terminal execution statuses are a
+Step Functions concept, distinct from (but mapped to) the state database
+states:
 
-- “SUCCEEDED”: the successful completion of a cirrus workflow
-- “FAILED”: A failed execution. This can occur for a variety of reasons
-- “ABORTED”: The state machinea was forced to abort execution. Can be
-  triggered by manual termination of a workflow.
-- “TIMED OUT”: State machine terminated due to time out. Can occur if a
-  third party resource involved in a task hangs, or a workflow
-  configuration did not allow sufficient time for a task to complete.
+| Execution status | Resulting state database state |
+| ---------------- | ------------------------------ |
+| `SUCCEEDED`      | `SUCCEEDED`                    |
+| `FAILED`         | `FAILED` or `INVALID`          |
+| `ABORTED`        | `ABORTED`                      |
+| `TIMED_OUT`      | `FAILED`                       |
 
-## StateDB Updates
+A `FAILED` execution is recorded as `INVALID` when its error type is
+`cirrus.lib.errors.InvalidInput` or `stactask.exceptions.InvalidInput`; a
+`TIMED_OUT` execution is recorded as `FAILED` with a `TimedOutError` error.
+For failed executions, the error name and cause are extracted from the event
+and stored on the state database record. The workflow definition's `Fail`
+state must include `ErrorPath` and `CausePath` fields for the cause to be
+captured (see [workflow definitions](../workflows/definitions.md)).
 
-Updating the DynamoDB state database is the core functionality of the
-`update-state` lambda.
+The execution's input and output payloads are read from the EventBridge
+event itself. If the combined size exceeds the EventBridge limit the payloads
+are excluded from the event and the function raises an error.
 
-In addition to updating DynamoDB on each state update, the `update-state`
-lambda logs events to the events timeseries database (AWS TimeStream or
-CloudWatch). On workflow success `update-state` also archives the output
-payload to S3.
+## Actions on completion
 
-The `update-state` lambda additionally logs any errors that come from
-the StateMachine so they can be captured and analyzed in the log stream.
+Every invocation updates the state database record and emits a workflow
+event to the event recording system. For successful executions,
+`update-state` additionally:
 
-`update-state` will send workflow event messages to configured SNS topics to
-provide notifications to users or downstream services when events and/or output
-items are produced. It may also be used to facilitate workflow chaining by
-requeuing payloads in the `process` queue.
+- uploads the output payload to the payload bucket
+- publishes each output item to the publish SNS topic (when
+  `CIRRUS_PUBLISH_TOPIC_ARN` is configured), for consumption by downstream
+  services such as a STAC API ingest
+- enqueues any chained payloads onto the process queue (when
+  `CIRRUS_PROCESS_QUEUE_URL` is configured), continuing a
+  [workflow chain](../workflows/chaining.md)

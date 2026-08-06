@@ -1,13 +1,13 @@
 # pre-batch
 
-A lambda related to running Batch tasks, required to work around limitations of
-AWS Batch.
+The `pre-batch` Lambda function runs immediately before a Batch task in a
+workflow, working around an AWS Batch limitation: a Batch job submission
+cannot carry a large JSON payload directly, and Cirrus Payloads can be large.
 
-This lambda exists due to how AWS Batch tasks are called. `Batch` tasks do
-not support large JSONs being passed directly in the "submit job" call, and
-STAC payloads can be large. To work around this limitation the `pre-batch`
-lambda will take the input payload, push it to an intermediate location (S3)
-and the URL of this location will be returned.
+`pre-batch` uploads the input payload to the payload bucket and returns:
 
-A batch task will execute the defined workflow and will dump the output to S3,
-where it is picked up by the `post-batch` lambda
+- `url`: the S3 URL of the uploaded input payload, passed to the Batch job
+  as its input parameter
+- `url_out`: the S3 URL (the input URL with an `_out.json` suffix) where the
+  Batch task must write its output payload, picked up afterwards by
+  [`post-batch`](post_batch.md)
