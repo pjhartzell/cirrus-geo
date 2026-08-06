@@ -72,7 +72,14 @@ nav:
   #     - Operations: cirrus/50_operation.md
   #     - Monitoring: cirrus/80_monitoring.md
   #     - Tips and tricks: cirrus/95_tips_and_tricks.md
-  # - Reference:
+  - Reference:
+      - CLI:
+          - Overview: cli/00_intro.md
+          - Installing: cli/01_install.md
+          - Authentication: cli/02_auth.md
+          - Deployments: cli/03_deployments.md
+          - Command examples: cli/04_commands.md
+  # - Reference (rest — uncomment into the section above per batch):
   #     - Components:
   #         - Overview: cirrus/60_components.md
   #         - Feeders: cirrus/components/feeders/index.md
