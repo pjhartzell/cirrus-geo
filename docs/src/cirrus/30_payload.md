@@ -1,69 +1,86 @@
 # Cirrus Payload
 
-A Cirrus Payload is a JSON object containing the input metadata along with a parameters
-for processing that metadata and associated data. A Cirrus payload is used to start a
-single execution of a workflow.
+A Cirrus Payload is a JSON object containing input metadata along with
+parameters for processing that metadata and associated data. A Cirrus payload
+is used to start a single execution of a workflow.
 
-**Cirrus Payload**
+At a high level, the payload looks like a GeoJSON FeatureCollection with an
+additional `process` field:
 
-| Field Name | Type                     | Description                                                              |
-|------------|--------------------------|--------------------------------------------------------------------------|
-| type       | string                   | Type of the GeoJSON Object. If set, it must be set to FeatureCollection. |
-| features   | [[Item](#item)]          | An array of STAC-like input items                                        |
-| process    | [[Process Definition](#process-definition)] | An array of process definitions                                          |
-
-At a high-level, the payload looks like a GeoJSON FeatureCollection with an additional
-`process` field.
-
-```
+```json
 {
     "type": "FeatureCollection",
     "features": [
-        {
-            <stac-item-1>
-        },
-        {
-            <stac-item-2>
-        }
+        { "<stac-item-1>": "..." },
+        { "<stac-item-2>": "..." }
     ],
-    "process": {
-        <process-definition>
-    }
+    "process": [
+        { "<process-definition>": "..." }
+    ]
 }
 ```
 
-A workflow task may take 1 or more items as input, and could output 1 or more items.
-One common use-case is to take in a single input item and generate a single output item.
+A workflow task may take one or more items as input, and could output one or
+more items. One common use case is to take in a single input item and
+generate a single output item.
+
+| Field Name   | Type                                          | Description                                                                 |
+| ------------ | --------------------------------------------- | --------------------------------------------------------------------------- |
+| id           | string                                        | An identifier for this execution. See [ID format](#id-format) below.        |
+| type         | string                                        | GeoJSON object type. Conventionally `FeatureCollection`, but not validated. |
+| features     | [[Item](#item)]                               | An array of STAC-like input items                                           |
+| process      | [[Process Definition](#process-definition)]   | **REQUIRED** An array of process definitions, at least one                  |
+
+Cirrus validates the payload before starting a workflow (`CirrusPayload.validate`):
+`process` must be an array with at least one entry, and the first entry must
+contain a `workflow` field. `id` must match the [ID format](#id-format).
+
+!!! note
+    A `process` array with more than one entry, or with an entry that is
+    itself an array, describes a chain of workflow executions rather than
+    parameters for a single execution. See [Workflow
+    chaining](../components/workflows/chaining.md).
+
+## ID format
+
+A payload's `id` field tracks the individual execution of a workflow and must
+match `<collections>/workflow-<workflow>/<itemids>`, where `workflow` is the
+workflow name from the process definition. If a submitted payload has no
+`id`, the [`cirrus` CLI](../cli/00_intro.md) and the process Lambda function can
+generate one:
+
+- `collections` is taken from the process definition's `collections` field if
+  present, otherwise it is derived from the sorted, `/`-joined set of
+  `collection` values across the input `features` (or `none` if no item
+  declares a collection).
+- `itemids` is the sorted, `/`-joined set of item `id` values from `features`.
 
 ## Item
 
-An input item to Cirrus is commonly 1 or more STAC Items, allowing workflow tasks
-to be interoperable across different data sources. For example an NDVI task could
-create an NDVI asset, adding it to the item regardless of if it was a Landsat or
-Sentinel STAC Item.
+An input item to Cirrus is commonly one or more STAC Items, allowing workflow
+tasks to be interoperable across different data sources. For example, an NDVI
+task could create an NDVI asset and add it to the item regardless of whether
+the source was a Landsat or Sentinel STAC Item.
 
-However, sometimes workflows are also responsible for creating proper STAC Items,
-mapping metadata in different formats into STAC. Thus, as far as Cirrus is concerned,
-the only required field in the payload is an `id` field. The `id` is used to track
-the individual execution of a workflow.
+Workflows are also sometimes responsible for creating proper STAC Items,
+mapping metadata in other formats into STAC. As far as Cirrus itself is
+concerned, the only field an item needs is `id`.
 
-**Item**
+| Field Name   | Type     | Description                         |
+| ------------ | -------- | ----------------------------------- |
+| id           | string   | **REQUIRED** An ID for this item    |
 
-| Field Name | Type   | Description                      |
-|------------|--------|----------------------------------|
-| id         | string | **REQUIRED** An ID for this item |
+Each workflow task has its own requirements for the items it processes, and
+may perform additional validation. A task that receives a payload failing its
+validation should raise an `InvalidInput` exception, which marks the
+execution in the state database as `INVALID`.
 
-Each workflow task will have it's own requirements on the items, and may perform
-additional validation. Payloads that fail validation of a workflow task should
-throw an `InvalidInput` exception, which will mark the execution in the
-state database as `INVALID`.
+In the following example, the input item is a partial STAC Item using STAC
+fields but missing most required fields (e.g., `geometry`, `datetime`). It
+provides URLs to Sentinel-2 metadata that will be converted to a full STAC
+Item by one of the workflow tasks:
 
-In the following example the input item is a partial STAC Item, using STAC fields
-but missing most required fields (e.g., geometry, datetime). In this case,
-this item provides URLs to the original Sentinel-2 metadata which will be converted
-to a STAC Item during during one of the workflow tasks.
-
-``` json
+```json
 {
     "features": [
         {
@@ -85,99 +102,83 @@ to a STAC Item during during one of the workflow tasks.
 ```
 
 While partial STAC Items make sense as input to workflows that create STAC
-metadata, the final output of a Cirrus workflow should always contain an array
-of actual STAC Items.
+metadata, the final output of a Cirrus workflow should always contain an
+array of complete STAC Items.
 
 ## Process Definition
 
-**Process Definition**
+The first element of the `process` array is the definition consulted for the
+current (or next, when chaining) workflow execution.
 
-| Field Name        | Type                              | Description                                                                                 |
-|-------------------|-----------------------------------|---------------------------------------------------------------------------------------------|
-| description       | string                            | An optional description of the process                                                      |
-| workflow          | string                            | **REQUIRED** Name of the workflow to run                                                    |
-| input_collections | string                            | An identifier representing the set of collections the input items belong to                 |
-| upload_options    | [Output Options](#output-options) | Parameters affecting the upload of item assets                                              |
-| tasks             | Map\<string, Map\<str, object\>\> | A dictionary of task names (keys), each containing a dictionary of parameters for that task |
+| Field Name        | Type                                 | Description                                                                                                                                       |
+| ----------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| workflow          | string                               | **REQUIRED** Name of the workflow to run                                                                                                          |
+| collections       | string                               | Overrides the derived `collections` segment of a generated payload `id`                                                                           |
+| replace           | bool                                 | If true, reruns the workflow regardless of the payload's current state (see [below](#replace))                                                    |
+| upload_options    | [Upload Options](#upload-options)    | Parameters controlling how task-uploaded assets are stored and published                                                                          |
+| workflow_options  | Map\<str, object\>                   | Parameters merged into every task's `parameters` for this workflow execution                                                                      |
+| tasks             | Map\<string, Map\<str, object\>\>    | A dictionary of task names (keys), each containing a dictionary of parameters for that task                                                       |
+| chain_filter      | string                               | JSONPath filter applied to the previous workflow's output features (chaining only). See [Workflow chaining](../components/workflows/chaining.md). |
 
-### input_collections
+### replace
 
-The `input_collections` field is a way to explicitly group together input items
-across executions of workflows. It is optional, and if not provided `input_collections`
-is derived from all the collections the input items belong to. For instance, if
-a payload contains a single item, and it belongs in the collection `sat-a-l1`,
-then `input_collections` is `sat-a-l1`.
-
-If the payload contains multiple items spanning more than 1 collection, then
-`input_collections` is a '/' separated string of the sorted list of collections.
-For instance, if the items are in collections `sat-c-l1` and `sat-a-l1` then
-`input_collections` would be `sat-a-l1/sat-c-l1`
+By default, `PayloadManagers.process` only (re)starts a workflow execution
+for a payload `id` whose current state database entry is `FAILED`,
+`ABORTED`, `CLAIMED`, or has no entry at all — an `id` already `PROCESSING`
+or `SUCCEEDED` is skipped. Setting `"replace": true` in the process
+definition bypasses that check and starts the execution regardless of the
+payload's current state, including `PROCESSING` or `SUCCEEDED`.
 
 ### tasks
 
-The tasks field is a dictionary with an optional key for each task. If present, it
-contains a dictionary of parameters for the task. The documentation for each task
-will supply the list of available parameters.
+The `tasks` field is a dictionary with an optional key for each task in the
+workflow. If present, the value is a dictionary of parameters for that task.
+A task reads its parameters as the combination of the workflow's
+`workflow_options` and its own entry under `tasks`, with `tasks` values
+taking precedence on key conflicts. The documentation for each task supplies
+its list of available parameters.
 
-## Output Options
+## Upload Options
 
-The output options object is a dictionary of parameters to used to control the
-publishing of the metadata and uploading data assets. Any task that uploads
-data should use the OutputOptions to control where and how that data is uploaded.
-See the cirrus-lib function `transfer.upload_item_assets`
+`upload_options` in the process definition controls how a task uploads and
+publishes an item's data assets. See the stac-task
+`upload_item_assets_to_s3` function.
 
-**Output Options**
-
-| Field Name    | Type            | Description                                                                                  |
-|---------------|-----------------|----------------------------------------------------------------------------------------------|
-| path_template | string          | **REQUIRED** A string template for specifying the location of uploaded assets                |
-| collections   | Map\<str, str\> | **REQUIRED** A mapping of output collection name to a regex pattern used on Item IDs         |
-| public_assets | \[str\]         | A list of asset keys that should be marked as public when uploaded                           |
-| headers       | Map\<str, str\> | A set of key, value headers to send when uploading data to s3                                |
-| s3_urls       | bool            | Controls if the final published URLs should be an s3 (s3://\<bucket\>/\<key\>) or https URL. |
+| Field Name      | Type               | Description                                                                                      |
+| --------------- | ------------------ | ------------------------------------------------------------------------------------------------ |
+| path_template   | string             | A string template for the location of uploaded assets. Defaults to `${collection}/${id}`.        |
+| public_assets   | \[str\] or `"ALL"` | Asset keys that should be marked public when uploaded, or `"ALL"` for every asset in the item    |
+| headers         | Map\<str, str\>    | Key/value headers to send when uploading assets to S3                                            |
+| s3_urls         | bool               | If true, return `s3://<bucket>/<key>` URLs for uploaded assets instead of HTTPS URLs             |
 
 ### path_template
 
-The `path_template` string is a way to control the output location of uploaded assets from a
-STAC Item using metadata from the Item itself. The template can contain fixed strings
-along with variables used for substitution. The following variables can be used in the template.
+`path_template` controls the output location of an item's uploaded assets
+using metadata from the item itself. The template can contain fixed strings
+along with variables substituted from the item. Variables resolve, in order,
+against the item's own attributes, then its `properties`, then its
+`extra_fields`. A few variables carry special meaning for STAC Items:
 
-**Output Options**
+| Template variable    | Description                                                                               |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| date                 | The date (ISO format) of the item's `datetime`, or `start_datetime` if `datetime` is null |
+| year                 | The year of the same date                                                                 |
+| month                | The month of the same date                                                                |
+| day                  | The day of the same date                                                                  |
+| collection           | The item's collection ID                                                                  |
+| \<property\>         | Any other item attribute or STAC property (e.g., `id`, `mgrs:utm_zone`)                   |
 
-| Field Name   | Type   | Description                                                                                            |
-|--------------|--------|--------------------------------------------------------------------------------------------------------|
-| id           | string | The id of the Item                                                                                     |
-| collection   | string | The name of the Item's Collection                                                                      |
-| date         | string | The date portion of the Item's `datetime` property of the form YYYY-MM-DD |
-| year         | string | The year portion of the Item's `datetime` property                        |
-| month        | string | The month portion of the Item's `datetime` property                       |
-| day          | string | The day portion of the Item's `datetime` property                         |
-| \<property\> | varies | Any Item property (e.g., `mgrs:utm_zone`)                                 |
+For example, a `path_template` of `${collection}/${id}` uploads all assets to
+a path based on the item's collection and ID, under the default Cirrus data
+bucket. If a complete S3 URL is provided instead (e.g.,
+`s3://my-bucket/data/${collection}/${id}`), assets upload to that bucket
+instead.
 
-As an example, a `path_template` of `/data/${collection}/${id}/` will upload all assets
-to a path based on the Item's collection and ID to the default Cirrus data bucket.
-
-If a complete s3 URL is provided instead (e.g., s3://my-bucket/data/\${collection}/\${id}/)
-then the data will be uploaded to the provided bucket.
-
-### collections
-
-The `collections` dictionary is a way to control what collection output STAC Items
-are ultimately assigned to. Each dictionary key is the name of a collection, and it's
-value is a regex expression that is used to match against each STAC Item ID that
-will be published. The first matching collection will be used.
-
-``` json
-"upload_options": {
-    "collections": {
-        "sat-a-l1": "sa.*"
-        "sat-b-l1": "sb.*"
-    }
-}
-```
-
-With this example an Item with an ID of "sa-l1-20200107" will be put in the `sat-a-l1`
-collection, and Item "sb-l1-19731212" would be put in the `sat-b-l1` collection.
-
-If `collections` is supplied, each Item is assigned a new collection before it is
-published. If not provided the collections will remain as they were.
+!!! note
+    Older payloads may set `upload_options.collections` — a mapping of
+    output collection name to a regex matched against item IDs, used to
+    reassign an item's collection before publishing. stac-task deprecates
+    this in favor of `collection_matchers` in the process definition; the
+    two are mutually exclusive on a single payload. Consult the installed
+    stac-task version for the current `collection_matchers` shape before
+    using it in new workflows.
