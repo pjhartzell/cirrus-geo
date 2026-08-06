@@ -36,6 +36,12 @@ repos:
         language: system
         types: [text]
         stages: [pre-commit, pre-push, manual]
+      - id: codespell
+        name: codespell
+        entry: codespell
+        language: system
+        files: ^(docs/|README\.md)
+        exclude: ^docs/(build/|DOCS_PLAN\.md)
       - id: pymarkdown
         name: PyMarkdown
         description: "PyMarkdown - GitHub Flavored Markdown and CommonMark Compliant Linter"

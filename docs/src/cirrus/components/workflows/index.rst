@@ -9,7 +9,7 @@ more tasks.  Workflows are composed of one or more "tasks".
 Cirrus workflows, being implemented via `AWS Step Functions`_, are written in
 the `AWS States Language`_. Workflows are defined in ``state-machine.json`` files and require a companion ``README.md``.
 
-These ``state-machine.json`` files define the entire step function workflow.  A non exhaustive list of configuarable are :
+These ``state-machine.json`` files define the entire step function workflow.  A non exhaustive list of configurable are :
 
 * task definitions
 * task input parameters

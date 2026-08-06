@@ -293,7 +293,7 @@ Keep workflows short and focused
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Generally speaking, a workflow should model a single level of processing.
-Conflating multiple levels of processing into a single worflow should be a good
+Conflating multiple levels of processing into a single workflow should be a good
 indication that a workflow is doing too much and should be split up.
 
 If modeling a single level of processing requires one or more set of

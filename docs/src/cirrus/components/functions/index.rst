@@ -23,6 +23,6 @@ like longer running jobs and Cirrus dashboards.
 
 * ``pre-batch``: Runs only for batch tasks.  Takes input payloads and send them to S3 to then pass the S3 payload URL to the Step Function
 * ``post-batch``: Runs only for batch tasks.  Takes batch output payloads from S3 and passes payloads to next task in the workflow.  Also retrieves and errors from failed batch tasks and re-raises them in the step-functon context.
-* ``api``: Offers a read-only HTTP API clients can leverage to search and fetch data from state databse and event database.
+* ``api``: Offers a read-only HTTP API clients can leverage to search and fetch data from state database and event database.
 
 Additional documentation on each lambda can be found in component READMEs

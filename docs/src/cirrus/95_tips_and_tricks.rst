@@ -7,7 +7,7 @@ Processing Queue Priority
 By default, there is only one `process` queue. This can cause difficulty when doing
 back-processing or failure re-run, as thousands of older, lower-priority payloads
 can pile up in front of newly-generated, higher-priority payloads. A solution to this
-is to create an addiitonal "bulk" queue and put all of the lower-priority payloads into it.
+is to create an additional "bulk" queue and put all of the lower-priority payloads into it.
 
 In the CloudFormation resources file, define a new queue named `ProcessBulkQueue` and
 associated DLQ with the same settings as the default `ProcessQueue`.

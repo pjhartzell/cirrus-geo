@@ -52,9 +52,14 @@ locally, containing the existing content (converted, hygiene-fixed, dead weight 
 correctness rewrites come next session, authored directly in Markdown.
 
 ### Phase 0: mechanical hygiene (on RST — reduces conversion noise)
-- [ ] 0.1 Run `codespell` across `docs/` and `README.md`; fix all hits (known: monitorig,
+- [x] 0.1 Run `codespell` across `docs/` and `README.md`; fix all hits (known: monitorig,
       authenticatig, independant, lambada, scalabale, Additonal, compoent, mentined, commmands,
       acesses, databse, extrated, entires, occured, provisoning). Add `codespell` to CI.
+      *Deviation: the `docs-mechanic`/`docs-writer` agent types are not registered with the
+      session harness; mechanical tasks are delegated to a general-purpose agent on haiku
+      with docs-mechanic's rules inlined in the prompt — same model, same constraints.*
+      *Note: codespell added as a pre-commit hook (CI runs `pre-commit run --all-files`),
+      scoped to `docs/` + `README.md`, excluding `docs/build` and `DOCS_PLAN.md`.*
 - [ ] 0.2 CLIrrus purge: replace all doc occurrences (`docs/src/cli/*`,
       `components/functions/process.rst`, `cirrus/50_operation.rst`) per terminology rule.
       Rename `RoleSessionName="CLIrrus_iam_session"` in `src/cirrus/lib/utils.py` to

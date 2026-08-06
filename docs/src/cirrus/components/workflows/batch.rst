@@ -45,7 +45,7 @@ is, if we encounter an error anywhere in that set of three, we either want to
 fail them all or retry them all together.
 
 Enter the step function ``parallel`` block. Step functions provide this control
-primative to allow users to define one or more branches in a workflow that can
+primitive to allow users to define one or more branches in a workflow that can
 execute in parallel. Interestly for us, ``parallel`` supports both ``Catch`` and
 ``Retry`` policies for error handling, which provides us with the control we
 need for Batch.
@@ -100,7 +100,7 @@ Search are:
   scenes have this processing baseline, but when back-processing the catalog,
   about half of the scenes have an older baseline and are immediately ignored.
   This meant that half of the Batch Jobs ran for seconds and half ran for 5-10
-  minutes. The batch jobs that ran for seconds caused a signficant increase in
+  minutes. The batch jobs that ran for seconds caused a significant increase in
   cost and decrease in throughput. A better solution would have been to have an
   initial Lambda that checked only if the processing baseline was appropriate,
   and only allowed the Batch job to run if so.

@@ -36,7 +36,7 @@ CloudWatch). On workflow success ``update-state`` also archives the output
 payload to S3.
 
 The ``update-state`` lambda additionally logs any errors that come from
-the StateMachine so they can be captured and anlyzed in the log stream.
+the StateMachine so they can be captured and analyzed in the log stream.
 
 ``update-state`` will send workflow event messages to configured SNS topics to
 provide notifications to users or downstream services when events and/or output

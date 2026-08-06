@@ -20,7 +20,7 @@ To ease the management of a cirrus deployment the cirrus-geo library has a
 built in command line tool (CLIrrus) designed to streamline the developer
 experience when using and interacting with a Cirrus deployment.
 
-CLIrrus is a python CLI tool built using the `click`_ library with commmands
+CLIrrus is a python CLI tool built using the `click`_ library with commands
 specific to Cirrus.  Example use cases would be to list all available cirrus
 deployments, list lambdas in a given deployment, and even directly trigger a
 workflow with an input Payload by sending the payload directly to the SQS queue
@@ -66,7 +66,7 @@ CLI tool here is what an example workflow might look like.  These are one way of
 
     cirrus mgmt deployment-name-here list-lambdas
 
-And thats it!  If you would like more in depth explanations on how to use the
+And that's it!  If you would like more in depth explanations on how to use the
 tool, please proceed.
 
 .. _click: https://click.palletsprojects.com/en/stable/

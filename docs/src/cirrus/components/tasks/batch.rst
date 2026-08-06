@@ -143,7 +143,7 @@ Let's break down the resources at play in this Batch example.
 Job definition
 ^^^^^^^^^^^^^^
 
-The ``ReprojectBatchJob`` resource defines a CloudFormation resouce of job
+The ``ReprojectBatchJob`` resource defines a CloudFormation resource of job
 definition type, and represents the job configuration used when running our
 ``Reproject`` job. The job definition includes such configuration settings as
 the container image to run, the command to run inside that container, and the
@@ -185,7 +185,7 @@ which tells Batch to run a command like::
 Exactly what command should be specified for a job definition is dependent on
 the appropriate entry point inside the specified container image. Regardless,
 that entry point should be expecting an S3 URL to a process payload, specified
-in some manner. The ``stac-task`` python library provides convenince
+in some manner. The ``stac-task`` python library provides convenience
 classes/methods to help with this common need.
 
 The Batch tasks should replace the payload in S3 at the end of execution after
@@ -219,7 +219,7 @@ Resource requirements
 The ``ResourceRequirements`` key allows specification of a list of all hardware
 resources required by the job (unfortunately with the exception of disk space).
 Note that the values provided here serve as defaults for spawned jobs, and can
-be overriden when calling ``SubmitJob`` in the workflow. Again, see :doc:`Batch
+be overridden when calling ``SubmitJob`` in the workflow. Again, see :doc:`Batch
 tasks in workflows <../workflows/batch>` for an example of overriding resource
 requirements.
 
@@ -325,7 +325,7 @@ costs and is not recommended unless strictly required. It also does not help
 mitigate latency in the case of job bursts beyond the minimum constant capacity.
 
 Back to scaling: the compute environment will continue to allocate instances
-until the total number of CPUs in the environment matchs the total CPU demand
+until the total number of CPUs in the environment matches the total CPU demand
 from jobs. However, this allocation will only continue as long as ``MaxvCpus``
 is greater than the number of CPUs in the environment. In this way ``MaxvCpus``
 acts as the cap on instance count and therefore the maximum number of Batch jobs
@@ -343,7 +343,7 @@ Using the AWS Spot market
 
 Using Spot instances instead of On-Demand can result in a significant cost savings, with only a
 small effect on throughput and latency. Workflow error handling must be well-defined, since Spot
-instances have a significantly higher liklihood of being deallocated as compared with On-Demand
+instances have a significantly higher likelihood of being deallocated as compared with On-Demand
 instances.
 
 This is an example of a ComputeEnvironment that uses Spot::
@@ -498,7 +498,7 @@ single compute environment.
 
 Multiple compute environment can also be specified for a single queue. This can
 be useful in the case of wanting some on-demand capacity, but pushing overflow
-into the spot market, or vise versa.
+into the spot market, or vice versa.
 
 Job queues can be combined with a `Batch scheduling policy`_ for advanced
 use-cases.
@@ -534,8 +534,8 @@ Batch Quotas
 AWS limits the number of job queues and compute environments in an account to
 50 each. Considering this limit is important when determining how to
 structure/organize a project's compute environments. In a large, batch-heavy
-deployment, consolidating compute environments and job queus such that they can
-be shared between tasks may be advantegeous or even necessary to ensure the
+deployment, consolidating compute environments and job queues such that they can
+be shared between tasks may be advantageous or even necessary to ensure the
 deployment can remain below these quotas. If diverging from the general
 recommendation of a unique job queue and compute environment per task, be sure
 to fully consider instance requirement compatibilities between tasks (including

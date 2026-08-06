@@ -107,9 +107,9 @@ than Lambda allows, as well as much greater limits on resources.
 
 Batch tasks are inherently just an abstraction around a set of CloudFormation
 resources, minimally just a Batch `job definition`_, but commonly also the job
-queue, compute environment, and any other requried resources.
+queue, compute environment, and any other required resources.
 
-For more infomation see the :doc:`Batch tasks <batch>` documentation.
+For more information see the :doc:`Batch tasks <batch>` documentation.
 
 .. _AWS Batch: https://docs.aws.amazon.com/batch/latest/userguide/what-is-batch.html
 .. _jobs: https://docs.aws.amazon.com/batch/latest/userguide/jobs.html
@@ -199,7 +199,7 @@ Docker with directives::
 If you choose to use your own container that is not based on a standard Lambda image,
 you must add the ``lambda-entrypoint.sh`` file to your image and set ``ENTRYPOINT`` explicitly.
 
-Unfortuantely, the same Docker image cannot be used by both Batch and Lambda, as they
+Unfortunately, the same Docker image cannot be used by both Batch and Lambda, as they
 have slightly different requirements for the ``CMD`` and ``ENTRYPOINT`` parameters. The
 solution to this is to have one base image definition that has all directives exception
 ``CMD`` and ``ENTRYPOINT``, and then create two image definitions that use the base image

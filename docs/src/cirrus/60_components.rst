@@ -23,7 +23,7 @@ There is one more component type, that while not explicitly defined in
   an automated process that turns external events into process payloads and
   publishes them to the Cirrus process topic.
 
-Additonal documentation on each compoent type is available.
+Additional documentation on each component type is available.
 
 .. toctree::
    :maxdepth: 2

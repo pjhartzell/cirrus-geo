@@ -14,7 +14,7 @@ stored in the `AWS Parameter Store`_
 Deployments and Parameter Store
 -------------------------------
 
-As previously mentined, using CLIrrus requires knowing deployment specific
+As previously mentioned, using CLIrrus requires knowing deployment specific
 environment variables to make AWS API calls to the correct resources.  These
 environment variables are stored in the AWS Parameter Store.  For example, the
 ``process`` lambda requires the "CIRRUS_PAYLOAD_BUCKET" environment variable to
@@ -26,7 +26,7 @@ Parameter Store
 ---------------
 
 The parameter store has a hierarchical storage system centered around the use of
-``/`` in parameter names. More information on parameter hierachies can be found
+``/`` in parameter names. More information on parameter hierarchies can be found
 on the `AWS parameter store documentation`_.  This hierarchial organization is
 used to ensure deployments can be found under common prefixes, and enables for
 easy use if you wish to directly search the parameter store yourself.
@@ -38,7 +38,7 @@ that cirrus deployment from the parameter store and then uses them to execute
 commands like ``list-lambdas``
 
 A pointer system is used to identify the parameter store prefix for a given
-deployment to ensure that we can search and retrieve only the enviroment
+deployment to ensure that we can search and retrieve only the environment
 variables for a given deployment without having to parse a large amount of
 returned parameters.  Using this pointer CLIrrus can then retrieve the related
 environment variables.
