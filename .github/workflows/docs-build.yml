@@ -9,9 +9,30 @@ on:
   release:
     types:
       - published
+
 jobs:
   build:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+      - name: Install dependencies
+        run: uv sync --locked --group docs
+      - name: Build documentation
+        run: uv run mkdocs build --strict
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -26,26 +47,21 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --group docs
       - name: Build documentation
+        run: uv run mkdocs build --strict
+      - name: Configure git
         run: |
-          cd ./docs
-          uv run make clean build CIRRUS_VERSION=$GITHUB_REF_NAME
-      - name: Copy documentation into gh-pages
-        if: github.event_name != 'pull_request'
-        run: |
-          cd ./docs
-          uv run make gh-pages-copy gh-pages-versions-update CIRRUS_VERSION=$GITHUB_REF_NAME
-      - name: Commit gh-pages changes
-        if: github.event_name != 'pull_request'
-        run: |
-          cd ./docs/gh-pages
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add .
-          git commit -m "CI doc updates" -a ||:
-      - name: Push gh-pages changes
-        if: github.event_name != 'pull_request'
-        uses: ad-m/github-push-action@master
-        with:
-          branch: gh-pages
-          directory: ./docs/gh-pages
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      # Version layout on gh-pages matches the previous Sphinx tooling so
+      # existing URLs keep working: releases deploy to v<X.Y.Z> with the
+      # "stable" alias, pushes to main deploy to "main" with the "dev" alias.
+      # Aliases are symlinks, as before. Old Sphinx-built version directories
+      # are left in place; mike only manages the versions it has deployed.
+      - name: Deploy dev docs
+        if: github.event_name == 'push'
+        run: uv run mike deploy --push --alias-type symlink main dev
+      - name: Deploy release docs
+        if: github.event_name == 'release'
+        run: |
+          uv run mike deploy --push --alias-type symlink --update-aliases ${{ github.ref_name }} stable
+          uv run mike set-default --push stable

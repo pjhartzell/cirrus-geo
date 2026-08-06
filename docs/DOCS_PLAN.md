@@ -113,10 +113,16 @@ correctness rewrites come next session, authored directly in Markdown.
       old RST (from git) and new Markdown both rendered to plain text via pandoc and
       diffed — remaining diffs are link-target unwrapping, toctree removal, and reflow
       only.*
-- [ ] 1.3 Versioned deploys with `mike`; rewrite `.github/workflows/docs-build.yml`; retire
+- [x] 1.3 Versioned deploys with `mike`; rewrite `.github/workflows/docs-build.yml`; retire
       `docs/update-versions.py`, `static/js/versions-loader.js`, `templates/versions.html`,
       `conf.py`, `Makefile`, `index.include`. Preserve existing published version URLs or add
       redirects where feasible.
+      *URL preservation: mike mirrors the existing gh-pages layout — releases → `v<X.Y.Z>`
+      dir, main → `main` dir, `dev`/`stable` as symlink aliases (`--alias-type symlink`),
+      root redirect via `mike set-default stable` on next release. Old Sphinx-built version
+      dirs and `versions.txt` are left untouched on gh-pages; mike only manages versions it
+      deployed, so all published URLs keep working. Also retired `index.rst` and the empty
+      `extra/` dir; `docs/.gitignore` trimmed to `build`.*
 - [ ] 1.4 Landing page (`docs/index.md`): what-is paragraph (adapt from README), architecture
       image, card-style quick links to quickstart / architecture / payloads / CLI (mirror
       stac-server's landing page pattern). Verify `mkdocs build --strict` clean and
