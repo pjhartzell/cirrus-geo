@@ -123,10 +123,17 @@ correctness rewrites come next session, authored directly in Markdown.
       dirs and `versions.txt` are left untouched on gh-pages; mike only manages versions it
       deployed, so all published URLs keep working. Also retired `index.rst` and the empty
       `extra/` dir; `docs/.gitignore` trimmed to `build`.*
-- [ ] 1.4 Landing page (`docs/index.md`): what-is paragraph (adapt from README), architecture
+- [x] 1.4 Landing page (`docs/index.md`): what-is paragraph (adapt from README), architecture
       image, card-style quick links to quickstart / architecture / payloads / CLI (mirror
       stac-server's landing page pattern). Verify `mkdocs build --strict` clean and
       spot-check every page against the old Sphinx rendering.
+      *Notes: quickstart card points at `cirrus/10_intro.md` ("Getting started with
+      Cirrus") until task 2.1 authors the real quickstart — retarget the card then. Added
+      `pymdownx.emoji` (stock Material config) for card icons. Spot-check found the
+      pymarkdown hook's MD046 consistent-style fix had reverted the chaining-page mermaid
+      fences to indented code (silently breaking mermaid rendering); fixed by making
+      chaining.md all-fenced. Every built page verified to have an H1 and body content;
+      images and version-selector config verified in the rendered HTML.*
 
 **Session 1 exit criteria:** `mkdocs build --strict` clean; `mkdocs serve` shows the full
 site in Material with the target nav; no empty pages; no CLIrrus; codespell in CI; version
