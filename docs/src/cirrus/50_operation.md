@@ -2,7 +2,7 @@
 
 ## Rerun tasks
 
-One of the most common actions to to re-run failed tasks. For example, it it
+One of the most common actions is to re-run failed tasks. For example, it is
 common when running the task to discover code bugs that cause the task to fail,
 fix them, and then want to re-run the task.
 
@@ -14,12 +14,14 @@ passed to `get-input-payloads` to add the `.process.replace: true` parameter.
 
 Adding this parameter when queuing a payload will result in the payload being
 rerun if the payload is in the following states in the StateDB: `SUCCEEDED`,
-`FAILED`, `ABORTED`, or `CLAIMED`. Checks are in place so that a state of
-`PROCESSING` will result in the payload being skipped.
+`FAILED`, `INVALID`, `ABORTED`, or `CLAIMED`. Checks are in place so that a
+state of `PROCESSING` will result in the payload being skipped. (Without the
+`replace` parameter, only payloads in `FAILED`, `ABORTED`, or `CLAIMED` states,
+or payloads with no state database record, are run.)
 
 like:
 
-    cirrus manage deployment-name get-input-payloads --collectons-workflow "sar-test_workflow" --state "FAILED" --rerun | xargs -0 -L 1 echo | cirrus manage deployment-name process
+    cirrus manage deployment-name get-input-payloads --collections-workflow "sar-test_workflow" --state "FAILED" --rerun | xargs -0 -L 1 echo | cirrus manage deployment-name process
 
 Under the hood the Cirrus CLI searches the AWS DynamoDB state database for records
 matching the query parameters. Using these state database records, the
@@ -38,4 +40,4 @@ The available query parameters are:
 - `error-prefix` (string): a string prefix in an error string. Useful if
   multiple records failed as a result of the same bug.
 - `state` (string): the state of the record. Must be one of the following:
-  `PROCESSING`, `SUCCEEDED`, `FAILED`, `INVALID`, `ABORTED`
+  `PROCESSING`, `SUCCEEDED`, `FAILED`, `INVALID`, `ABORTED`, `CLAIMED`
