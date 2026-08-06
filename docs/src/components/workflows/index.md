@@ -1,23 +1,20 @@
 # Workflows
 
-Cirrus workflows are the component that puts the "pipe" in "pipeline".
-Workflows model a transformation of an input item or set of input items with a
-process definition into one or more output items via processing from one or
-more tasks. Workflows are composed of one or more "tasks".
+A workflow models the transformation of an input payload into one or more
+output items via processing through one or more tasks. Workflows are
+implemented as [AWS Step Functions](https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html)
+state machines, written in the [AWS States Language](https://docs.aws.amazon.com/step-functions/latest/dg/concepts-amazon-states-language.html).
 
-Cirrus workflows, being implemented via [AWS Step Functions](https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html), are written in
-the [AWS States Language](https://docs.aws.amazon.com/step-functions/latest/dg/concepts-amazon-states-language.html). Workflows are defined in `state-machine.json` files and require a companion `README.md`.
+A workflow definition is a CloudFormation template that deploys a
+`AWS::StepFunctions::StateMachine` resource, along with the IAM role the
+state machine assumes to invoke its tasks. See
+[Writing workflow definitions](definitions.md) for the required structure and
+naming, and the in-repo `minimal` workflow
+(`cloudformation/workflows/minimal/state_machine.yaml`) for a working
+example.
 
-These `state-machine.json` files define the entire step function workflow. A non exhaustive list of configurable are :
-
-- task definitions
-- task input parameters
-- task output parameters
-- job definition
-- job name
-- task retry config
-- error handling
-- resource ARNs
-
-The [state database](../../cirrus/70_statedb.md) tracks the state of items
-processed at the workflow level.
+The `process` Lambda function dispatches each incoming payload to the Step
+Functions execution named in the payload's `process` definition. When an
+execution reaches a terminal status, the `update-state` Lambda function
+records the result in the [state database](../../cirrus/70_statedb.md) and
+handles [chaining](chaining.md) to any subsequent workflow.

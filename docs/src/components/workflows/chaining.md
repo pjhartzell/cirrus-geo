@@ -1,51 +1,48 @@
 # Workflow chaining
 
-Workflow chaining is a mechanism to allow multiple workflow executions to be
-chained together in a declarative fashion, such that the output of one becomes
-the inputs of the next. Chaining is implemented as an extension to the Cirrus
-Process Payload format via support for an array of process definitions under the
-payload `process` key, where each element in that `process` array represents
-a link in the chain. The payload for the simple case of two chained workflows
-would have a `process` array something like this:
+Workflow chaining lets multiple workflow executions run in sequence, with
+the output of one becoming the input of the next. Chaining is implemented
+as an extension to the Cirrus Payload format: the `process` key holds an
+array of process definitions, where each element represents a link in the
+chain. A payload chaining two workflows looks like:
 
+```json
+{
+    "process": [
+        { "workflow": "workflow-1" },
+        { "workflow": "workflow-2" }
+    ]
+}
 ```
-process = [
-    { <workflow 1 definition> },
-    { <workflow 2 definition> }
-]
-```
 
-This example models a simple chain:
+This models a simple chain:
 
-``` mermaid
+```mermaid
 flowchart LR
   1(Workflow 1)
   2(Workflow 2)
   1 --> 2
 ```
 
-In this case, the Cirrus Payload output from `workflow 1` is passed as
-the input to `workflow 2` after
+Each element of `process` after the first can also be a nested array, to
+model branching within the chain. For example:
 
-- popping the `workflow 1` process definition from the array.
-- deleting the payload `id` (as the `id` necessarily has to be different for
-  the `workflow 2` execution).
-
-Each step in the workflow chain additionally supports a nested array, to model
-branching within the chain. For example, the following would branch into two
-separate workflow executions after the end of `workflow 1`:
-
-```
-process = [
-    { <workflow 1 definition> },
-    [{ <workflow 2a definition> }, { <workflow 2b definition> }],
-    { <workflow 3 definition> }
-]
+```json
+{
+    "process": [
+        { "workflow": "workflow-1" },
+        [
+            { "workflow": "workflow-2a" },
+            { "workflow": "workflow-2b" }
+        ],
+        { "workflow": "workflow-3" }
+    ]
+}
 ```
 
-This example would result in an execution chain that looks like this:
+produces an execution chain that looks like this:
 
-``` mermaid
+```mermaid
 flowchart LR
   1(Workflow 1)
   2a(Workflow 2a)
@@ -58,33 +55,81 @@ flowchart LR
   2b --> 3b
 ```
 
-Note that chaining alone can effectively model one-to-one and one-to-many
-dependency relationships.
+Chaining alone can model one-to-one and one-to-many dependency
+relationships; it has no facility for merging branches back together.
+
+## How chaining runs
+
+When a workflow's Step Functions execution succeeds, the `update-state`
+Lambda function (triggered by the execution's terminal EventBridge event)
+builds the next payload(s) for the chain and, if `CIRRUS_PROCESS_QUEUE_URL`
+is configured, enqueues each one onto the process SQS queue. Each queued
+payload is then picked up by the `process` Lambda function like any other
+incoming payload, which starts the next workflow's execution:
+
+```mermaid
+flowchart LR
+  sfn1[Workflow 1 execution]
+  us[update-state]
+  q[Process queue]
+  proc[process]
+  sfn2[Workflow 2 execution]
+  sfn1 -- terminal event --> us
+  us -- next payload --> q
+  q --> proc
+  proc -- starts execution --> sfn2
+```
+
+Building the next payload(s) (`next_payloads` on the succeeded execution's
+output) works as follows:
+
+- The first element of `process` (the definition for the workflow that just
+  finished) is dropped from the array.
+- If there is no further element in `process`, the chain ends and nothing is
+  enqueued.
+- If the next element is a single process definition (a dict), one payload
+  is produced with that definition as the new `process[0]`. If it's a list
+  (a branch), one payload is produced per element in the list.
+- Each produced payload has its `id` removed, since a new one will be
+  derived (or assigned) for the next workflow's execution — the same
+  payload `id` cannot be reused for a different workflow.
+
+Chaining only fires for successful executions; a `FAILED`, `ABORTED`, or
+`TIMED_OUT` execution does not enqueue any next payload.
 
 ## Filtering output items
 
-In cases where a successive workflow in a chain does not need all items produced
-by an multi-output-item proceeding workflow, chaining supports an output item
-filter via a [JSONPath](https://goessner.net/articles/JsonPath/index.html) filter expression. To set such a filter, specify it in
-the successive workflow's process definition using the `chain_filter` key. For
-example, if we only wanted items with an `id` starting with `SWE` that had a
-`confidence` property greater than 80, we could do something like this:
+When a successive workflow in a chain doesn't need every item produced by
+the preceding workflow, chaining supports filtering the output items via a
+[JSONPath](https://goessner.net/articles/JsonPath/index.html) filter
+expression. Set the filter in the successive workflow's process definition
+using the `chain_filter` key. For example, to keep only items with an `id`
+starting with `SWE` and a `confidence` property greater than 80:
+
+```json
+{
+    "process": [
+        { "workflow": "workflow-1" },
+        {
+            "workflow": "workflow-2",
+            "chain_filter": "@.id =~ 'SWE.*' & @.properties.confidence > 80"
+        }
+    ]
+}
+```
+
+The `chain_filter` value is a JSONPath filter expression applied to the
+preceding workflow's output `features`. It's substituted into the
+expression:
 
 ```
-process = [
-    { <workflow 1 definition> },
-    {
-        <workflow 2 definition>,
-        "chain_filter": "@.id =~ 'SWE*' & @.properties.confidence > 80"
-    }
-]
+$.features[?(<chain_filter>)]
 ```
 
-The `chain_filter` string is specifically a JSONPath filter expression string
-to apply to the output payload features. In other words, the above filter
-expression example actually results in the following JSONPath query applied
-against the JSON `workflow 1` output payload:
+So the example above evaluates:
 
 ```
-$.features[?(@.id =~ 'SWE*' & @.properties.confidence > 80)]
+$.features[?(@.id =~ 'SWE.*' & @.properties.confidence > 80)]
 ```
+
+and only the matching items are carried into the next payload's `features`.
