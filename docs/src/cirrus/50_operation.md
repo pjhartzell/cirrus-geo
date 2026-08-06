@@ -35,7 +35,7 @@ The available query parameters are:
 - `collections-workflow` (string): collections workflow field in StateDB
 - `since` (string): takes an integer and then a value of 'd' for days, 'h' for
   hours, or 'm' for minutes and only runs items that were last updated in the
-  state database within that time period. e.g. "10 h" looks back 10 hours.
+  state database within that time period, e.g. `10h` looks back 10 hours (no space between integer and unit).
 - `limit` (int): limit how many records are returned from stateDB query
 - `error-prefix` (string): a string prefix in an error string. Useful if
   multiple records failed as a result of the same bug.

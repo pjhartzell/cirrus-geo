@@ -189,7 +189,7 @@ The Cirrus CLI currently supports a number of commands.
   Piping with xargs to resubmit failed workflows:
 
   ``` bash
-  cirrus mgmt name-dev get-input-payloads --collections-workflow "sar-test_flow" --state "FAILED" --since "10 d" --rerun | xargs -0 -L 1 echo |  cirrus mgmt name-dev process
+  cirrus mgmt name-dev get-input-payloads --collections-workflow "sar-test_flow" --state "FAILED" --since 10d --rerun | xargs -0 -L 1 echo |  cirrus mgmt name-dev process
   ```
 
 - *query:*
@@ -201,7 +201,7 @@ The Cirrus CLI currently supports a number of commands.
   inspecting StateDB entries or piping into other tools.
 
   ``` bash
-  cirrus mgmt name-dev query --collections-workflow "sar-test_workflow" --state "FAILED" --since "1 d"
+  cirrus mgmt name-dev query --collections-workflow "sar-test_workflow" --state "FAILED" --since 1d
   ```
 
 - *migrate:*
