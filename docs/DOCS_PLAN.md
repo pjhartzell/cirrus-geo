@@ -60,7 +60,7 @@ correctness rewrites come next session, authored directly in Markdown.
       with docs-mechanic's rules inlined in the prompt — same model, same constraints.*
       *Note: codespell added as a pre-commit hook (CI runs `pre-commit run --all-files`),
       scoped to `docs/` + `README.md`, excluding `docs/build` and `DOCS_PLAN.md`.*
-- [ ] 0.2 CLIrrus purge: replace all doc occurrences (`docs/src/cli/*`,
+- [x] 0.2 CLIrrus purge: replace all doc occurrences (`docs/src/cli/*`,
       `components/functions/process.rst`, `cirrus/50_operation.rst`) per terminology rule.
       Rename `RoleSessionName="CLIrrus_iam_session"` in `src/cirrus/lib/utils.py` to
       `"cirrus_cli_session"`; add CHANGELOG entry under Unreleased (behavior-visible in

@@ -1,7 +1,7 @@
 Command Examples
 ================
 
-CLIrrus currently support a number of commands.
+The Cirrus CLI currently supports a number of commands.
 
 - *version:*
     Print the installed Cirrus CLI version.

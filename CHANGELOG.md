@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 
 - The api `items` endpoint now includes the `nextkey` token when more results are available.
+- IAM role session name used by the management CLI when assuming a deployment
+  role renamed from `CLIrrus_iam_session` to `cirrus_cli_session`; visible in
+  CloudTrail logs and assumed-role ARNs
 
 ## [v2.0.0] - 2026-04-22
 

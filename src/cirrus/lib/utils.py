@@ -130,7 +130,7 @@ def assume_role(
     if iam_role_arn:
         creds = boto3.client("sts").assume_role(
             RoleArn=iam_role_arn,
-            RoleSessionName="CLIrrus_iam_session",
+            RoleSessionName="cirrus_cli_session",
         )["Credentials"]
 
         session._session.set_config_variable(

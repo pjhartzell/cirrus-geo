@@ -41,7 +41,7 @@ One of the most common actions to to re-run failed tasks. For example, it it
 common when running the task to discover code bugs that cause the task to fail,
 fix them, and then want to re-run the task.
 
-This can be done with the ``get-input-payloads`` CLIrrus command. This command offers
+This can be done with the ``get-input-payloads`` Cirrus CLI command. This command offers
 a way to retrieve payloads in bulk based on user supplied query parameters.
 The output of ``get-input-payloads`` can then be passed into the ``process`` command
 to rerun the tasks that meet your conditions.  The ``--rerun`` flag can be
@@ -56,7 +56,7 @@ like::
 
   cirrus manage deployment-name get-input-payloads --collectons-workflow "sar-test_workflow" --state "FAILED" --rerun | xargs -0 -L 1 echo | cirrus manage deployment-name process
 
-Under the hood CLIrrus searches the AWS DynamoDB state database for records
+Under the hood the Cirrus CLI searches the AWS DynamoDB state database for records
 matching the query parameters.  Using these state database records, the
 original payloads are retrieved from the Cirrus deployment S3 bucket.
 The ``--rerun`` flag adds a flag to the process block of the payload.  These

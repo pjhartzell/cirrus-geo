@@ -46,5 +46,5 @@ workflows running the same payload.
 CLI
 ~~~
 
-This lambda can be invoked using the included CLIrrus CLI tool using
+This lambda can be invoked using the included Cirrus CLI using
 either the ``process`` or ``invoke`` commands.
