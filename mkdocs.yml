@@ -71,7 +71,7 @@ nav:
           - Chaining workflows: components/workflows/chaining.md
           - Batch in workflows: components/workflows/batch.md
       - Batch tasks: components/tasks/batch.md
-      - Configuration and deployment: cirrus/40_config-deploy.md
+      - Deployment: cirrus/40_config-deploy.md
       - Operations: cirrus/50_operation.md
       - Monitoring: cirrus/80_monitoring.md
       - Tips and tricks: cirrus/95_tips_and_tricks.md
