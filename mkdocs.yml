@@ -55,12 +55,13 @@ markdown_extensions:
           class: mermaid
           format: !!python/name:mermaid2.fence_mermaid_custom
 
-# Quickstart and Upgrading-to-2.0 pages are authored in Session 2 of the
-# docs overhaul (see docs/DOCS_PLAN.md).
+# The Upgrading-to-2.0 page is authored in Session 2 of the docs overhaul
+# (see docs/DOCS_PLAN.md).
 nav:
   - Home: index.md
   - Getting Started:
       - What is Cirrus: cirrus/10_intro.md
+      - Quickstart: cirrus/15_quickstart.md
       - Concepts & architecture: cirrus/20_arch.md
   - Guides:
       - Payloads: cirrus/30_payload.md

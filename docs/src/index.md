@@ -15,13 +15,13 @@ external processes, such as indexing into a STAC API.
 
 <div class="grid cards" markdown>
 
-- :material-rocket-launch: **Getting started**
+- :material-rocket-launch: **Quickstart**
 
     ---
 
-    Core concepts and how a payload moves through Cirrus.
+    Deploy Cirrus to AWS or LocalStack and run a test workflow.
 
-    [:octicons-arrow-right-24: Getting started with Cirrus](cirrus/10_intro.md)
+    [:octicons-arrow-right-24: Quickstart](cirrus/15_quickstart.md)
 
 - :material-sitemap: **Architecture**
 
