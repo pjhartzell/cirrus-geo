@@ -52,53 +52,45 @@ markdown_extensions:
           class: mermaid
           format: !!python/name:mermaid2.fence_mermaid_custom
 
-# Nav entries for pages still in RST are commented out and are uncommented
-# batch-by-batch as task 1.2 converts each directory. Quickstart and
-# Upgrading-to-2.0 pages are authored in Session 2.
+# Quickstart and Upgrading-to-2.0 pages are authored in Session 2 of the
+# docs overhaul (see docs/DOCS_PLAN.md).
 nav:
   - Home: index.md
-  # - Getting Started:
-  #     - What is Cirrus: cirrus/10_intro.md
-  #     - Concepts & architecture: cirrus/20_arch.md
-  # - Guides:
-  #     - Payloads: cirrus/30_payload.md
-  #     - Workflows:
-  #         - Overview: cirrus/components/workflows/index.md
-  #         - Workflow definitions: cirrus/components/workflows/definitions.md
-  #         - Chaining workflows: cirrus/components/workflows/chaining.md
-  #         - Batch in workflows: cirrus/components/workflows/batch.md
-  #     - Batch tasks: cirrus/components/tasks/batch.md
-  #     - Configuration and deployment: cirrus/40_config-deploy.md
-  #     - Operations: cirrus/50_operation.md
-  #     - Monitoring: cirrus/80_monitoring.md
-  #     - Tips and tricks: cirrus/95_tips_and_tricks.md
+  - Getting Started:
+      - What is Cirrus: cirrus/10_intro.md
+      - Concepts & architecture: cirrus/20_arch.md
+  - Guides:
+      - Payloads: cirrus/30_payload.md
+      - Workflows:
+          - Overview: cirrus/components/workflows/index.md
+          - Workflow definitions: cirrus/components/workflows/definitions.md
+          - Chaining workflows: cirrus/components/workflows/chaining.md
+          - Batch in workflows: cirrus/components/workflows/batch.md
+      - Batch tasks: cirrus/components/tasks/batch.md
+      - Configuration and deployment: cirrus/40_config-deploy.md
+      - Operations: cirrus/50_operation.md
+      - Monitoring: cirrus/80_monitoring.md
+      - Tips and tricks: cirrus/95_tips_and_tricks.md
   - Reference:
+      - Components:
+          - Overview: cirrus/60_components.md
+          - Feeders: cirrus/components/feeders/index.md
+          - Functions:
+              - Overview: cirrus/components/functions/index.md
+              - api: components/functions/api.md
+              - process: components/functions/process.md
+              - update-state: components/functions/update-state.md
+              - pre-batch: components/functions/pre_batch.md
+              - post-batch: components/functions/post_batch.md
+          - Tasks: cirrus/components/tasks/index.md
       - CLI:
           - Overview: cli/00_intro.md
           - Installing: cli/01_install.md
           - Authentication: cli/02_auth.md
           - Deployments: cli/03_deployments.md
           - Command examples: cli/04_commands.md
-  # - Reference (rest — uncomment into the section above per batch):
-  #     - Components:
-  #         - Overview: cirrus/60_components.md
-  #         - Feeders: cirrus/components/feeders/index.md
-  #         - Functions:
-  #             - Overview: cirrus/components/functions/index.md
-  #             - api: components/functions/api.md
-  #             - process: components/functions/process.md
-  #             - update-state: components/functions/update-state.md
-  #             - pre-batch: components/functions/pre_batch.md
-  #             - post-batch: components/functions/post_batch.md
-  #         - Tasks: cirrus/components/tasks/index.md
-  #     - CLI:
-  #         - Overview: cli/00_intro.md
-  #         - Installing: cli/01_install.md
-  #         - Authentication: cli/02_auth.md
-  #         - Deployments: cli/03_deployments.md
-  #         - Command examples: cli/04_commands.md
-  #     - State database: cirrus/70_statedb.md
-  #     - Payload bucket: cirrus/75_payload_bucket.md
+      - State database: cirrus/70_statedb.md
+      - Payload bucket: cirrus/75_payload_bucket.md
   - About:
       - Contributing: about/contributing.md
       - Changelog: about/changelog.md

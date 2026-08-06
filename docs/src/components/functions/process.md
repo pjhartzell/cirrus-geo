@@ -1,50 +1,44 @@
-process
-=======
+# process
 
-The ``process`` lambda is a core piece of Cirrus infrastructure. It
+The `process` lambda is a core piece of Cirrus infrastructure. It
 processes messages, extracts and prepares Cirrus Payloads from these
 messages and then uses these payloads to trigger execution of
 pre-defined AWS Step Function workflows. This lambda can also involve
 simple administrative work like setting payload ids, and updating the
 state db to avoid duplicative executions.
 
-Trigger
--------
+## Trigger
 
-There are multiple ways to trigger the ``process`` lambda.
+There are multiple ways to trigger the `process` lambda.
 
-- Send a message to the SQS ``process`` queue via a feeder
-- Send a message to the SQS queue using the CLI tool ``process``
+- Send a message to the SQS `process` queue via a feeder
+- Send a message to the SQS queue using the CLI tool `process`
   command.
 
 The SQS message can be used to send a single payload, or batch payloads to
 trigger workflows at volume with a single message (e.g. bulk image processing).
 Once the lambda has ingested a payload it begins the processing pipeline.
 
-Payload
--------
+## Payload
 
 The message may contain the Cirrus Payload, have an S3 URL for a
 payload, be a Batch message containing a url link to a Cirrus Payload,
 or notification from an SNS topic that contains a Cirrus Payload.
 
-Workflow Kick Off
------------------
+## Workflow Kick Off
 
-The core function of the ``process`` lambda is to handle and process
+The core function of the `process` lambda is to handle and process
 inputs and to then trigger AWS Step Function execution of predefined
 cirrus tasks and workflows. Payloads are also stored in the cirrus
 deployment S3 bucket.
 
-State Management
-----------------
+## State Management
 
-The ``process`` lambda also updates the state table when workflows are
+The `process` lambda also updates the state table when workflows are
 initiated or fail to be initiated. This is intended to prevent duplicate
 workflows running the same payload.
 
-CLI
-~~~
+### CLI
 
 This lambda can be invoked using the included Cirrus CLI using
-either the ``process`` or ``invoke`` commands.
+either the `process` or `invoke` commands.

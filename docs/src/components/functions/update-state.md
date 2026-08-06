@@ -1,5 +1,4 @@
-update-state
-============
+# update-state
 
 Updates the dynamoDB state database with the State Function execution
 results.
@@ -9,10 +8,9 @@ additional workflow steps with pushing messages to SQS or SNS for
 additional steps beyond the core cirrus workflow, like triggering a
 lambda to push an output STAC Item to a STAC API.
 
-Trigger
--------
+## Trigger
 
-The ``update-state`` lambda listens for terminal events output by a
+The `update-state` lambda listens for terminal events output by a
 State Function that is executing a cirrus workflow/task. These terminal
 states are not an exclusive list of possible states in the StateDB.
 
@@ -24,21 +22,20 @@ states are not an exclusive list of possible states in the StateDB.
   third party resource involved in a task hangs, or a workflow
   configuration did not allow sufficient time for a task to complete.
 
-StateDB Updates
----------------
+## StateDB Updates
 
 Updating the DynamoDB state database is the core functionality of the
-``update-state`` lambda.
+`update-state` lambda.
 
-In addition to updating DynamoDB on each state update, the ``update-state``
+In addition to updating DynamoDB on each state update, the `update-state`
 lambda logs events to the events timeseries database (AWS TimeStream or
-CloudWatch). On workflow success ``update-state`` also archives the output
+CloudWatch). On workflow success `update-state` also archives the output
 payload to S3.
 
-The ``update-state`` lambda additionally logs any errors that come from
+The `update-state` lambda additionally logs any errors that come from
 the StateMachine so they can be captured and analyzed in the log stream.
 
-``update-state`` will send workflow event messages to configured SNS topics to
+`update-state` will send workflow event messages to configured SNS topics to
 provide notifications to users or downstream services when events and/or output
 items are produced. It may also be used to facilitate workflow chaining by
-requeuing payloads in the ``process`` queue.
+requeuing payloads in the `process` queue.

@@ -99,10 +99,20 @@ correctness rewrites come next session, authored directly in Markdown.
       `!!python/name:` tag needed by the mermaid2 fence; mkdocs validates its own config).
       Sphinx `make -C docs build` is non-functional from this commit (deps swapped); the
       remaining Sphinx machinery is retired in 1.3.*
-- [ ] 1.2 Convert all remaining `.rst` → `.md` (pandoc first pass; hand-fix admonitions,
+- [x] 1.2 Convert all remaining `.rst` → `.md` (pandoc first pass; hand-fix admonitions,
       code-block languages, cross-references, images, Mermaid blocks). **Conversion commits
       are content-neutral** — no wording changes, so the diff is reviewable as pure
       transformation. Batch by directory, one commit per batch.
+      *Deviations: (1) `cli/` committed alone (no outgoing cross-refs), but the other three
+      directories (`cirrus/`, `cirrus/components/`, `components/functions/`) reference each
+      other circularly, so they share one commit — intermediate per-directory commits could
+      not pass `mkdocs build --strict` with links pointing at not-yet-converted files. Each
+      directory was still converted and reviewed as its own agent batch. (2)
+      `components/functions/index.rst` deleted rather than converted — pure toctree wrapper;
+      the nav lists its five pages directly. (3) Content-neutrality verified mechanically:
+      old RST (from git) and new Markdown both rendered to plain text via pandoc and
+      diffed — remaining diffs are link-target unwrapping, toctree removal, and reflow
+      only.*
 - [ ] 1.3 Versioned deploys with `mike`; rewrite `.github/workflows/docs-build.yml`; retire
       `docs/update-versions.py`, `static/js/versions-loader.js`, `templates/versions.html`,
       `conf.py`, `Makefile`, `index.include`. Preserve existing published version URLs or add
