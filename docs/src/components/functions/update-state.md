@@ -20,7 +20,9 @@ states:
 | `TIMED_OUT`      | `FAILED`                       |
 
 A `FAILED` execution is recorded as `INVALID` when its error type is
-`cirrus.lib.errors.InvalidInput` or `stactask.exceptions.InvalidInput`; a
+`stactask.exceptions.InvalidInput` — or `cirrus.lib.errors.InvalidInput`,
+the equivalent exception from pre-2.0 cirrus-lib, still recognized so tasks
+built against the old library classify correctly; a
 `TIMED_OUT` execution is recorded as `FAILED` with a `TimedOutError` error.
 For failed executions, the error name and cause are extracted from the event
 and stored on the state database record. The workflow definition's `Fail`

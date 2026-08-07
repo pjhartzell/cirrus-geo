@@ -126,8 +126,9 @@ By default, `PayloadManagers.process` only (re)starts a workflow execution
 for a payload `id` whose current state database entry is `FAILED`,
 `ABORTED`, `CLAIMED`, or has no entry at all — an `id` already `PROCESSING`
 or `SUCCEEDED` is skipped. Setting `"replace": true` in the process
-definition bypasses that check and starts the execution regardless of the
-payload's current state, including `PROCESSING` or `SUCCEEDED`.
+definition bypasses that check for every state except `PROCESSING` — a
+payload with an execution already underway is skipped regardless, enforced
+by a condition on the state database claim.
 
 ### tasks
 
@@ -174,11 +175,36 @@ bucket. If a complete S3 URL is provided instead (e.g.,
 `s3://my-bucket/data/${collection}/${id}`), assets upload to that bucket
 instead.
 
+### Assigning output collections
+
+A process definition may include a top-level `collection_matchers` field to
+assign each output item's `collection` before publishing. It is a list of
+matchers evaluated in order per item; the first match wins:
+
+```json
+{
+    "workflow": "my-workflow",
+    "collection_matchers": [
+        {
+            "type": "jsonpath",
+            "collection_name": "landsat-derived",
+            "pattern": "$[?(@.id =~ 'LC08.*')]"
+        },
+        {
+            "type": "catch_all",
+            "collection_name": "other-products"
+        }
+    ]
+}
+```
+
+A `jsonpath` matcher assigns `collection_name` to items matching its
+`pattern` (a JSONPath expression evaluated against the item); a `catch_all`
+matcher matches every item and belongs last. Items matching no matcher keep
+their existing `collection`.
+
 !!! note
-    Older payloads may set `upload_options.collections` — a mapping of
-    output collection name to a regex matched against item IDs, used to
-    reassign an item's collection before publishing. stac-task deprecates
-    this in favor of `collection_matchers` in the process definition; the
-    two are mutually exclusive on a single payload. Consult the installed
-    stac-task version for the current `collection_matchers` shape before
-    using it in new workflows.
+    Older payloads may instead set `upload_options.collections` — a mapping
+    of output collection name to a JSONPath expression matched against
+    items. stac-task deprecates this in favor of `collection_matchers`; the
+    two are mutually exclusive on a single payload.

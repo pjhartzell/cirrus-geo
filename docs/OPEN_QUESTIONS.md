@@ -21,28 +21,38 @@ numbers, should anyone want to restore/verify them:
 - EC2 Spot request default of 5 per instance type (old line 30): actual
   mechanism is per-family vCPU quotas, not a flat request count.
 
-Deleted outright as wrong or inapplicable (not parked, just noted): WAF
-Classic 200 rules/region (WAF is unused anywhere in `cloudformation/` or
-`src/`); "no limit on Spot vCPUs" (contradicted by current AWS docs); S3
-bucket quota corrected 200 → 10,000 in the page.
+Deleted outright as wrong or inapplicable (not parked, just noted): "no
+limit on Spot vCPUs" (contradicted by current AWS docs); S3 bucket quota
+corrected 200 → 10,000 in the page.
 
-## Code discrepancies surfaced by the Session 2 audits (2026-08-06)
+The WAF Classic 200-rules/region line was also deleted, with extra context
+(investigated 2026-08-07): WAF appears nowhere in cirrus-geo's
+`cloudformation/` or `src/`, but FilmDrop deployments
+(`Element84/filmdrop-aws-tf-modules`) front their CloudFront distributions
+with WAF — which is almost certainly why the line was in the original
+operator quota list (introduced in PR #240, Feb 2024, by Element84). That
+suite uses WAF**v2** (`aws_wafv2_*` resources), so the cited WAF *Classic*
+quota was stale even for that context. FilmDrop-specific quota guidance
+belongs in that repo's docs per the plan's scope rule; restore a WAFv2 note
+here only if the maintainers want FilmDrop operational context in the
+cirrus-geo deployment guide.
 
-Not documentation decisions — code-side items the docs deliberately avoid
-depending on:
+## Code discrepancies surfaced by the Session 2 audits — RESOLVED 2026-08-07
 
-- `src/cirrus/lambda_functions/update_state.py:21` lists
-  `"cirrus.lib.errors.InvalidInput"` in `INVALID_EXCEPTIONS`, but no such
-  class exists in `src/cirrus/lib/errors.py` (only
-  `stactask.exceptions.InvalidInput` is real). The payloads guide names no
-  specific import path for the invalid-input exception because of this.
-  Needs a code fix or an intentional-compat note.
-- stac-task's `collection_matchers` process-definition field (the
-  replacement for the deprecated `upload_options.collections`) is validated
-  for mutual exclusivity but its shape is not documented anywhere in
-  cirrus-geo and has no in-repo usage to derive from. The payloads guide
-  notes the deprecation but does not document `collection_matchers`'
-  structure — needs either a stac-task doc link or a verified example.
+- `"cirrus.lib.errors.InvalidInput"` in `update_state.py`'s
+  `INVALID_EXCEPTIONS` is **intentional backward compatibility**, not a bug:
+  commit `a68cea1` ("refine InvalidInput exception support") removed the
+  class from `cirrus.lib.errors` and in the same change switched the match
+  string to the fully-qualified name, so tasks still running against the
+  old cirrus-lib (where the class exists in *their* environment) keep being
+  classified `INVALID`. The update-state function page now documents it as
+  the legacy name.
+- `collection_matchers` shape derived from the installed stac-task source
+  (`stactask/utils.py` `_find_collection_from_matchers`, `MatcherType`) and
+  verified by executing an example against it: ordered list of matchers,
+  `{"type": "jsonpath", "collection_name": ..., "pattern": <JSONPath>}` or
+  `{"type": "catch_all", "collection_name": ...}`, first match wins. The
+  payloads guide now carries the verified example.
 
 (The pre-existing empty section headers recorded here during Session 1 were
 deleted per maintainer decision, 2026-08-06.)
