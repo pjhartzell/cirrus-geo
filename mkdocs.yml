@@ -34,6 +34,25 @@ plugins:
   - search
   - mermaid2
   - mike
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            # docstring defects are tracked in DOCSTRING_GAPS.md for a
+            # follow-up code PR; re-enable parser warnings when fixed
+            docstring_options:
+              warnings: false
+            members_order: source
+            filters: ["!^_"]
+            show_if_no_docstring: true
+            show_root_heading: true
+            show_source: false
+            separate_signature: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+            merge_init_into_class: true
+            heading_level: 2
 
 extra:
   version:
@@ -94,6 +113,13 @@ nav:
           - Deployments: cli/03_deployments.md
           - CLI reference: cli/reference.md
           - Common CLI workflows: cli/04_commands.md
+      - Library API:
+          - CirrusPayload: api/cirrus_payload.md
+          - StateDB: api/statedb.md
+          - PayloadBucket: api/payload_bucket.md
+          - Events: api/events.md
+          - Errors and exceptions: api/errors.md
+          - Deployment: api/deployment.md
       - State database: cirrus/70_statedb.md
       - Payload bucket: cirrus/75_payload_bucket.md
   - About:
