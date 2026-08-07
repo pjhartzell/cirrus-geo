@@ -54,5 +54,24 @@ cirrus-geo deployment guide.
   `{"type": "catch_all", "collection_name": ...}`, first match wins. The
   payloads guide now carries the verified example.
 
+## API-lambda behaviors documented as-written, flagged for maintainers (task 4.3, 2026-08-07)
+
+The new endpoints page (`docs/src/cirrus/78_api_endpoints.md`) documents
+these code behaviors faithfully; each looks possibly unintended, and a code
+change would require a docs follow-up:
+
+- `src/cirrus/lambda_functions/api.py:274-280` — if API Gateway supplies no
+  `requestContext.domainName`, `root_url` is `None` and `get_root` calls
+  `urljoin(None, ...)`, which raises. Likely dead code for real `AWS_PROXY`
+  events; not reachable to verify from docs work.
+- `src/cirrus/lambda_functions/api.py:337` — `itemids == "items"` is a
+  literal string match, so a payload whose item-ID segment is literally
+  `items` is shadowed by the paginated items route.
+- `src/cirrus/lambda_functions/api.py:354-356` — the items route drops the
+  `nextkey` continuation token that `StateDB.get_items_page` computes; the
+  response body contains only `items`. Clients can still paginate by passing
+  the last returned item's `payload_id` as `nextkey`, and the page documents
+  that workaround, but returning the token may have been the intent.
+
 (The pre-existing empty section headers recorded here during Session 1 were
 deleted per maintainer decision, 2026-08-06.)

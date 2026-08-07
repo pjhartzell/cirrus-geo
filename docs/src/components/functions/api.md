@@ -42,8 +42,9 @@ Returns the single state database record for the given payload ID.
 
 - `state`: filter records on a state database state (`PROCESSING`,
   `SUCCEEDED`, `FAILED`, `INVALID`, `ABORTED`, `CLAIMED`)
-- `since`: look-back window relative to now — an integer followed by a unit
-  suffix `d` (days), `h` (hours), or `m` (minutes), e.g. `10 d`
+- `since`: look-back window relative to now — an integer immediately
+  followed by a unit suffix `d` (days), `h` (hours), or `m` (minutes), with
+  no space, e.g. `10d`
 - `limit`: maximum number of records to return (default 100000)
 - `nextkey`: pagination key from a previous `items` response, returned when
   more results are available
@@ -51,3 +52,7 @@ Returns the single state database record for the given payload ID.
 - `sort_index`: index to sort by (default `updated`)
 
 Unrecognized query parameters have no effect.
+
+See the [Cirrus API endpoints reference](../../cirrus/78_api_endpoints.md)
+for full request/response shapes, error behavior, and how the API is
+exposed via CloudFormation.

@@ -122,6 +122,7 @@ nav:
           - Deployment: api/deployment.md
       - State database: cirrus/70_statedb.md
       - Payload bucket: cirrus/75_payload_bucket.md
+      - Cirrus API endpoints: cirrus/78_api_endpoints.md
   - About:
       - Contributing: about/contributing.md
       - Changelog: about/changelog.md
