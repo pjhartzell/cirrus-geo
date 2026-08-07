@@ -80,6 +80,7 @@ nav:
   - Getting Started:
       - What is Cirrus: cirrus/10_intro.md
       - Quickstart: cirrus/15_quickstart.md
+      - End-to-end walkthrough: cirrus/17_end_to_end.md
       - Concepts & architecture: cirrus/20_arch.md
   - Guides:
       - Payloads: cirrus/30_payload.md
