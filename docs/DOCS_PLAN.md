@@ -250,6 +250,16 @@ exists; single component taxonomy.
 - [ ] 5.2 End-to-end example: deploy via quickstart → submit payload → track state → inspect
       output. Plain doc page unless a notebook is clearly more maintainable.
 - [ ] 5.3 Callbacks doc if 0.3 found implemented functionality.
+      *Moot per 0.3: no callback support found in code — nothing to document unless
+      that changes.*
+- [ ] 5.4 Decide 1.x visibility in the version selector (maintainer decision,
+      2026-08-07): the dropdown lists only mike-managed versions from `versions.json`;
+      old Sphinx-built 1.x dirs keep their URLs but won't appear in it. Options:
+      hand-add 1.x entries to `versions.json` on gh-pages (lighter touch), or leave
+      1.x unlisted and rely on the upgrading guide. Decision needed by the first
+      release deploy (when `mike set-default stable` runs). Writing new 1.x docs was
+      considered and rejected — docs are authored for 2.0 only; legacy notes appear
+      in pages only where 2.0 code itself carries compat behavior.
 
 ## Verification checklist (run at end of every session)
 - `mkdocs build --strict` passes (Session 1 pre-migration steps: Sphinx build, no new
