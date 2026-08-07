@@ -43,6 +43,7 @@ markdown_extensions:
   - admonition
   - attr_list
   - md_in_html
+  - mkdocs-click
   - toc:
       permalink: true
   - pymdownx.emoji:
@@ -91,7 +92,8 @@ nav:
           - Installing: cli/01_install.md
           - Authentication: cli/02_auth.md
           - Deployments: cli/03_deployments.md
-          - Command examples: cli/04_commands.md
+          - CLI reference: cli/reference.md
+          - Common CLI workflows: cli/04_commands.md
       - State database: cirrus/70_statedb.md
       - Payload bucket: cirrus/75_payload_bucket.md
   - About:

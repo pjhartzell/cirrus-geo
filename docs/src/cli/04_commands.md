@@ -1,252 +1,157 @@
-# Command Examples
+# Common CLI workflows
 
-The Cirrus CLI currently supports a number of commands.
+Worked examples composing `cirrus` commands for routine operational tasks.
+For the full option listing of every command, see the
+[CLI reference](reference.md). Examples use a deployment named `name-dev`;
+substitute your own deployment name from `cirrus list-deployments`.
 
-- *version:*
-  Print the installed Cirrus CLI version.
+Commands that take a payload read it from stdin, so payloads pipe naturally
+between commands and in from files with shell redirection (`<payload.json`).
 
-  ``` bash
-  cirrus version
-  ```
+## Run a workflow and wait for the result
 
-- *list-deployments:*
-  Return a list of all named cirrus deployments available for interacting
-  with by pulling deployments available in AWS parameter store. Defaults to looking in the region used in AWS SSO login. Names returned here will be the name strings needed to run commands on a specific deployment.
+Submit a payload, poll until the workflow reaches a terminal state, and print
+the output payload:
 
-  ``` bash
-  cirrus list-deployments
-  ```
+``` bash
+<payload.json cirrus manage name-dev run-workflow
+```
 
-- *manage (mgmt):*
-  A wrapper for commands to interact with a specific named deployment
+`run-workflow` exits `0` on a `SUCCEEDED` execution, `10` on any other
+terminal state, and `11` if it times out waiting (default 3600 seconds;
+adjust with `--timeout`). The exit code makes it usable in scripts and CI
+smoke tests.
 
-  ``` bash
-  cirrus mgmt DEPLOYMENT_NAME COMMAND
-  ```
+To enqueue a payload without waiting, use `process` instead:
 
-- *payload:*
-  a wrapper for commands for working with payloads.
+``` bash
+<payload.json cirrus manage name-dev process
+```
 
-  ``` bash
-  cirrus payload COMMAND
-  ```
+Payloads larger than the SQS maximum message size are uploaded to the payload
+bucket automatically and enqueued by reference, so oversized payloads need no
+special handling.
 
-## Manage commands
+## Inspect an execution
 
-- *call:*
-  Call a new command with the deployment environment variables loaded
+Most execution commands accept either `--payload-id` or `--arn` to identify
+the execution:
 
-  ``` bash
-  cirrus mgmt name-dev call ls
-  ```
+``` bash
+cirrus manage name-dev get-execution --payload-id sar/workflow-test/example-01
+cirrus manage name-dev get-execution --arn arn:aws:states:us-west-2:000000000011:execution:fd-name-dev-cirrus-project:c123456789-b19292-999
+```
 
-- *exec:*
-  Run an executable with the deployment specific environment variables loaded into the local environment
+Walk an execution from summary to event history to task logs:
 
-  ``` bash
-  cirrus mgmt name-dev exec "bash" "hello_env_var_world.sh"
-  ```
+``` bash
+# input and output payloads for the execution
+cirrus manage name-dev get-execution-input --payload-id sar/workflow-test/example-01
+cirrus manage name-dev get-execution-output --payload-id sar/workflow-test/example-01
 
-- *get-execution:*
-  Get a workflow execution using its ARN or its payload-id
+# event history, with log-group/request-id metadata injected into
+# task succeed/fail events for follow-up log queries
+cirrus manage name-dev get-execution-events --payload-id sar/workflow-test/example-01 --with-log-metadata
 
-  ``` bash
-  cirrus mgmt name-dev get-execution --payload-id sar/workflow-test/example-01_2024-10-31-06-05-10
+# fetch the logs a task event pointed at
+cirrus manage name-dev get-lambda-logs /aws/lambda/my-function abc123-request-id
+cirrus manage name-dev get-batch-logs my-job-log-stream
+```
 
-  cirrus mgmt name-dev get-execution --arn arn:aws:states:us-west-2:000000000011:execution:fd-name-dev-cirrus-project:c123456789-b19292-999
-  ```
+The state machine definition backing a workflow is available by workflow
+name:
 
-- *get-execution-input:*
-  Get a workflow execution's input payload using ARN or payload-id
+``` bash
+cirrus manage name-dev get-workflow-definition my-workflow
+```
 
-  ``` bash
-  cirrus mgmt name-dev get-execution-input --arn arn:aws:states:us-west-2:000000000011:execution:fd-name-dev-cirrus-project:c123456789-b19292-999
+## Check state and stored payloads
 
-  cirrus mgmt name-dev get-execution-input --payload-id sar/workflow-test/example-01_2024-10-31-06-05-10
-  ```
+``` bash
+# state database record for a payload ID
+cirrus manage name-dev get-state sar/workflow-test/example-01
 
-- *get-execution-output:*
-  Get a workflow execution's output payload using payload-id or ARN
+# input/output payloads as stored in the payload bucket
+cirrus manage name-dev get-input-payload sar/workflow-test/example-01
+cirrus manage name-dev get-output-payload sar/workflow-test/example-01
+```
 
-  ``` bash
-  cirrus mgmt name-dev get-execution-output --payload-id sar/workflow-test/example-01_2024-10-31-06-05-10
+## Query the state database in bulk
 
-  cirrus mgmt name-dev get-execution-output --arn arn:aws:states:us-west-2:000000000011:execution:fd-name-dev-cirrus-project:c123456789-b19292-999
-  ```
+`query` returns state database records as NDJSON, filtered by
+`--collections-workflow` (required) plus optional `--state`, `--since`,
+`--limit`, and `--error-prefix`:
 
-- *get-workflow-definition:*
-  Get a workflow's state machine ASL definition using the workflow name
+``` bash
+cirrus manage name-dev query --collections-workflow "sar-test_workflow" --state FAILED --since 1d
+```
 
-  ``` bash
-  cirrus mgmt name-dev get-workflow-definition test
-  ```
+`get-input-payloads` takes the same filters but resolves each matching record
+to its input payload from S3:
 
-- *get-execution-events:*
-  Get a workflow execution's event history using its ARN or its input payload ID
+``` bash
+cirrus manage name-dev get-input-payloads --collections-workflow "sar-test_workflow" --state FAILED --since 10d
+```
 
-  ``` bash
-  cirrus mgmt name-dev get-execution-events --payload-id sar/workflow-test/example-01_2024-10-31-06-05-10
+## Rerun failed workflows in bulk
 
-  cirrus mgmt name-dev get-execution-events --arn arn:aws:states:us-west-2:000000000011:execution:fd-name-dev-cirrus-project:c123456789-b19292-999
+`get-input-payloads --rerun` alters each returned payload so it can be
+resubmitted. The output is NDJSON — one payload per line — and `process`
+enqueues one payload per invocation, so submit line by line:
 
-  cirrus mgmt name-dev get-execution-events --payload-id sar/workflow-test/example-01_2024-10-31-06-05-10 --with-log-metadata
-  ```
+``` bash
+cirrus manage name-dev get-input-payloads \
+    --collections-workflow "sar-test_workflow" --state FAILED --since 10d --rerun |
+while IFS= read -r payload; do
+    printf '%s' "$payload" | cirrus manage name-dev process
+done
+```
 
-- *get-lambda-logs:*
-  Get CloudWatch logs for a Lambda invocation
+See the [operations guide](../cirrus/50_operation.md) for which states rerun
+under which conditions.
 
-  ``` bash
-  cirrus mgmt name-dev get-lambda-logs /aws/lambda/my-function abc123-request-id
+## Template payloads
 
-  cirrus mgmt name-dev get-lambda-logs /aws/lambda/my-function abc123-request-id --limit 50
+Both templating commands substitute `$`-prefixed variables in a payload read
+from stdin. `cirrus payload template` uses only the variables you supply;
+`cirrus manage ... template-payload` additionally loads the deployment's
+environment variables:
 
-  cirrus mgmt name-dev get-lambda-logs /aws/lambda/my-function abc123-request-id --start-time 1699999999000 --end-time 1700000099000
+``` bash
+<payload-template.json cirrus payload template --var EXAMPLE_VAR value
+<payload-template.json cirrus manage name-dev template-payload --var EXAMPLE_VAR value
+```
 
-  cirrus mgmt name-dev get-lambda-logs /aws/lambda/my-function abc123-request-id --next-token "pagination-token-here"
-  ```
+## Validate a payload locally
 
-- *get-batch-logs:*
-  Get CloudWatch logs for a Batch job
+``` bash
+# check that a payload is a valid Cirrus process payload
+<payload.json cirrus payload validate
 
-  ``` bash
-  cirrus mgmt name-dev get-batch-logs my-job-log-stream
+# show the ID a payload would get (or has)
+<payload.json cirrus payload get-id
+```
 
-  cirrus mgmt name-dev get-batch-logs my-job-log-stream --log-group /aws/batch/custom
+## Run local tools with deployment environment variables
 
-  cirrus mgmt name-dev get-batch-logs my-job-log-stream --limit 50 --next-token "pagination-token-here"
-  ```
+`exec` replaces the current process; `call` runs the command in a child
+process. Both load the deployment's environment variables first, which is
+useful for running local scripts or debugging tools against a deployment's
+resources:
 
-- *get-input-payload:*
-  Get an input payload from S3 using its ID
+``` bash
+cirrus manage name-dev exec env | grep CIRRUS
+cirrus manage name-dev call bash my-script.sh
+```
 
-  ``` bash
-  cirrus mgmt name-dev get-input-payload sar/workflow-test/example-01_2024-10-31-06-05-10
-  ```
+## Migrate a pre-2.0 deployment
 
-- *get-output-payload:*
-  Get an output payload from S3 for an input payload ID
+Preview, then apply, the v2 state database and payload bucket migration:
 
-  ``` bash
-  cirrus mgmt name-dev get-output-payload sar/workflow-test/example-01_2024-10-31-06-05-10
-  ```
+``` bash
+cirrus manage name-dev migrate --dry-run
+cirrus manage name-dev migrate
+```
 
-- *get-state:*
-  Get the stateDB record for a payload ID
-
-  ``` bash
-  cirrus mgmt name-dev get-state sar/workflow-test/example-01_2024-10-31-06-05-10
-  ```
-
-- *invoke-lambda:*
-  Invoke lambda with event (from stdin) and specifying by name which lambda to invoke
-
-  ``` bash
-  <payload.json cirrus mgmt name-dev invoke-lambda process
-  ```
-
-- *list-lambdas*:
-  List all lambda functions available in a given deployment
-
-  ``` bash
-  cirrus mgmt name-dev list-lambdas
-  ```
-
-- *process:*
-  Enqueue a payload (from stdin) for processing
-
-  ``` bash
-  <payload.json cirrus mgmt name-dev process
-  ```
-
-- *run-workflow:*
-  Pass a payload (from stdin) off to a deployment, wait for the workflow to finish, and retrieve and return its output payload
-
-  ``` bash
-  <payload.json cirrus mgmt name-dev run-workflow
-  ```
-
-- *show:*
-  Show a deployment configuration's environment variables available in the parameter store
-
-  ``` bash
-  cirrus mgmt name-dev show
-  ```
-
-- *template-payload:*
-  Template a payload using a deployment's environment variables and '\$' based substitution
-
-  ``` bash
-  <payload.json cirrus mgmt name-dev template-payload --var EXAMPLE_VAR VALUE
-  ```
-
-- *get-input-payloads:*
-  Bulk retrieve payloads as NDJSON. Can be filtered on fields available in
-  StateDB - 'collections-workflow', 'state', 'since', 'limit',
-  'error-prefix'. Output may be piped into additional commands to rerun
-  payloads using the 'rerun' flag which alters the payload to allow
-  rerunning.
-
-  Piping with xargs to resubmit failed workflows:
-
-  ``` bash
-  cirrus mgmt name-dev get-input-payloads --collections-workflow "sar-test_flow" --state "FAILED" --since 10d --rerun | xargs -0 -L 1 echo |  cirrus mgmt name-dev process
-  ```
-
-- *query:*
-  Query the StateDB for records matching the supplied filters and return
-  the raw StateDB records as NDJSON. Accepts the same filter options as
-  `get-input-payloads` (`--collections-workflow`, `--state`,
-  `--since`, `--limit`, `--error-prefix`) but returns state records
-  directly instead of fetching input payloads from S3. Useful for
-  inspecting StateDB entries or piping into other tools.
-
-  ``` bash
-  cirrus mgmt name-dev query --collections-workflow "sar-test_workflow" --state "FAILED" --since 1d
-  ```
-
-- *migrate:*
-  Migrate a deployment's StateDB and payload bucket from the pre-v2 schema
-  to the v2 schema. This performs a full DynamoDB table scan and updates
-  each record in place while also copying existing input payloads (and, for
-  recent executions, fetching output payloads from Step Functions history)
-  into the new payload bucket layout. The operation is idempotent and may
-  be re-run safely.
-
-  Supported options:
-
-  - `--dry-run`: preview all DynamoDB and S3 changes without writing
-    anything.
-  - `--since-days INT`: cutoff (in days) for fetching Step Functions
-    outputs for legacy `COMPLETED` records. Defaults to 90, matching
-    the default Step Functions history retention.
-
-  Run this after deploying a v2 release of Cirrus to bring existing state
-  records and payload objects in line with the new schema:
-
-  ``` bash
-  cirrus mgmt name-dev migrate --dry-run
-  cirrus mgmt name-dev migrate
-  ```
-
-## Payload commands
-
-- *get-id:*
-  Get/generate an ID for a given payload
-
-  ``` bash
-  <payload.json cirrus payload get-id
-  ```
-
-- *template:*
-  Template a payload (from stdin) with user supplied variables with '\$' based substitution
-
-  ``` bash
-  <payload.json cirrus payload template --var EXAMPLE_VAR VALUE
-  ```
-
-- *validate:*
-  Validate an input payload (from stdin) is a valid cirrus payload
-
-  ``` bash
-  <payload.json cirrus payload validate
-  ```
+See [Upgrading to 2.0](../cirrus/85_upgrading.md) for what the migration
+changes and its options.
