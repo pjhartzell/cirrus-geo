@@ -44,6 +44,8 @@ Basis: docs triage of v2.0.0 site vs. code at `516d43b` (2026-04-22).
    payload-bucket page (best existing page).
 5. **Local preview:** while on Sphinx, `uv sync --group docs && make -C docs build` then
    `python -m http.server -d docs/build/html`. After task 1.4, `mkdocs serve` (live reload).
+   After task 4.1, sync with the CLI extra — `uv sync --group docs --extra cli` — so
+   mkdocs-click can import the command tree.
 
 ## Session 1 — Hygiene, deletions, migration
 
@@ -236,22 +238,77 @@ exists; single component taxonomy.
 
 ## Session 3 — Generated reference and depth
 
-- [ ] 4.1 CLI reference generated via `mkdocs-click` covering the full `cirrus` tree
+- [x] 4.1 CLI reference generated via `mkdocs-click` covering the full `cirrus` tree
       including `manage` and `payload` groups. Keep curated command examples as a "common
       workflows" page; delete anything the generated reference now duplicates.
-- [ ] 4.2 Library API reference via `mkdocstrings[python]` for `cirrus.lib` (CirrusPayload,
+      *New `cli/reference.md` renders the full tree (root, manage×20, payload×3, version).
+      `cli/04_commands.md` rewritten as "Common CLI workflows" — scenario examples only;
+      per-command listings deleted. The old bulk-rerun example piped NDJSON into a single
+      `process` invocation (which enqueues one payload per call); replaced with a
+      line-by-line loop. CI docs jobs and local preview need `--extra cli` (backoff/click
+      are behind the `cli` extra).*
+- [x] 4.2 Library API reference via `mkdocstrings[python]` for `cirrus.lib` (CirrusPayload,
       StateDB, PayloadBucket, events, errors/exceptions) and
       `cirrus.management.deployment`. Docstring gaps become entries in `DOCSTRING_GAPS.md` —
       no code edits in this branch beyond 0.2.
-- [ ] 4.3 Cirrus API endpoints: enumerate from `src/cirrus/lambda_functions/api.py`; document
+      *Six pages under Reference → Library API. `show_if_no_docstring: true` renders
+      undocumented public symbols signature-only. Deviation: griffe's docstring-parser
+      warnings (malformed existing docstrings) would fail `--strict`, so
+      `docstring_options.warnings: false` is set in mkdocs.yml; `DOCSTRING_GAPS.md` records
+      every missing/malformed docstring and says to remove that option in the follow-up
+      code PR.*
+- [x] 4.3 Cirrus API endpoints: enumerate from `src/cirrus/lambda_functions/api.py`; document
       request/response shapes.
-- [ ] 5.1 Feeder guide with at least one complete worked example (SNS→SQS subscription
+      *New `cirrus/78_api_endpoints.md`: 5 routes, path handling, query params, response
+      shapes, error behavior, exposure per `core/api.yaml` (GET-only REST API, no auth,
+      `dev` stage). Review corrections: /stats is enabled in a default main-stack deploy;
+      items responses omit the `nextkey` token (handler drops it); sort params are
+      items-only. Three possibly-unintended api.py behaviors parked in OPEN_QUESTIONS.md.
+      Side fix: `functions/api.md` spaced `10 d` example → `10d`.*
+- [x] 5.1 Feeder guide with at least one complete worked example (SNS→SQS subscription
       pattern and a minimal Python feeder publishing a valid payload).
-- [ ] 5.2 End-to-end example: deploy via quickstart → submit payload → track state → inspect
+      *`components/feeders/index.md` rewritten from process-lambda/CloudFormation source.
+      No SNS subscription to the process queue exists in-repo, so the SNS→SQS snippet is
+      labeled illustrative; direct `sqs:SendMessage` documented as the template-backed
+      path. Corrects the old page's nonexistent "process topic" claim.*
+- [x] 5.2 End-to-end example: deploy via quickstart → submit payload → track state → inspect
       output. Plain doc page unless a notebook is clearly more maintainable.
-- [ ] 5.3 Callbacks doc if 0.3 found implemented functionality.
+      *Plain page `cirrus/17_end_to_end.md`, nav under Getting Started after Quickstart
+      (page was not in the locked IA; nav deviation noted). All flags verified against the
+      Click source. Documents that `process` does no client-side validation (only
+      `run-workflow` does) and `get-state`'s 60 s backoff.*
+- [x] 5.3 Callbacks doc if 0.3 found implemented functionality.
       *Moot per 0.3: no callback support found in code — nothing to document unless
-      that changes.*
+      that changes. Checked off as N/A, 2026-08-07.*
+**Session 3 result (2026-08-07): complete except 5.4 (maintainer decision).** Generated
+CLI and library API references build clean; endpoints, feeder, and end-to-end pages
+authored from source. Wrap-up verification: strict build clean; no CLIrrus; grep hits for
+COMPLETED/serverless reviewed-intentional; every state enumeration includes CLAIMED; no
+empty section headers; no orphaned pages (nav↔disk 1:1); site-wide internal link + anchor
+check over the built HTML found zero dead links (404.html's root-absolute URLs are
+deploy-time-only, expected). Code examples validated against source this session include
+run-workflow exit codes (deployment.py:326-332), the feeder SQS/SNS extraction path
+(utils.py:219-236), and /stats gating (main.yaml EnableWorkflowMetrics wiring). Addendum
+outside task scope: `95_tips_and_tricks.md` still carried Serverless-era `cirrus.yml`
+config that evaded the checklist grep (the literal word never appears) — rewritten in
+CloudFormation terms against core/functions.yaml.
+
+## Remaining work (intentionally deferred)
+
+- **Docstring follow-up code PR** (from 4.2): fix everything in `docs/DOCSTRING_GAPS.md`,
+  then remove `docstring_options.warnings: false` from mkdocs.yml so docstring
+  regressions fail the docs build.
+- **Task 5.4** below: 1.x visibility in the version selector — maintainer decision due by
+  the first release deploy.
+- **OPEN_QUESTIONS.md**, all needing maintainer decisions: restored-or-dropped AWS quota
+  numbers (task 2.2); optional WAFv2/FilmDrop note; three possibly-unintended
+  `api.py` behaviors documented as-written (urljoin(None), literal `items` route
+  shadowing, dropped `nextkey` pagination token).
+- **Full audit of `components/workflows/batch.md`** (deferred in 3.4 — only targeted
+  fixes applied).
+- **`cli/00_intro.md` register**: content is accurate but conversational
+  ("And that's it!"); never rewritten in any session. Candidate for a light prose pass.
+
 - [ ] 5.4 Decide 1.x visibility in the version selector (maintainer decision,
       2026-08-07): the dropdown lists only mike-managed versions from `versions.json`;
       old Sphinx-built 1.x dirs keep their URLs but won't appear in it. Options:
