@@ -35,14 +35,14 @@ installed via pip.
 A few simple steps are all it takes to set up the Cirrus CLI for use.
 
 1. Install
-2. Authenticatie
+2. Authenticate
 3. Run commands
 
 ## Cirrus CLI Quick Start
 
 If you understand the broader background and structure of Cirrus, cirrus
 deployments and the cirrus CLI tool and you want to jump right into using the
-CLI tool here is what an example workflow might look like. These are one way of accomplishing these steps, personal and organizatonal requirements may differ.
+CLI tool here is what an example workflow might look like. These are one way of accomplishing these steps, personal and organizational requirements may differ.
 
 1. Install requirements
 

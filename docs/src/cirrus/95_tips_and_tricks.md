@@ -2,34 +2,45 @@
 
 ## Processing Queue Priority
 
-By default, there is only one `process` queue. This can cause difficulty when doing
-back-processing or failure re-run, as thousands of older, lower-priority payloads
-can pile up in front of newly-generated, higher-priority payloads. A solution to this
-is to create an additional "bulk" queue and put all of the lower-priority payloads into it.
+By default, there is only one `process` queue. This can cause difficulty when
+doing back-processing or failure re-runs, as thousands of older,
+lower-priority payloads can pile up in front of newly-generated,
+higher-priority payloads. A solution is to create an additional "bulk" queue
+and put the lower-priority payloads into it.
 
-In the CloudFormation resources file, define a new queue named `ProcessBulkQueue` and
-associated DLQ with the same settings as the default `ProcessQueue`.
+Alongside the existing `ProcessQueue` and `ProcessDeadLetterQueue` resources
+(`cloudformation/core/base.yaml`), define a `ProcessBulkQueue` and associated
+dead-letter queue with the same settings. Then give the process Lambda a
+second event source mapping, using each mapping's
+`ScalingConfig.MaximumConcurrency` to divide the Lambda's concurrency between
+the queues — the in-repo mapping is `ProcessLambdaEventSourceMapping` in
+`cloudformation/core/functions.yaml`:
 
-Create an environment variable in cirrus.yml to reference this queue:
+```yaml
+# Illustrative — extends the in-repo templates with a second queue.
+ProcessLambdaEventSourceMapping:
+  Type: AWS::Lambda::EventSourceMapping
+  Properties:
+    EventSourceArn: !Ref ProcessQueueArn
+    FunctionName: !Ref ProcessLambda
+    BatchSize: 10
+    ScalingConfig:
+      MaximumConcurrency: 12
 
-    CIRRUS_PROCESS_QUEUE_URL: !Ref ProcessQueue
-    CIRRUS_PROCESS_BULK_QUEUE_URL: !Ref ProcessBulkQueue
+ProcessLambdaBulkEventSourceMapping:
+  Type: AWS::Lambda::EventSourceMapping
+  Properties:
+    EventSourceArn: !GetAtt ProcessBulkQueue.Arn
+    FunctionName: !Ref ProcessLambda
+    BatchSize: 10
+    ScalingConfig:
+      MaximumConcurrency: 4
+```
 
-Modify the `process` lambda definition to trigger on either of these queues with
-`maximumConcurrency` set:
-
-    lambda:
-    memorySize: 128
-    timeout: 30
-    reservedConcurrency: 16
-    handler: lambda_function.lambda_handler
-    events:
-       - sqs:
-          arn: !GetAtt ProcessQueue.Arn
-          maximumConcurrency: 4
-       - sqs:
-          arn: !GetAtt ProcessBulkQueue.Arn
-          maximumConcurrency: 12
-
-To use this "bulk" queue, replace uses of CIRRUS_PROCESS_QUEUE_URL with
-CIRRUS_PROCESS_BULK_QUEUE_URL.
+No Cirrus code reads a bulk-queue environment variable —
+`CIRRUS_PROCESS_QUEUE_URL` remains the default queue used by workflow
+chaining and `cirrus manage ... process`. Routing to the bulk queue is the
+producer's choice: point bulk [feeders](../components/feeders/index.md) (or
+bulk rerun scripts) at the `ProcessBulkQueue` URL instead of the default
+process queue URL. The process Lambda handles messages from either queue
+identically.
