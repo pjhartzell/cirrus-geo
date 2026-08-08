@@ -20,4 +20,4 @@ preference you can login with
 aws sso login --profile your-named-profile
 ```
 
-One you have successfully SSO'd setup will be complete for the Cirrus CLI
+Once you have successfully SSO'd setup will be complete for the Cirrus CLI

@@ -43,7 +43,7 @@ fail them all or retry them all together.
 
 Enter the step function `parallel` block. Step functions provide this control
 primitive to allow users to define one or more branches in a workflow that can
-execute in parallel. Interestly for us, `parallel` supports both `Catch` and
+execute in parallel. Interestingly for us, `parallel` supports both `Catch` and
 `Retry` policies for error handling, which provides us with the control we
 need for Batch.
 
