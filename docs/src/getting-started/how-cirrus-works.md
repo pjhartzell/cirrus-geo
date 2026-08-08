@@ -1,0 +1,147 @@
+# How Cirrus works
+
+Cirrus is a [STAC](https://stacspec.org/)-based geospatial processing pipeline
+platform built on serverless AWS infrastructure. As input, Cirrus takes a
+[Cirrus Payload](../reference/payload-schema.md) — a GeoJSON-like
+FeatureCollection of STAC items plus a `process` block naming a workflow —
+and runs it through that workflow to produce one or more output STAC items.
+Outputs are stored in S3 and published to an SNS topic, so a workflow's
+results can trigger indexing into a STAC API (such as
+[stac-server](https://github.com/stac-utils/stac-server)) or feed further
+processing.
+
+The `cirrus` Python package (installed as the `cirrus-geo` distribution)
+provides both the [Cirrus CLI](../cli/using-the-cli.md) for deploying and
+operating a Cirrus instance, and `cirrus.lib`, the library used by the
+framework's own Lambda functions and available to task/feeder authors for
+common needs like payload handling and state queries.
+
+## Components
+
+Cirrus pipelines are built from four kinds of pieces:
+
+- **[Feeders](../building-pipelines/feeders.md)** put a Cirrus Payload on the
+  process queue, triggering a workflow execution. A feeder can be anything
+  that can call `sqs:SendMessage` on the process queue or publish to an SNS
+  topic subscribed to it — an S3 event notification, a scheduled search
+  against an external API, a manual submission. Cirrus does not ship
+  feeders: there is no feeder scaffolding, base class, or CloudFormation
+  resource in this repository. Everything upstream of the process queue is
+  left to the deployment.
+- **[Tasks](../building-pipelines/tasks.md)** are the unit of work inside a
+  workflow. A task takes a Cirrus Payload as input and returns a Cirrus
+  Payload as output, doing the actual processing in between — for example,
+  transforming data to data, data to metadata, or metadata to metadata. Tasks
+  run on Lambda or AWS Batch and are written against the `stac-task`
+  library; task code lives outside this repository, in each deployment's own
+  task images.
+- **[Workflows](../building-pipelines/workflows.md)** are [AWS Step
+  Functions](https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html)
+  state machines that compose tasks into a pipeline. A workflow is deployed
+  as its own CloudFormation stack; the `process` Lambda function dispatches a
+  payload to a workflow by name, matching a state machine named
+  `${ResourcePrefix}-<workflow_name>`. Most workflows run one or more tasks,
+  but a workflow can have none — the in-repo `minimal` workflow used in the
+  [Quickstart](quickstart.md) is a single `Choice` state with no tasks at
+  all.
+- **[Functions](../reference/lambda-functions.md)** are the five Lambda
+  functions built into Cirrus itself (`process`, `update-state`, `pre-batch`,
+  `post-batch`, `api`). They move payloads into and out of workflows, track
+  state, and expose deployment data over HTTP, and are created by the
+  CloudFormation core stack rather than authored per deployment.
+
+This is the framework/user-code boundary: Cirrus provides the process/
+update-state machinery, the state database, the payload bucket, and the
+CloudFormation for deploying all of it. Users provide the feeders that feed
+it, the task code that does the processing, and the workflow definitions that
+wire tasks together.
+
+## Architecture
+
+![Cirrus architecture overview](../images/arch-overview.png)
+
+A feeder puts a payload on the process **SQS queue**, either directly or
+through an SNS topic subscribed to it. The **`process`** Lambda function
+consumes the queue, creates or updates the payload's
+[state database](../reference/state-database.md) record, and starts a Step
+Functions execution of the workflow named in the payload's process
+definition.
+
+The workflow's tasks run, reading and returning Cirrus Payloads, uploading
+any generated assets to the data bucket. When the Step Functions execution
+reaches a terminal status, an EventBridge rule (matching on the
+`${ResourcePrefix}-*` state machine ARN prefix) invokes the **`update-state`**
+Lambda function. `update-state` records the outcome in the state database
+(`SUCCEEDED`, `FAILED`, `INVALID`, or `ABORTED`), uploads the output payload
+to the payload bucket on success, and:
+
+- publishes each output item to the **publish SNS topic**, for downstream
+  subscribers such as a STAC API ingest process
+- enqueues any chained payloads back onto the process queue, continuing a
+  [workflow chain](../building-pipelines/chaining-workflows.md)
+
+Every state transition is also announced on a **workflow event** channel —
+CloudWatch Logs metric filters by default, or optionally the deprecated
+Timestream-backed event database shown as "State Transition Event DB" in the
+diagram above — which the [`api`](../reference/lambda-functions.md#api)
+function and [monitoring](../operating/monitoring.md) tooling read from.
+
+A workflow itself is a sequence of tasks chained together in a Step Functions
+state machine:
+
+![Example workflow](../images/workflow-example.png)
+
+Each task reads the Cirrus Payload produced by the previous step, does its
+work, uploads any generated assets to the data bucket, and returns an updated
+payload for the next task. `pre-batch` and `post-batch` are not tasks
+themselves — they are framework Lambda functions that run immediately before
+and after a Batch task in the state machine, working around the fact that a
+Batch job submission cannot carry a large JSON payload directly. If any task
+fails, the workflow's `Fail` state routes the execution to a failed terminal
+status; if every task completes, the execution succeeds.
+
+## Who uses this
+
+Cirrus originated as, and continues to be used as, the processing pipeline
+behind [Earth Search](https://www.element84.com/earth-search/), Element 84's
+public STAC catalog of open Earth observation data.
+
+## Glossary
+
+**execution**
+: A single run of a workflow against one payload — one Step Functions state
+machine execution.
+
+**feeder**
+: Anything that builds a Cirrus Payload and puts it on the process queue.
+Not part of the Cirrus framework; see [Feeders](../building-pipelines/feeders.md).
+
+**payload**
+: The JSON document — STAC items plus a process definition — used as input
+to (and returned as output from) a workflow execution. See the
+[Cirrus Payload schema](../reference/payload-schema.md).
+
+**payload bucket**
+: The S3 bucket where Cirrus stores execution input/output payloads and
+other payload objects too large to pass inline. See
+[Payload bucket](../reference/payload-bucket.md).
+
+**publish**
+: Uploading a workflow's output STAC items and assets to S3 and publishing
+the items to the Cirrus publish SNS topic, done by the `update-state`
+function on a successful execution.
+
+**state database**
+: The DynamoDB table that tracks the state of every payload a Cirrus
+deployment has processed — also called the StateDB. See
+[State database](../reference/state-database.md).
+
+**task**
+: A single unit of processing within a workflow, run on Lambda or Batch,
+taking a Cirrus Payload as input and returning one as output. See
+[Tasks](../building-pipelines/tasks.md).
+
+**workflow**
+: An AWS Step Functions state machine that processes a payload. Most
+workflows run one or more tasks, but a workflow can have none — the
+`minimal` workflow has zero tasks. See [Workflows](../building-pipelines/workflows.md).

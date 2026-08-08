@@ -23,13 +23,13 @@ external processes, such as indexing into a STAC API.
 
     [:octicons-arrow-right-24: Quickstart](getting-started/quickstart.md)
 
-- :material-sitemap: **Architecture**
+- :material-sitemap: **How Cirrus works**
 
     ---
 
     The AWS pieces of a Cirrus deployment and how they fit together.
 
-    [:octicons-arrow-right-24: Cirrus architecture](getting-started/architecture.md)
+    [:octicons-arrow-right-24: How Cirrus works](getting-started/how-cirrus-works.md)
 
 - :material-code-json: **Payloads**
 

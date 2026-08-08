@@ -161,7 +161,7 @@ failure:
 The `api` Lambda function serves a read-only HTTP API over the state
 database and workflow event metrics. It supports uses like monitoring
 dashboards that need aggregate event statistics, and sits outside the payload
-flow shown in the [architecture diagram](../getting-started/architecture.md) — unlike
+flow shown in the [architecture diagram](../getting-started/how-cirrus-works.md#architecture) — unlike
 the other functions, it never modifies state.
 
 See the [Cirrus API endpoints reference](http-api.md)

@@ -358,6 +358,18 @@ Consolidated from OPEN_QUESTIONS.md and DOCS_PLAN.md so both files can be retire
 4. **Three possibly-unintended `api.py` behaviors** documented as-written
    (`urljoin(None)` on missing domainName, literal `items` route shadowing, dropped
    `nextkey` token): fix in code (docs follow-up required) or leave documented.
+5. **Scaling claims dropped from the concepts page** (old
+   `docs/src/getting-started/intro.md:6-9,52-66`, pre-3.1 git history): "tens to
+   millions of items" and the horizontal/vertical scaling section could not be
+   verified against code — the only concrete mechanisms found are SQS buffering and
+   `ReservedConcurrentExecutions: 16` on the process Lambda
+   (`cloudformation/core/functions.yaml:403`). Restore a toned-down, verified
+   version in How Cirrus works, or leave out.
+6. **STAC-in/STAC-out framing dropped** (old
+   `docs/src/getting-started/intro.md:18-29`, pre-3.1 git history): the payload
+   schema requires STAC-like items in, but nothing enforces STAC out; the
+   "highly-interoperable, metadata-first" language was not traceable to a code
+   constraint. Restore reworded if the framing matters, or leave out.
 
 ## Disposition of the planning documents
 
@@ -468,8 +480,13 @@ Mechanical only: moves, merges, deletions, nav, links. Merged content moves
 
 One page per task, code-verified per its brief above.
 
-- [ ] 3.1 How Cirrus works (merge intro + architecture; delete personas; canonical
-      taxonomy; framework-vs-user-code boundary).
+- [x] 3.1 How Cirrus works (merge intro + architecture; delete personas; canonical
+      taxonomy; framework-vs-user-code boundary). *Deviations: scaling claims and
+      STAC-in/STAC-out framing dropped as unverifiable — parked as decisions 5–6.
+      Added verified content not in either old page: workflow dispatch mechanism
+      (`${ResourcePrefix}-<name>`, EventBridge prefix match) and a one-clause note
+      on the deprecated Timestream event DB (still a box in the architecture
+      diagram). Earth Search trivia reduced to one "Who uses this" sentence.*
 - [ ] 3.2 Quickstart: collapse the duplicated LocalStack narrative; add time/cost
       expectations; exit codes become a link.
 - [ ] 3.3 Follow a payload through: slim to narrative; fold into Quickstart instead

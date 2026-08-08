@@ -2,7 +2,7 @@
 
 The state database (StateDB) is a DynamoDB table that tracks the state of every
 payload a Cirrus deployment has processed. It is a core piece of the
-[Cirrus architecture](../getting-started/architecture.md), created by the CloudFormation core stack,
+[Cirrus architecture](../getting-started/how-cirrus-works.md#architecture), created by the CloudFormation core stack,
 that prevents duplicate workflow executions, records processing errors, and
 lets [monitoring](../operating/monitoring.md) and CLI tooling query execution history.
 

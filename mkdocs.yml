@@ -83,8 +83,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Getting started:
-      - What is Cirrus: getting-started/intro.md
-      - Concepts & architecture: getting-started/architecture.md
+      - How Cirrus works: getting-started/how-cirrus-works.md
       - Quickstart: getting-started/quickstart.md
       - Follow a payload through Cirrus: getting-started/follow-a-payload.md
   - Building pipelines:
