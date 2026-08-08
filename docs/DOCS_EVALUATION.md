@@ -497,8 +497,12 @@ One page per task, code-verified per its brief above.
       corrections needed. Disabled pymarkdown md031/md046 in pyproject.toml:
       md031's fixer crashes and md046 false-positives on pymdownx tabbed
       content.*
-- [ ] 3.3 Follow a payload through: slim to narrative; fold into Quickstart instead
-      if it lands under ~80 lines.
+- [x] 3.3 Follow a payload through: slim to narrative; fold into Quickstart instead
+      if it lands under ~80 lines. *Landed at 106 lines — kept as its own page.
+      Submit-a-payload walkthrough removed (quickstart step 6 covers it); all
+      per-command flag prose replaced with cookbook/reference links; kept the
+      unique material (validation contrast, `get-state` 60 s backoff, worked
+      state-record JSON — verified against statedb.py and deployment.py).*
 - [ ] 3.4 Payload schema: canonicalize the `replace`/rerun rule; add the
       no-underscores-in-workflow-names constraint beside the ID format.
 - [ ] 3.5 Workflows: canonical homes for naming, ErrorPath/CausePath, retry pattern,
