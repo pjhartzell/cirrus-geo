@@ -30,7 +30,7 @@ as needed for a given workflow.
 
 ### Cirrus Components
 
-Cirrus is organized into reusable blocks called [Components](../components/index.md). There are four types of Components:
+Cirrus is organized into reusable blocks called Components. There are four types of Components:
 
 - [Feeders](../components/feeders/index.md) accept arbitrary input, and
   output a Cirrus Payload which is enqueued for processing. These can
@@ -128,7 +128,6 @@ necessary.
 
 *Those writing code to be run as Cirrus tasks within workflows.*
 
-- [Components](../components/index.md)
 - [Tasks](../components/tasks/index.md)
 - [Cirrus Payload format](30_payload.md)
 - `cirrus-lib` documentation

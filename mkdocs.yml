@@ -94,7 +94,6 @@ nav:
       - Upgrading to 2.0: cirrus/85_upgrading.md
   - Reference:
       - Components:
-          - Overview: components/index.md
           - Feeders: components/feeders/index.md
           - Lambda functions: components/functions/index.md
           - Tasks: components/tasks/index.md
