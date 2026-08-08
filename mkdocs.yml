@@ -120,7 +120,7 @@ nav:
           - PayloadBucket: api/payload_bucket.md
           - Events: api/events.md
           - Errors and exceptions: api/errors.md
-          - Deployment: api/deployment.md
+          - Deployment class: api/deployment.md
       - State database: cirrus/70_statedb.md
       - Payload bucket: cirrus/75_payload_bucket.md
       - Cirrus API endpoints: cirrus/78_api_endpoints.md
