@@ -19,9 +19,16 @@ state of `PROCESSING` will result in the payload being skipped. (Without the
 `replace` parameter, only payloads in `FAILED`, `ABORTED`, or `CLAIMED` states,
 or payloads with no state database record, are run.)
 
-like:
+The output is NDJSON — one payload per line — and `process` enqueues one
+payload per invocation, so submit line by line:
 
-    cirrus manage deployment-name get-input-payloads --collections-workflow "sar-test_workflow" --state "FAILED" --rerun | xargs -0 -L 1 echo | cirrus manage deployment-name process
+``` bash
+cirrus manage deployment-name get-input-payloads \
+    --collections-workflow "sar-test_workflow" --state FAILED --rerun |
+while IFS= read -r payload; do
+    printf '%s' "$payload" | cirrus manage deployment-name process
+done
+```
 
 Under the hood the Cirrus CLI searches the AWS DynamoDB state database for records
 matching the query parameters. Using these state database records, the
