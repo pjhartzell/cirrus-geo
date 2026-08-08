@@ -60,6 +60,8 @@ Cirrus Publish SNS topic
 **task**: A single function operating on a Cirrus Payload running on Lambda or
 Batch
 
-**workflow**: An AWS Step Function consisting of 1 or more tasks
+**workflow**: An AWS Step Functions state machine that processes a payload.
+Most workflows run one or more tasks, but a workflow can have none (the
+`minimal` workflow used in the quickstart has zero tasks).
 
 **feeder**: Anything that generates a [Cirrus Process Payload](30_payload.md) and queues it for processing.
