@@ -1,7 +1,7 @@
 # Tasks
 
 Tasks in Cirrus implement a unit of processing, to be composed together into a
-[Workflow](../workflows/index.md). Tasks are expected to support both input
+[Workflow](../workflows/definitions.md). Tasks are expected to support both input
 and output formatted as a [Cirrus Payload](../../cirrus/30_payload.md). As
 part of it's processing, a task can make any requisite modifications to its
 input payload and/or derive any output assets, pushing them to the canonical

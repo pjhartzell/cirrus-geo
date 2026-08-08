@@ -43,7 +43,7 @@ Cirrus is organized into reusable blocks called [Components](../components/index
   where specific processing, for example, transforming data to data (e.g.
   JPEG200 to COG), data to metadata (e.g., COG to STAC), or metadata to
   metadata (e.g., MTL to STAC).
-- [Workflows](../components/workflows/index.md) are a composition of one or
+- [Workflows](../components/workflows/definitions.md) are a composition of one or
   more Tasks implementing a processing pipeline that coordinate transforming a
   given input into one or more output STAC items
 - [Functions](../components/functions/index.md) provide internal services that

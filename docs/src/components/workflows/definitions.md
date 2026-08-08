@@ -1,11 +1,32 @@
-# Writing workflow definitions
+# Workflows
+
+A workflow models the transformation of an input payload into one or more
+output items via processing through one or more tasks. Workflows are
+implemented as [AWS Step Functions](https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html)
+state machines, written in the [AWS States Language](https://docs.aws.amazon.com/step-functions/latest/dg/concepts-amazon-states-language.html).
+
+A workflow definition is a CloudFormation template that deploys a
+`AWS::StepFunctions::StateMachine` resource, along with the IAM role the
+state machine assumes to invoke its tasks. See
+[Writing workflow definitions](#writing-workflow-definitions) for the required structure and
+naming, and the in-repo `minimal` workflow
+(`cloudformation/workflows/minimal/state_machine.yaml`) for a working
+example.
+
+The `process` Lambda function dispatches each incoming payload to the Step
+Functions execution named in the payload's `process` definition. When an
+execution reaches a terminal status, the `update-state` Lambda function
+records the result in the [state database](../../cirrus/70_statedb.md) and
+handles [chaining](chaining.md) to any subsequent workflow.
+
+## Writing workflow definitions
 
 Cirrus workflows are implemented via [AWS Step Functions](https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html)
 and written in the [AWS States Language](https://docs.aws.amazon.com/step-functions/latest/dg/concepts-amazon-states-language.html).
 A workflow is deployed as a CloudFormation template defining an
 `AWS::StepFunctions::StateMachine` resource and the IAM role it assumes.
 
-## Minimal example
+### Minimal example
 
 The in-repo `minimal` workflow (`cloudformation/workflows/minimal/state_machine.yaml`)
 is the simplest complete example: a `Choice` state that succeeds or fails
@@ -73,7 +94,7 @@ machinery, which is why its `Fail` state can use static `Error`/`Cause`
 strings. A workflow with real tasks should capture the actual error from a
 failed task instead; see [Capturing errors](#capturing-errors) below.
 
-## A workflow with a Lambda task
+### A workflow with a Lambda task
 
 A workflow that invokes a Lambda function uses the
 `arn:aws:states:::lambda:invoke` resource, with the function ARN passed in
@@ -128,7 +149,7 @@ logs (see [Lambda logs](../tasks/index.md#lambda-logs)).
 The `Payload.$: "$"` parameter passes the full state input (the Cirrus
 Payload) to the Lambda function unmodified.
 
-### Workflow naming
+#### Workflow naming
 
 A workflow's state machine is named `${ResourcePrefix}-<workflow_name>`,
 where `ResourcePrefix` is the CloudFormation stack's resource prefix
@@ -147,7 +168,7 @@ state machine's execution.
 For a workflow to be reachable by `process`, its state machine must be named
 following this `${ResourcePrefix}-<workflow_name>` convention.
 
-## Basic state machine structure
+### Basic state machine structure
 
 Workflows share some common structure within the state machine definition:
 
@@ -162,7 +183,7 @@ Review the built-in `minimal` workflow for the smallest working example, and
 see [Batch tasks in workflows](batch.md) for the additional structure Batch
 tasks require.
 
-## Triggering workflows off one another
+### Triggering workflows off one another
 
 It is common to model a processing pipeline as a series of connected
 workflows. Cirrus supports this via:
@@ -175,7 +196,7 @@ workflows. Cirrus supports this via:
   output items and trigger further processing outside of a pre-defined
   chain.
 
-## Error handling
+### Error handling
 
 Some errors occur before a task even executes — for example, a
 `Lambda.TooManyRequestsException` when the Lambda concurrency quota is
@@ -203,7 +224,7 @@ retrying in lockstep and re-creating the same load spike. `IntervalSeconds`
 sets the first delay; each subsequent retry multiplies the prior interval by
 `BackoffRate`, up to `MaxAttempts` attempts and capped at `MaxDelaySeconds`.
 
-### Capturing errors
+#### Capturing errors
 
 When a Step Functions task fails, the error information needs to reach the
 `update-state` Lambda function so it can be recorded in the state database.
@@ -242,19 +263,19 @@ definition is missing these fields.
 
 See the AWS documentation for the [Fail workflow state](https://docs.aws.amazon.com/step-functions/latest/dg/state-fail.html).
 
-## Workflow best practices
+### Workflow best practices
 
 Cirrus imposes few constraints on workflow structure, favoring flexibility
 over guardrails. The following guidelines are not enforced, but help keep a
 Cirrus deployment easy to manage.
 
-### AWS Step Functions best practices
+#### AWS Step Functions best practices
 
 Review AWS's own [best practices for Step Functions](https://docs.aws.amazon.com/step-functions/latest/dg/sfn-best-practices.html)
 for general considerations, including handling Lambda concurrency quotas
 with a `Retry` block as shown above.
 
-### Prefer one input item per workflow
+#### Prefer one input item per workflow
 
 State tracking and execution management are easier to follow when a
 workflow processes a single input item. Where multiple inputs are
@@ -263,21 +284,21 @@ the full set of inputs is one way to keep a single-item workflow interface
 while still processing many items. The synthetic item should resolve the
 same set of inputs deterministically.
 
-### Keep workflows short and focused
+#### Keep workflows short and focused
 
 A workflow should model a single level of processing. If a workflow needs to
 persist intermediate outputs partway through, that's a sign it should be
 split into multiple workflows chained together, with a final workflow
 producing the actual outputs.
 
-### Workflows should not produce different outputs from the same set of inputs
+#### Workflows should not produce different outputs from the same set of inputs
 
 See the [Cirrus Payload docs](../../cirrus/30_payload.md) for how Cirrus's
 idempotency check works: Cirrus uses the set of input items as a proxy for a
 workflow's outputs. Don't rely on workflow or task parameters to change the
 set of outputs, since those settings are not part of the idempotency check.
 
-### Make workflows specific, not flexible
+#### Make workflows specific, not flexible
 
 Using process-definition parameters to control dynamic behavior within a
 workflow is tempting, but generally best avoided:
@@ -292,7 +313,7 @@ workflow is tempting, but generally best avoided:
 Restrict dynamic parameters to those that don't affect the type or contents
 of the output items.
 
-### Don't use workflows for side effects
+#### Don't use workflows for side effects
 
 Workflows are functional processing units that transform inputs into a
 fixed set of outputs. Using a workflow purely to trigger a side effect for

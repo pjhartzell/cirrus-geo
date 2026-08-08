@@ -85,8 +85,7 @@ nav:
   - Guides:
       - Payloads: cirrus/30_payload.md
       - Workflows:
-          - Overview: components/workflows/index.md
-          - Workflow definitions: components/workflows/definitions.md
+          - Workflows: components/workflows/definitions.md
           - Chaining workflows: components/workflows/chaining.md
           - Batch in workflows: components/workflows/batch.md
       - Batch tasks: components/tasks/batch.md
