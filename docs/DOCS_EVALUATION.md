@@ -522,7 +522,12 @@ One page per task, code-verified per its brief above.
       to FAILED, and `states:StartExecution` scoped to `${ResourcePrefix}-*`.
       Error/cause read off the EventBridge event envelope, not "the Fail state"
       as the old prose had it.*
-- [ ] 3.6 Feeders: trim the payload-validation restatement to a link.
+- [x] 3.6 Feeders: trim the payload-validation restatement to a link. *Two
+      restatements trimmed (the "Payload validation" subsection and the
+      ID-derivation recap after the worked example), both replaced with links to
+      the payload schema page (`#id-format`). Adjacent claims re-verified
+      against utils.py, payload_manager.py, and cloudformation/core — no fixes
+      needed.*
 - [ ] 3.7 Batch workflow structure: full deferred audit; single retry-JSON instance
       linking to Workflows; promote the Earth Search anecdotes under a named heading.
 - [ ] 3.8 Batch infrastructure: restructure (declare-first, hazards into a bounded

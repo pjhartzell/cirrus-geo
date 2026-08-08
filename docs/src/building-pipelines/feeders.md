@@ -35,18 +35,10 @@ bucket's invalid-payload prefix and does not start a workflow
 
 ### Payload validation
 
-`CirrusPayload.validate` (`cirrus.lib.cirrus_payload.CirrusPayload`) requires:
-
-- A `process` field that is a non-empty array of process definitions.
-- A `workflow` field in the first process definition.
-- An `id` field matching `<collections>/workflow-<workflow>/<itemids>`.
-
-If `id` is omitted, the process Lambda generates one (`CirrusPayload.set_id`):
-`collections` comes from the process definition's `collections` field if
-present, otherwise from the sorted, `/`-joined set of `collection` values
-across `features`; `itemids` is the sorted, `/`-joined set of item `id`
-values from `features`. A feeder that omits `features` entirely cannot rely
-on ID generation and must set `id` itself.
+A feeder's payload must satisfy `CirrusPayload.validate` — see [Cirrus
+Payload](../reference/payload-schema.md) for the required fields and the
+`id` format, and [ID format](../reference/payload-schema.md#id-format) for
+how the process Lambda derives `id` when a feeder omits it.
 
 ## Getting a payload onto the process queue
 
@@ -173,13 +165,10 @@ def lambda_handler(event, context):
 `CIRRUS_PROCESS_QUEUE_URL` is the URL of the process queue — the same value
 exposed as the `ProcessQueueUrl` stack output in
 `cloudformation/core/base.yaml`. The `id` is set explicitly here rather than
-left for the process Lambda to generate, since the format
-(`<collections>/workflow-<workflow>/<itemids>`) is fixed and simple to
-construct from a single item. For a feeder handling multiple items or
-collections per payload, omit `id` and provide `features` so the process
-Lambda's `CirrusPayload.set_id` generates one, or replicate the same
-sorted-join logic if the queue message needs a deterministic ID before
-sending.
+left for the process Lambda to generate, since it's simple to construct from
+a single item. For a feeder handling multiple items or collections per
+payload, omit `id` and provide `features` so the process Lambda generates
+one instead — see [ID format](../reference/payload-schema.md#id-format).
 
 ## Where feeders run
 
