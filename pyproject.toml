@@ -141,6 +141,9 @@ plugins.md013.line_length = 88
 plugins.md013.heading_line_length = 88
 plugins.md013.code_block_line_length = 100
 plugins.md024.siblings_only = true
+# md031 crashes and md046 false-positives on pymdownx tabbed content (=== "...")
+plugins.md031.enabled = false
+plugins.md046.enabled = false
 extensions.front-matter.enabled = true
 
 [tool.mypy]

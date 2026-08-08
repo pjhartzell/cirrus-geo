@@ -204,7 +204,7 @@ commands themselves.
 
 ## Deleting a deployment
 
-See the quickstart's [stack cleanup](../getting-started/quickstart.md#stack-cleanup-aws)
+See the quickstart's [stack cleanup](../getting-started/quickstart.md#stack-cleanup)
 section for the emptying and delete-order steps (workflow stacks, then the
 main stack, then bootstrap).
 

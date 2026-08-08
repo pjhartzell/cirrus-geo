@@ -487,8 +487,16 @@ One page per task, code-verified per its brief above.
       (`${ResourcePrefix}-<name>`, EventBridge prefix match) and a one-clause note
       on the deprecated Timestream event DB (still a box in the architecture
       diagram). Earth Search trivia reduced to one "Who uses this" sentence.*
-- [ ] 3.2 Quickstart: collapse the duplicated LocalStack narrative; add time/cost
-      expectations; exit codes become a link.
+- [x] 3.2 Quickstart: collapse the duplicated LocalStack narrative; add time/cost
+      expectations; exit codes become a link. *Deviations: enabled
+      `pymdownx.tabbed` + `content.tabs.link` in mkdocs.yml (site-wide extension,
+      needed for the per-step AWS/LocalStack tabs). Time stated as a 10–15 min
+      estimate (derived from step count, not measured); cost stated qualitatively
+      with the NAT-gateway caveat sourced from the Deployment page. All commands
+      re-verified against bin/, cloudformation/, and management/ — no factual
+      corrections needed. Disabled pymarkdown md031/md046 in pyproject.toml:
+      md031's fixer crashes and md046 false-positives on pymdownx tabbed
+      content.*
 - [ ] 3.3 Follow a payload through: slim to narrative; fold into Quickstart instead
       if it lands under ~80 lines.
 - [ ] 3.4 Payload schema: canonicalize the `replace`/rerun rule; add the
