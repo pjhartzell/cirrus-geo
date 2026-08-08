@@ -448,12 +448,15 @@ Mechanical only: moves, merges, deletions, nav, links. Merged content moves
       deleting `components/index.md` required unlinking two references in the intro
       page, including removing the "Components" bullet from the persona reading
       list — content 3.1 deletes anyway.*
-- [ ] 2.5 Redirects for moved paths within the new site version: propose an approach
+- [x] 2.5 Redirects for moved paths within the new site version: propose an approach
       (likely mkdocs-redirects) and get maintainer approval before adding the
-      dependency; otherwise document the decision to skip. *Status: proposal made
-      (mkdocs-redirects with a redirect map covering every moved/merged path;
-      stub-page fallback if the dependency is declined) — awaiting maintainer
-      approval; no dependency added.*
+      dependency; otherwise document the decision to skip. *Decision (2026-08-08):
+      skip — no dependency. Old URLs under previously-deployed mike versions keep
+      working; breakage is limited to `/latest/`–`/stable/` deep links and a few
+      weeks of stale search results, accepted for this audience. Reversible later:
+      the old→new map is reconstructable from git history of this phase. The
+      inbound links we control (README.md, also the PyPI page) are re-pointed in
+      Phase 4.*
 - [x] 2.6 Fix all internal links and anchors; `mkdocs build --strict` clean.
       *Deviation: added `validation.links.anchors: warn` to mkdocs.yml so strict
       builds now fail on broken anchors, not just broken paths. Note for Phase 4:
