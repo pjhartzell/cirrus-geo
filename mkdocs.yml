@@ -99,13 +99,7 @@ nav:
       - Components:
           - Overview: components/index.md
           - Feeders: components/feeders/index.md
-          - Functions:
-              - Overview: components/functions/index.md
-              - api: components/functions/api.md
-              - process: components/functions/process.md
-              - update-state: components/functions/update-state.md
-              - pre-batch: components/functions/pre_batch.md
-              - post-batch: components/functions/post_batch.md
+          - Lambda functions: components/functions/index.md
           - Tasks: components/tasks/index.md
       - CLI:
           - Overview: cli/00_intro.md

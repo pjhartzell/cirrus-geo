@@ -11,7 +11,7 @@ few more things in mind when using to Batch tasks.
 
 Because Batch tasks cannot take the input payload natively like Lambda and
 must redirect through S3, Cirrus provides the built-in
-[`pre-batch`](../functions/pre_batch.md) Lambda function to assist.
+[`pre-batch`](../functions/index.md#pre-batch) Lambda function to assist.
 `pre-batch` takes an input payload, uploads it to S3, and returns a JSON
 object with two keys: `url`, the S3 URL of the uploaded payload, and
 `url_out`, the S3 URL where the Batch task must write its output. It should
@@ -19,7 +19,7 @@ always run immediately preceding a Batch task.
 
 Similarly, Batch does not integrate returned payloads with Step Functions
 nearly as well as Lambda, so Cirrus has a built-in
-[`post-batch`](../functions/post_batch.md) Lambda function for post-batch
+[`post-batch`](../functions/index.md#post-batch) Lambda function for post-batch
 operations. `post-batch` pulls the output payload from S3 (at `url_out`) and
 returns it in the case of a successful Batch execution. In the case of a
 Batch error, `post-batch` will scrape the container logs for an exception or

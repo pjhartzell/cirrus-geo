@@ -1,6 +1,6 @@
 # Cirrus API Endpoints
 
-The [`api`](../components/functions/api.md) Lambda function serves a
+The [`api`](../components/functions/index.md#api) Lambda function serves a
 read-only HTTP API over the [state database](70_statedb.md) and workflow
 event metrics. It is fronted by an Amazon API Gateway REST API, provisioned
 by `cloudformation/core/api.yaml` and wired into the deployment by the

@@ -112,7 +112,7 @@ functions stack are empty strings and both `WorkflowMetricLogger` and
 
 ### Reading events back
 
-The [`api` function](../components/functions/api.md)'s `/stats` endpoint
+The [`api` function](../components/functions/index.md#api)'s `/stats` endpoint
 returns aggregate event counts grouped by state, on daily, hourly, and
 rolling-hour bases. It reads from CloudWatch metrics when
 `WorkflowMetricReader` is enabled, falling back to the Timestream event
@@ -151,11 +151,11 @@ AWS Lambda convention `/aws/lambda/<function-name>`. Function names are
 
 | Function | Log group |
 | --- | --- |
-| [`api`](../components/functions/api.md) | `/aws/lambda/<ResourcePrefix>-api` |
-| [`process`](../components/functions/process.md) | `/aws/lambda/<ResourcePrefix>-process` |
-| [`update-state`](../components/functions/update-state.md) | `/aws/lambda/<ResourcePrefix>-update-state` |
-| [`pre-batch`](../components/functions/pre_batch.md) | `/aws/lambda/<ResourcePrefix>-pre-batch` |
-| [`post-batch`](../components/functions/post_batch.md) | `/aws/lambda/<ResourcePrefix>-post-batch` |
+| [`api`](../components/functions/index.md#api) | `/aws/lambda/<ResourcePrefix>-api` |
+| [`process`](../components/functions/index.md#process) | `/aws/lambda/<ResourcePrefix>-process` |
+| [`update-state`](../components/functions/index.md#update-state) | `/aws/lambda/<ResourcePrefix>-update-state` |
+| [`pre-batch`](../components/functions/index.md#pre-batch) | `/aws/lambda/<ResourcePrefix>-pre-batch` |
+| [`post-batch`](../components/functions/index.md#post-batch) | `/aws/lambda/<ResourcePrefix>-post-batch` |
 
 AWS Batch jobs (run by [Batch tasks](../components/tasks/batch.md), not by
 the `pre-batch`/`post-batch` functions themselves) log to the shared

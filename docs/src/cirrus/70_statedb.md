@@ -14,14 +14,14 @@ needed.
 
 The StateDB is used at several points in the Cirrus pipeline:
 
-- **[`process`](../components/functions/process.md) function** — checks
+- **[`process`](../components/functions/index.md#process) function** — checks
   existing state before starting a workflow execution (to skip duplicates or
   already-succeeded payloads), claims the payload for processing, and
   transitions it to `PROCESSING`.
-- **[`update-state`](../components/functions/update-state.md) function** —
+- **[`update-state`](../components/functions/index.md#update-state) function** —
   records the terminal state (`SUCCEEDED`, `FAILED`, `INVALID`, or `ABORTED`)
   after a Step Functions execution finishes.
-- **[`api`](../components/functions/api.md) function** — queries the StateDB
+- **[`api`](../components/functions/index.md#api) function** — queries the StateDB
   for aggregate execution counts and individual item records.
 - **The Cirrus CLI (`cirrus manage`)** — queries the StateDB directly for
   execution status, and to retrieve input/output payloads.
@@ -119,7 +119,7 @@ current state to be `CLAIMED`.
 
 The other terminal-state setters (`set_succeeded`, `set_failed`,
 `set_invalid`, `set_aborted`) are called by the
-[`update-state`](../components/functions/update-state.md) function once a
+[`update-state`](../components/functions/index.md#update-state) function once a
 Step Functions execution finishes.
 
 ## Querying via the Cirrus CLI

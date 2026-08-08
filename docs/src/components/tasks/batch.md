@@ -149,7 +149,7 @@ in to the executed command.
 
 This is an important note: Batch has a rather low limit on the size of a job
 sent to the SubmitJob API ([30KiB at current](https://docs.aws.amazon.com/batch/latest/userguide/service_limits.html)). To mitigate impacts from this
-limit, run the [`pre-batch`](../functions/pre_batch.md) Lambda function
+limit, run the [`pre-batch`](../functions/index.md#pre-batch) Lambda function
 immediately before any Batch task step to upload the payload to S3. `pre-batch`
 returns two S3 URLs:
 
@@ -179,7 +179,7 @@ classes/methods to help with this common need.
 The Batch task must write the (possibly modified) payload back to S3 at the
 `url_out` location established by `pre-batch`. Both `url` and `url_out` need
 to be passed through the workflow's Batch task step so that
-[`post-batch`](../functions/post_batch.md), which runs immediately after,
+[`post-batch`](../functions/index.md#post-batch), which runs immediately after,
 can find the output location. `post-batch` reads the payload from `url_out`
 and returns it to the state machine; if the Batch job failed, `post-batch`
 instead pulls the error from the job's CloudWatch logs and raises it within
