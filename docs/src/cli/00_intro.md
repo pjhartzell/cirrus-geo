@@ -47,9 +47,7 @@ CLI tool here is what an example workflow might look like. These are one way of 
 1. Install requirements
 
     ``` bash
-    python3.12 -m venv .venv
-    source .venv/bin/activate
-    pip install 'cirrus-geo[cli]>=1.0.0'
+    pipx install 'cirrus-geo[cli]'
     ```
 
 2. Authenticate (if necessary)
