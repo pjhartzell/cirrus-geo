@@ -512,8 +512,16 @@ One page per task, code-verified per its brief above.
       anchor renamed to `#the-replace-field-and-reruns`; no inbound `#` links
       existed. The stale `cirrus.lib.errors.InvalidInput` reference in
       `update_state.py:20-23` is already covered by the coverage-gaps note.*
-- [ ] 3.5 Workflows: canonical homes for naming, ErrorPath/CausePath, retry pattern,
+- [x] 3.5 Workflows: canonical homes for naming, ErrorPath/CausePath, retry pattern,
       payload-size ceiling; "Design guidance" heading over the best-practices items.
+      *Deviations: payload-size ceiling stated as the code-enforced
+      `MAX_PAYLOAD_LENGTH = 120000` bytes (`payload_manager.py:38`), with AWS's
+      248 KiB EventBridge limit cited only as the motivation the code comments
+      give. Added previously-undocumented verified facts: FAILED-vs-INVALID
+      decided by exact error-name match in `update_state.py`, TIMED_OUT mapped
+      to FAILED, and `states:StartExecution` scoped to `${ResourcePrefix}-*`.
+      Error/cause read off the EventBridge event envelope, not "the Fail state"
+      as the old prose had it.*
 - [ ] 3.6 Feeders: trim the payload-validation restatement to a link.
 - [ ] 3.7 Batch workflow structure: full deferred audit; single retry-JSON instance
       linking to Workflows; promote the Earth Search anecdotes under a named heading.
