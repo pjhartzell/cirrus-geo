@@ -8,7 +8,7 @@ console, and CloudWatch Logs.
 
 ## Querying the state database
 
-The [state database](70_statedb.md) (StateDB) is a DynamoDB table that
+The [state database](../reference/state-database.md) (StateDB) is a DynamoDB table that
 records the current state of every payload a deployment has processed. The
 Cirrus CLI queries it directly through the `manage` command group.
 
@@ -45,8 +45,8 @@ All three commands accept the same filter set: `--collections-workflow`
 (required), `--state` (one of `PROCESSING`, `SUCCEEDED`, `FAILED`,
 `INVALID`, `ABORTED`, `CLAIMED`), `--since` (an integer followed by `d`, `h`,
 or `m`, e.g. `7d`, `24h`, `30m`), `--limit`, and `--error-prefix` (filters on
-the stored error message prefix). See the [CLI reference](../cli/04_commands.md)
-for full option details and the [state database reference](70_statedb.md) for
+the stored error message prefix). See the [CLI reference](../cli/common-workflows.md)
+for full option details and the [state database reference](../reference/state-database.md) for
 the record schema and state meanings.
 
 ## Workflow events
@@ -112,7 +112,7 @@ functions stack are empty strings and both `WorkflowMetricLogger` and
 
 ### Reading events back
 
-The [`api` function](../components/functions/index.md#api)'s `/stats` endpoint
+The [`api` function](../reference/lambda-functions.md#api)'s `/stats` endpoint
 returns aggregate event counts grouped by state, on daily, hourly, and
 rolling-hour bases. It reads from CloudWatch metrics when
 `WorkflowMetricReader` is enabled, falling back to the Timestream event
@@ -126,7 +126,7 @@ executions per state machine, and each execution's detail view shows its
 graph, input/output payloads, and event history.
 
 The state database record for a payload (see
-[state database fields](70_statedb.md#fields)) stores the Step Functions
+[state database fields](../reference/state-database.md#fields)) stores the Step Functions
 execution ARNs for every execution attempted for that payload in its
 `executions` field — a payload rerun after a failure accumulates multiple
 entries. Records returned by `query`, `get-input-payloads`, and the `api`
@@ -151,13 +151,13 @@ AWS Lambda convention `/aws/lambda/<function-name>`. Function names are
 
 | Function | Log group |
 | --- | --- |
-| [`api`](../components/functions/index.md#api) | `/aws/lambda/<ResourcePrefix>-api` |
-| [`process`](../components/functions/index.md#process) | `/aws/lambda/<ResourcePrefix>-process` |
-| [`update-state`](../components/functions/index.md#update-state) | `/aws/lambda/<ResourcePrefix>-update-state` |
-| [`pre-batch`](../components/functions/index.md#pre-batch) | `/aws/lambda/<ResourcePrefix>-pre-batch` |
-| [`post-batch`](../components/functions/index.md#post-batch) | `/aws/lambda/<ResourcePrefix>-post-batch` |
+| [`api`](../reference/lambda-functions.md#api) | `/aws/lambda/<ResourcePrefix>-api` |
+| [`process`](../reference/lambda-functions.md#process) | `/aws/lambda/<ResourcePrefix>-process` |
+| [`update-state`](../reference/lambda-functions.md#update-state) | `/aws/lambda/<ResourcePrefix>-update-state` |
+| [`pre-batch`](../reference/lambda-functions.md#pre-batch) | `/aws/lambda/<ResourcePrefix>-pre-batch` |
+| [`post-batch`](../reference/lambda-functions.md#post-batch) | `/aws/lambda/<ResourcePrefix>-post-batch` |
 
-AWS Batch jobs (run by [Batch tasks](../components/tasks/batch.md), not by
+AWS Batch jobs (run by [Batch tasks](../building-pipelines/batch-infrastructure.md), not by
 the `pre-batch`/`post-batch` functions themselves) log to the shared
 `/aws/batch/job` log group, one log stream per job attempt. The `post-batch`
 function reads from this log group directly to extract the error from a
@@ -165,9 +165,9 @@ failed job's last log line.
 
 The Cirrus CLI's `get-lambda-logs` and `get-batch-logs` commands fetch
 CloudWatch logs for a specific invocation or job without using the console.
-See [Lambda logs](../components/tasks/index.md#lambda-logs) for the
+See [Lambda logs](../building-pipelines/tasks.md#lambda-logs) for the
 request-ID filtering pattern that isolates a single invocation's logs, and
-the [CLI reference](../cli/04_commands.md) for full command usage.
+the [CLI reference](../cli/common-workflows.md) for full command usage.
 
 <!-- TODO(phase-3.12): refine — state-eligibility rule by link to payload schema -->
 

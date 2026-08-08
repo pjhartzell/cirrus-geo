@@ -1,6 +1,6 @@
 # Feeders
 
-A feeder is any producer that puts a valid [Cirrus Payload](../../cirrus/30_payload.md)
+A feeder is any producer that puts a valid [Cirrus Payload](../reference/payload-schema.md)
 on the process queue. Cirrus does not ship feeders — there is no feeder
 scaffolding, base class, or CloudFormation resource in this repository.
 Everything upstream of the process queue (discovering new data, deciding
@@ -22,7 +22,7 @@ For each incoming event it:
 3. If the extracted payload is a `{"url": "s3://..."}` reference rather than
    an inline payload, fetches the full payload from S3
    (`cirrus.lib.utils.payload_from_s3`). This is how oversized payloads are
-   handled — see [Oversized Payloads](../../cirrus/75_payload_bucket.md#oversized-payloads).
+   handled — see [Oversized Payloads](../reference/payload-bucket.md#oversized-payloads).
 4. Constructs a `CirrusPayload` from the result, generating an `id` if one
    is missing, then validates it.
 5. Hands valid payloads to `PayloadManagers.process`, which claims each

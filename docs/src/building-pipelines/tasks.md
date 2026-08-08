@@ -1,8 +1,8 @@
 # Tasks
 
 Tasks in Cirrus implement a unit of processing, to be composed together into a
-[Workflow](../workflows/definitions.md). Tasks are expected to support both input
-and output formatted as a [Cirrus Payload](../../cirrus/30_payload.md). As
+[Workflow](workflows.md). Tasks are expected to support both input
+and output formatted as a [Cirrus Payload](../reference/payload-schema.md). As
 part of it's processing, a task can make any requisite modifications to its
 input payload and/or derive any output assets, pushing them to the canonical
 storage location in S3.
@@ -70,12 +70,12 @@ where the `--filter-pattern` value is the Lambda request ID.
 
 When Lambda tasks are invoked in Step Functions using the
 `arn:aws:states:::lambda:invoke` resource pattern (as shown in the
-[workflow definitions](../workflows/definitions.md) documentation), the request
+[workflow definitions](workflows.md) documentation), the request
 ID is exposed in the Step Function execution history metadata. The
 `get-execution-events` management command with the `--with-log-metadata` flag
 retrieves this metadata, and the `get-lambda-logs` command uses the request ID to
 filter CloudWatch logs for a specific Lambda invocation. See the
-[CLI commands](../../cli/04_commands.md) documentation for usage examples.
+[CLI commands](../cli/common-workflows.md) documentation for usage examples.
 
 ### Batch tasks
 
@@ -89,7 +89,7 @@ Batch tasks are inherently just an abstraction around a set of CloudFormation
 resources, minimally just a Batch [job definition](https://docs.aws.amazon.com/batch/latest/userguide/job_definitions.html), but commonly also the job
 queue, compute environment, and any other required resources.
 
-For more information see the [Batch tasks](batch.md) documentation.
+For more information see the [Batch tasks](batch-infrastructure.md) documentation.
 
 ## Lambda vs Batch
 
@@ -219,4 +219,4 @@ into a single definition.
 ## Task parameters
 
 Tasks can take arguments at runtime via process definition parameters. See the
-[Cirrus Payload](../../cirrus/30_payload.md) docs for more information.
+[Cirrus Payload](../reference/payload-schema.md) docs for more information.

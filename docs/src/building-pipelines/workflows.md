@@ -16,8 +16,8 @@ example.
 The `process` Lambda function dispatches each incoming payload to the Step
 Functions execution named in the payload's `process` definition. When an
 execution reaches a terminal status, the `update-state` Lambda function
-records the result in the [state database](../../cirrus/70_statedb.md) and
-handles [chaining](chaining.md) to any subsequent workflow.
+records the result in the [state database](../reference/state-database.md) and
+handles [chaining](chaining-workflows.md) to any subsequent workflow.
 
 ## Writing workflow definitions
 
@@ -101,7 +101,7 @@ A workflow that invokes a Lambda function uses the
 `Parameters.FunctionName` rather than as the state's `Resource` directly.
 This produces additional metadata in the execution history, including the
 Lambda request ID, which can be used to filter the function's CloudWatch
-logs (see [Lambda logs](../tasks/index.md#lambda-logs)).
+logs (see [Lambda logs](tasks.md#lambda-logs)).
 
 ```json
 {
@@ -180,7 +180,7 @@ Workflows share some common structure within the state machine definition:
   each task's `Catch` block routing to it.
 
 Review the built-in `minimal` workflow for the smallest working example, and
-see [Batch tasks in workflows](batch.md) for the additional structure Batch
+see [Batch tasks in workflows](batch-workflow-structure.md) for the additional structure Batch
 tasks require.
 
 ### Triggering workflows off one another
@@ -190,7 +190,7 @@ workflows. Cirrus supports this via:
 
 - **Workflow chaining**: a chain of process definitions is specified in the
   payload's `process` array, so that the output of one workflow execution
-  becomes the input to the next. See [Workflow chaining](chaining.md).
+  becomes the input to the next. See [Workflow chaining](chaining-workflows.md).
 - **Publish topic subscriptions**: custom Lambda functions or other
   listeners can subscribe to the publish SNS topic to process workflow
   output items and trigger further processing outside of a pre-defined
@@ -293,7 +293,7 @@ producing the actual outputs.
 
 #### Workflows should not produce different outputs from the same set of inputs
 
-See the [Cirrus Payload docs](../../cirrus/30_payload.md) for how Cirrus's
+See the [Cirrus Payload docs](../reference/payload-schema.md) for how Cirrus's
 idempotency check works: Cirrus uses the set of input items as a proxy for a
 workflow's outputs. Don't rely on workflow or task parameters to change the
 set of outputs, since those settings are not part of the idempotency check.

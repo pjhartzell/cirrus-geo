@@ -107,7 +107,7 @@ while IFS= read -r payload; do
 done
 ```
 
-See the [monitoring guide](../cirrus/80_monitoring.md#rerun-tasks) for which
+See the [monitoring guide](../operating/monitoring.md#rerun-tasks) for which
 states rerun under which conditions.
 
 ## Template payloads
@@ -153,5 +153,5 @@ cirrus manage name-dev migrate --dry-run
 cirrus manage name-dev migrate
 ```
 
-See [Upgrading to 2.0](../cirrus/85_upgrading.md) for what the migration
+See [Upgrading to 2.0](../operating/upgrading.md) for what the migration
 changes and its options.

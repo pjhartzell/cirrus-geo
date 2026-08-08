@@ -26,7 +26,7 @@ are stored per execution at:
 
 Temporary objects (oversized payloads, batch task input, invalid payloads)
 are stored under `{root_prefix}/tmp/`. See the
-[Payload Bucket](75_payload_bucket.md) reference for the full key layout.
+[Payload Bucket](../reference/payload-bucket.md) reference for the full key layout.
 
 CloudFormation templates now include a `PayloadRootPrefix` parameter
 (defaults to `cirrus`), and the payload bucket has a lifecycle rule that
@@ -141,13 +141,13 @@ review the following API changes.
   removed from `cirrus.lib.statedb`.
 - The state database item representation changed: the `catalog` field is
   renamed to `input_payload_url`; new `output_payload_url` and
-  `claimed_at` fields are added. See the [State Database](70_statedb.md)
+  `claimed_at` fields are added. See the [State Database](../reference/state-database.md)
   reference for the current field list.
 
 ### Payload bucket access
 
 - The new `PayloadBucket` class (`cirrus.lib.payload_bucket`) centralizes
-  all S3 payload interactions. See the [Payload Bucket](75_payload_bucket.md)
+  all S3 payload interactions. See the [Payload Bucket](../reference/payload-bucket.md)
   reference.
 - `PayloadManager.upload_to_s3()` is removed. Use `PayloadBucket` methods
   instead.

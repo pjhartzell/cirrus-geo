@@ -322,8 +322,8 @@ curl "http://localhost:4566/restapis/${API_ID}/dev/_user_request_/collection/wor
 
 ## Next steps
 
-- [Concepts & architecture](20_arch.md) for how these pieces fit together.
-- [Payloads](30_payload.md) for the payload format the CLI and workflows
+- [Concepts & architecture](architecture.md) for how these pieces fit together.
+- [Payloads](../reference/payload-schema.md) for the payload format the CLI and workflows
   consume.
 - [CLI reference](../cli/using-the-cli.md) for the rest of the `cirrus` command
   tree.

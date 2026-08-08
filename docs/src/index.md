@@ -11,7 +11,7 @@ or more output STAC Items. Outputs are stored in S3 and broadcast via an SNS
 topic, and subscriptions to that topic can trigger additional workflows or
 external processes, such as indexing into a STAC API.
 
-![Cirrus architecture overview](cirrus/images/arch-overview.png)
+![Cirrus architecture overview](images/arch-overview.png)
 
 <div class="grid cards" markdown>
 
@@ -21,7 +21,7 @@ external processes, such as indexing into a STAC API.
 
     Deploy Cirrus to AWS or LocalStack and run a test workflow.
 
-    [:octicons-arrow-right-24: Quickstart](cirrus/15_quickstart.md)
+    [:octicons-arrow-right-24: Quickstart](getting-started/quickstart.md)
 
 - :material-sitemap: **Architecture**
 
@@ -29,7 +29,7 @@ external processes, such as indexing into a STAC API.
 
     The AWS pieces of a Cirrus deployment and how they fit together.
 
-    [:octicons-arrow-right-24: Cirrus architecture](cirrus/20_arch.md)
+    [:octicons-arrow-right-24: Cirrus architecture](getting-started/architecture.md)
 
 - :material-code-json: **Payloads**
 
@@ -37,7 +37,7 @@ external processes, such as indexing into a STAC API.
 
     The Cirrus Payload format: items, process definitions, and output options.
 
-    [:octicons-arrow-right-24: Cirrus Payload](cirrus/30_payload.md)
+    [:octicons-arrow-right-24: Cirrus Payload](reference/payload-schema.md)
 
 - :material-console: **CLI**
 

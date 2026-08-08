@@ -33,7 +33,7 @@ definition.
 The process SQS queue is the function's event source. Anything that can put a
 message on that queue can trigger processing:
 
-- a [feeder](../feeders/index.md) publishing payloads to the queue (directly
+- a [feeder](../building-pipelines/feeders.md) publishing payloads to the queue (directly
   or via the process SNS topic)
 - the Cirrus CLI `process` command, which enqueues a payload read from stdin:
 
@@ -99,7 +99,7 @@ built against the old library classify correctly; a
 For failed executions, the error name and cause are extracted from the event
 and stored on the state database record. The workflow definition's `Fail`
 state must include `ErrorPath` and `CausePath` fields for the cause to be
-captured (see [workflow definitions](../workflows/definitions.md)).
+captured (see [workflow definitions](../building-pipelines/workflows.md)).
 
 The execution's input and output payloads are read from the EventBridge
 event itself. If the combined size exceeds the EventBridge limit the payloads
@@ -117,7 +117,7 @@ event to the event recording system. For successful executions,
   services such as a STAC API ingest
 - enqueues any chained payloads onto the process queue (when
   `CIRRUS_PROCESS_QUEUE_URL` is configured), continuing a
-  [workflow chain](../workflows/chaining.md)
+  [workflow chain](../building-pipelines/chaining-workflows.md)
 
 ## pre-batch
 
@@ -161,9 +161,9 @@ failure:
 The `api` Lambda function serves a read-only HTTP API over the state
 database and workflow event metrics. It supports uses like monitoring
 dashboards that need aggregate event statistics, and sits outside the payload
-flow shown in the [architecture diagram](../../cirrus/20_arch.md) — unlike
+flow shown in the [architecture diagram](../getting-started/architecture.md) — unlike
 the other functions, it never modifies state.
 
-See the [Cirrus API endpoints reference](../../cirrus/78_api_endpoints.md)
+See the [Cirrus API endpoints reference](http-api.md)
 for the endpoint surface, full request/response shapes, error behavior, and
 how the API is exposed via CloudFormation.

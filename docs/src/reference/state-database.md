@@ -2,9 +2,9 @@
 
 The state database (StateDB) is a DynamoDB table that tracks the state of every
 payload a Cirrus deployment has processed. It is a core piece of the
-[Cirrus architecture](20_arch.md), created by the CloudFormation core stack,
+[Cirrus architecture](../getting-started/architecture.md), created by the CloudFormation core stack,
 that prevents duplicate workflow executions, records processing errors, and
-lets [monitoring](80_monitoring.md) and CLI tooling query execution history.
+lets [monitoring](../operating/monitoring.md) and CLI tooling query execution history.
 
 DynamoDB is a managed, non-relational (NoSQL) key-value store: items are
 independent of each other, addressed by a key, with no enforced schema beyond
@@ -14,14 +14,14 @@ needed.
 
 The StateDB is used at several points in the Cirrus pipeline:
 
-- **[`process`](../components/functions/index.md#process) function** — checks
+- **[`process`](lambda-functions.md#process) function** — checks
   existing state before starting a workflow execution (to skip duplicates or
   already-succeeded payloads), claims the payload for processing, and
   transitions it to `PROCESSING`.
-- **[`update-state`](../components/functions/index.md#update-state) function** —
+- **[`update-state`](lambda-functions.md#update-state) function** —
   records the terminal state (`SUCCEEDED`, `FAILED`, `INVALID`, or `ABORTED`)
   after a Step Functions execution finishes.
-- **[`api`](../components/functions/index.md#api) function** — queries the StateDB
+- **[`api`](lambda-functions.md#api) function** — queries the StateDB
   for aggregate execution counts and individual item records.
 - **The Cirrus CLI (`cirrus manage`)** — queries the StateDB directly for
   execution status, and to retrieve input/output payloads.
@@ -119,7 +119,7 @@ current state to be `CLAIMED`.
 
 The other terminal-state setters (`set_succeeded`, `set_failed`,
 `set_invalid`, `set_aborted`) are called by the
-[`update-state`](../components/functions/index.md#update-state) function once a
+[`update-state`](lambda-functions.md#update-state) function once a
 Step Functions execution finishes.
 
 ## Querying via the Cirrus CLI
@@ -134,7 +134,7 @@ The `cirrus manage` command group queries the StateDB directly
   to its input payload in the payload bucket and streams the payloads
   themselves.
 
-See the [CLI reference](../cli/04_commands.md) for the full command list and options.
+See the [CLI reference](../cli/common-workflows.md) for the full command list and options.
 
 ## Deleting StateDB items
 

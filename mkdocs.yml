@@ -7,6 +7,11 @@ repo_name: cirrus-geo/cirrus-geo
 edit_uri: edit/main/docs/src/
 
 docs_dir: docs/src
+
+validation:
+  links:
+    anchors: warn
+
 site_dir: docs/build/site
 
 theme:
@@ -77,30 +82,33 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - Getting Started:
-      - What is Cirrus: cirrus/10_intro.md
-      - Quickstart: cirrus/15_quickstart.md
-      - End-to-end walkthrough: cirrus/17_end_to_end.md
-      - Concepts & architecture: cirrus/20_arch.md
-  - Guides:
-      - Payloads: cirrus/30_payload.md
-      - Workflows:
-          - Workflows: components/workflows/definitions.md
-          - Chaining workflows: components/workflows/chaining.md
-          - Batch in workflows: components/workflows/batch.md
-      - Batch tasks: components/tasks/batch.md
-      - Deployment: cirrus/40_config-deploy.md
-      - Monitoring: cirrus/80_monitoring.md
-      - Upgrading to 2.0: cirrus/85_upgrading.md
+  - Getting started:
+      - What is Cirrus: getting-started/intro.md
+      - Concepts & architecture: getting-started/architecture.md
+      - Quickstart: getting-started/quickstart.md
+      - Follow a payload through Cirrus: getting-started/follow-a-payload.md
+  - Building pipelines:
+      - Workflows: building-pipelines/workflows.md
+      - Chaining workflows: building-pipelines/chaining-workflows.md
+      - Tasks: building-pipelines/tasks.md
+      - Batch:
+          - Batch workflow structure: building-pipelines/batch-workflow-structure.md
+          - Batch infrastructure: building-pipelines/batch-infrastructure.md
+      - Feeders: building-pipelines/feeders.md
+  - Deploying & operating:
+      - Deployment: operating/deployment.md
+      - Monitoring & troubleshooting: operating/monitoring.md
+      - Upgrading to 2.0: operating/upgrading.md
   - Reference:
-      - Components:
-          - Feeders: components/feeders/index.md
-          - Lambda functions: components/functions/index.md
-          - Tasks: components/tasks/index.md
+      - Payload schema: reference/payload-schema.md
+      - State database: reference/state-database.md
+      - Payload bucket: reference/payload-bucket.md
+      - HTTP API: reference/http-api.md
+      - Lambda functions: reference/lambda-functions.md
       - CLI:
           - Using the CLI: cli/using-the-cli.md
-          - CLI reference: cli/reference.md
-          - Common CLI workflows: cli/04_commands.md
+          - Command reference: cli/reference.md
+          - Common CLI workflows: cli/common-workflows.md
       - Library API:
           - CirrusPayload: api/cirrus_payload.md
           - StateDB: api/statedb.md
@@ -108,9 +116,6 @@ nav:
           - Events: api/events.md
           - Errors and exceptions: api/errors.md
           - Deployment class: api/deployment.md
-      - State database: cirrus/70_statedb.md
-      - Payload bucket: cirrus/75_payload_bucket.md
-      - Cirrus API endpoints: cirrus/78_api_endpoints.md
   - About:
       - Contributing: about/contributing.md
       - Changelog: about/changelog.md

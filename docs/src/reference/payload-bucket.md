@@ -5,7 +5,7 @@ that are either too large to pass inline through AWS service limits or
 that need to be persisted for state tracking, debugging, and retrieval
 after a workflow has finished executing.
 
-Together with the [StateDB](70_statedb.md), the payload bucket forms
+Together with the [StateDB](state-database.md), the payload bucket forms
 the record of a Cirrus deployment's work: where the StateDB tracks
 *that* an execution happened and *what state* it's in, the payload
 bucket stores the actual JSON payload content associated with each
@@ -208,7 +208,7 @@ places:
 - Task code — reads oversized payloads via
   `cirrus.lib.utils.payload_from_s3` and, for batch tasks, fetches
   payload content from the batch prefix.
-- [Management CLI](../cli/04_commands.md) — reads execution input
+- [Management CLI](../cli/common-workflows.md) — reads execution input
   and output payloads via `PayloadBucket.get_input_payload_url` and
   `PayloadBucket.get_output_payload_url`, which reconstruct the
   deterministic S3 URL from a `payload_id` and `execution_id` pair

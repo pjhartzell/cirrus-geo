@@ -39,7 +39,7 @@ contain a `workflow` field. `id` must match the [ID format](#id-format).
     A `process` array with more than one entry, or with an entry that is
     itself an array, describes a chain of workflow executions rather than
     parameters for a single execution. See [Workflow
-    chaining](../components/workflows/chaining.md).
+    chaining](../building-pipelines/chaining-workflows.md).
 
 ## ID format
 
@@ -118,7 +118,7 @@ current (or next, when chaining) workflow execution.
 | upload_options    | [Upload Options](#upload-options)    | Parameters controlling how task-uploaded assets are stored and published                                                                          |
 | workflow_options  | Map\<str, object\>                   | Parameters merged into every task's `parameters` for this workflow execution                                                                      |
 | tasks             | Map\<string, Map\<str, object\>\>    | A dictionary of task names (keys), each containing a dictionary of parameters for that task                                                       |
-| chain_filter      | string                               | JSONPath filter applied to the previous workflow's output features (chaining only). See [Workflow chaining](../components/workflows/chaining.md). |
+| chain_filter      | string                               | JSONPath filter applied to the previous workflow's output features (chaining only). See [Workflow chaining](../building-pipelines/chaining-workflows.md). |
 
 ### replace
 

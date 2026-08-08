@@ -1,7 +1,7 @@
 # Cirrus API Endpoints
 
-The [`api`](../components/functions/index.md#api) Lambda function serves a
-read-only HTTP API over the [state database](70_statedb.md) and workflow
+The [`api`](lambda-functions.md#api) Lambda function serves a
+read-only HTTP API over the [state database](state-database.md) and workflow
 event metrics. It is fronted by an Amazon API Gateway REST API, provisioned
 by `cloudformation/core/api.yaml` and wired into the deployment by the
 `ApiStack` nested stack in `cloudformation/main.yaml`. There is no Lambda
@@ -150,7 +150,7 @@ Data source, in order of preference:
 2. Otherwise, `EventDB` (Timestream) is queried directly via `daily`/`hourly`
    in `src/cirrus/lib/eventdb.py`, gated by the `CIRRUS_EVENT_DB_AND_TABLE`
    environment variable. This is a deprecated fallback path — see
-   [Monitoring](80_monitoring.md#workflow-events).
+   [Monitoring](../operating/monitoring.md#workflow-events).
 3. If neither is configured, `EventDB._query` raises `EventsDisabledError`,
    which `get_stats` catches and returns `None` for.
 
@@ -169,7 +169,7 @@ defaults to `''`), both sources are disabled and `/stats` returns:
 }
 ```
 
-with HTTP status `404`. See [Monitoring](80_monitoring.md#workflow-events)
+with HTTP status `404`. See [Monitoring](../operating/monitoring.md#workflow-events)
 for the workflow-metrics machinery behind this endpoint.
 
 ## Collections/workflow summary (`/<collections>/workflow-<workflow>`)
@@ -214,7 +214,7 @@ Returns a page of state database records:
 Each raw item is converted with `StateDB.dbitem_to_item`
 (`src/cirrus/lib/statedb.py:708`) and then `to_current`
 (`src/cirrus/lib/statedb.py:24`) before being added to the response — see
-[state database fields](70_statedb.md#fields) for the full field list
+[state database fields](state-database.md#fields) for the full field list
 (`payload_id`, `collections`, `workflow`, `items`, `state`, `created`,
 `updated`, `input_payload_url`, `output_payload_url`, and conditionally
 `executions`, `outputs`, `last_error`, `claimed_at`). `to_current` also adds
@@ -255,7 +255,7 @@ is assumed to parse into a valid `collections_workflow`/`itemids` key.
 | --- | --- | --- |
 | State database (DynamoDB) | Summary, items, single-item routes | `CIRRUS_STATE_DB` env var, set from `StateTable` in `cloudformation/core/functions.yaml`. `ApiLambdaRole` grants `dynamodb:Query`, `Scan`, `GetItem`, `DescribeTable` on the table and its indexes. |
 | Data bucket (S3) | Root route (`catalog.json`) | `CIRRUS_DATA_BUCKET` env var. `ApiLambdaRole` grants `s3:ListBucket`, `GetObject`, `GetBucketLocation` on `CirrusDataBucket*`. |
-| [Payload bucket](75_payload_bucket.md) (S3) | `input_payload_url`/`output_payload_url` fields on item responses | `CIRRUS_PAYLOAD_BUCKET` / `CIRRUS_PAYLOAD_ROOT_PREFIX` env vars, read indirectly through `StateDB`'s `PayloadBucket` instance — these are constructed URLs, not objects the `api` function reads directly. |
+| [Payload bucket](payload-bucket.md) (S3) | `input_payload_url`/`output_payload_url` fields on item responses | `CIRRUS_PAYLOAD_BUCKET` / `CIRRUS_PAYLOAD_ROOT_PREFIX` env vars, read indirectly through `StateDB`'s `PayloadBucket` instance — these are constructed URLs, not objects the `api` function reads directly. |
 | CloudWatch metrics | `/stats` (preferred source) | `CIRRUS_WORKFLOW_METRIC_NAMESPACE` env var; `ApiLambdaRole` conditionally grants `cloudwatch:GetMetricData`, `GetMetricStatistics`, `ListMetrics` when `WorkflowMetricNamespace` is non-empty. |
 | Timestream (`EventDB`) | `/stats` (deprecated fallback) | `CIRRUS_EVENT_DB_AND_TABLE` env var (pipe-separated `database\|table`); not set by the reference CloudFormation. |
 

@@ -149,7 +149,7 @@ in to the executed command.
 
 This is an important note: Batch has a rather low limit on the size of a job
 sent to the SubmitJob API ([30KiB at current](https://docs.aws.amazon.com/batch/latest/userguide/service_limits.html)). To mitigate impacts from this
-limit, run the [`pre-batch`](../functions/index.md#pre-batch) Lambda function
+limit, run the [`pre-batch`](../reference/lambda-functions.md#pre-batch) Lambda function
 immediately before any Batch task step to upload the payload to S3. `pre-batch`
 returns two S3 URLs:
 
@@ -179,13 +179,13 @@ classes/methods to help with this common need.
 The Batch task must write the (possibly modified) payload back to S3 at the
 `url_out` location established by `pre-batch`. Both `url` and `url_out` need
 to be passed through the workflow's Batch task step so that
-[`post-batch`](../functions/index.md#post-batch), which runs immediately after,
+[`post-batch`](../reference/lambda-functions.md#post-batch), which runs immediately after,
 can find the output location. `post-batch` reads the payload from `url_out`
 and returns it to the state machine; if the Batch job failed, `post-batch`
 instead pulls the error from the job's CloudWatch logs and raises it within
 the workflow.
 
-See [Batch tasks in workflows](../workflows/batch.md) for an example of how a
+See [Batch tasks in workflows](batch-workflow-structure.md) for an example of how a
 payload is passed to a job using the `url` parameter, how `pre-batch` and
 `post-batch` are used, and some other tips regarding Batch tasks in workflows.
 
@@ -204,7 +204,7 @@ The `ResourceRequirements` key allows specification of a list of all hardware
 resources required by the job (unfortunately with the exception of disk space).
 Note that the values provided here serve as defaults for spawned jobs, and can
 be overridden when calling `SubmitJob` in the workflow. Again, see [Batch
-tasks in workflows](../workflows/batch.md) for an example of overriding resource
+tasks in workflows](batch-workflow-structure.md) for an example of overriding resource
 requirements.
 
 The specified resource requirements are used by the compute environment to pick

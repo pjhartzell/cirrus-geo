@@ -4,7 +4,7 @@ Cirrus deploys to AWS as a set of nested CloudFormation stacks. This page
 covers the parameter surface and stack layout for the templates in
 [`cloudformation/`](https://github.com/cirrus-geo/cirrus-geo/tree/main/cloudformation);
 for a runnable, step-by-step deploy see the
-[quickstart](15_quickstart.md), which this page does not repeat.
+[quickstart](../getting-started/quickstart.md), which this page does not repeat.
 
 ## Stack layout
 
@@ -187,7 +187,7 @@ ProcessLambdaBulkEventSourceMapping:
 No Cirrus code reads a bulk-queue environment variable —
 `CIRRUS_PROCESS_QUEUE_URL` remains the default queue used by workflow
 chaining and `cirrus manage ... process`. Routing to the bulk queue is the
-producer's choice: point bulk [feeders](../components/feeders/index.md) (or
+producer's choice: point bulk [feeders](../building-pipelines/feeders.md) (or
 bulk rerun scripts) at the `ProcessBulkQueue` URL instead of the default
 process queue URL. The process Lambda handles messages from either queue
 identically.
@@ -199,12 +199,12 @@ IAM roles for each Lambda function and for API Gateway logging), plus
 permissions to create S3 buckets, DynamoDB tables, SQS queues, SNS topics,
 Lambda functions, EventBridge rules, API Gateway resources, SSM parameters,
 and (when `EnableVpc` is `true`) VPC/EC2 networking resources. See the
-[quickstart prerequisites](15_quickstart.md#prerequisites) for the deploy
+[quickstart prerequisites](../getting-started/quickstart.md#prerequisites) for the deploy
 commands themselves.
 
 ## Deleting a deployment
 
-See the quickstart's [stack cleanup](15_quickstart.md#stack-cleanup-aws)
+See the quickstart's [stack cleanup](../getting-started/quickstart.md#stack-cleanup-aws)
 section for the emptying and delete-order steps (workflow stacks, then the
 main stack, then bootstrap).
 

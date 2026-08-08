@@ -2,7 +2,7 @@
 
 This walks a single payload through a deployed Cirrus stack: submit it,
 watch it move through the state database, and retrieve its output. It
-assumes you've already completed the [Quickstart](15_quickstart.md) — the
+assumes you've already completed the [Quickstart](quickstart.md) — the
 main stack and the minimal workflow stack are deployed, and `.env.aws` (or
 `.env.localstack`) is sourced, so `$RESOURCE_PREFIX` and friends are set in
 your shell.
@@ -109,7 +109,7 @@ with backoff for up to 60 seconds before failing:
 cirrus manage "$RESOURCE_PREFIX" get-state "collection/workflow-minimal/item-<uuid>"
 ```
 
-This returns the raw DynamoDB item — see [State Database](70_statedb.md#fields)
+This returns the raw DynamoDB item — see [State Database](../reference/state-database.md#fields)
 for the full field reference. A record mid-processing looks like (illustrative
 values):
 
@@ -175,7 +175,7 @@ cirrus manage "$RESOURCE_PREFIX" query \
 
 `--collections-workflow` takes the underscore-joined form
 (`<collections>_<workflow>`, e.g. `collection_minimal` for this payload) —
-see [State Database key schema](70_statedb.md#key-schema). `--state` accepts
+see [State Database key schema](../reference/state-database.md#key-schema). `--state` accepts
 one of `PROCESSING`, `SUCCEEDED`, `FAILED`, `INVALID`, `ABORTED`, `CLAIMED`.
 `--since` takes an integer immediately followed by `d`, `h`, or `m` (e.g.
 `7d`, `24h`, `30m`).
@@ -200,7 +200,7 @@ and the single-item route for this payload:
 curl "https://<api-id>.execute-api.<region>.amazonaws.com/dev/collection/workflow-minimal/item-<uuid>"
 ```
 
-See [API Endpoints](78_api_endpoints.md) for the full route list, query
+See [API Endpoints](../reference/http-api.md) for the full route list, query
 parameters (`state`, `since`, `limit`, pagination via `nextkey`), and the
 response shape — note the API's item responses go through `dbitem_to_item`,
 which adds `payload_id`, `state`, `input_payload_url`, and
@@ -222,7 +222,7 @@ unformatted instead of pretty-printed JSON.
 
 ### Where these objects live
 
-Per the [payload bucket key layout](75_payload_bucket.md#execution-payloads),
+Per the [payload bucket key layout](../reference/payload-bucket.md#execution-payloads),
 execution payloads are stored under:
 
 ```text
@@ -239,7 +239,7 @@ s3://<payload-bucket>/cirrus/executions/collection/workflow-minimal/item-<uuid>/
 ```
 
 `<payload-bucket>` is the main stack's `CirrusPayloadBucket` output (see
-[Quickstart: inspect deployed resources](15_quickstart.md#4-inspect-deployed-resources)).
+[Quickstart: inspect deployed resources](quickstart.md#4-inspect-deployed-resources)).
 `<execution_id>` is the Step Functions execution name, deterministically
 derived from the payload ID and claim count — read it off the `executions`
 entry in the state database record (or the ARN returned by
