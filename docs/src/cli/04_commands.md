@@ -107,8 +107,8 @@ while IFS= read -r payload; do
 done
 ```
 
-See the [operations guide](../cirrus/50_operation.md) for which states rerun
-under which conditions.
+See the [monitoring guide](../cirrus/80_monitoring.md#rerun-tasks) for which
+states rerun under which conditions.
 
 ## Template payloads
 

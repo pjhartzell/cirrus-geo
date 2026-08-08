@@ -168,3 +168,54 @@ CloudWatch logs for a specific invocation or job without using the console.
 See [Lambda logs](../components/tasks/index.md#lambda-logs) for the
 request-ID filtering pattern that isolates a single invocation's logs, and
 the [CLI reference](../cli/04_commands.md) for full command usage.
+
+<!-- TODO(phase-3.12): refine — state-eligibility rule by link to payload schema -->
+
+## Rerun tasks
+
+One of the most common actions is to re-run failed tasks. For example, it is
+common when running the task to discover code bugs that cause the task to fail,
+fix them, and then want to re-run the task.
+
+This can be done with the `get-input-payloads` Cirrus CLI command. This command offers
+a way to retrieve payloads in bulk based on user supplied query parameters.
+The output of `get-input-payloads` can then be passed into the `process` command
+to rerun the tasks that meet your conditions. The `--rerun` flag can be
+passed to `get-input-payloads` to add the `.process.replace: true` parameter.
+
+Adding this parameter when queuing a payload will result in the payload being
+rerun if the payload is in the following states in the StateDB: `SUCCEEDED`,
+`FAILED`, `INVALID`, `ABORTED`, or `CLAIMED`. Checks are in place so that a
+state of `PROCESSING` will result in the payload being skipped. (Without the
+`replace` parameter, only payloads in `FAILED`, `ABORTED`, or `CLAIMED` states,
+or payloads with no state database record, are run.)
+
+The output is NDJSON — one payload per line — and `process` enqueues one
+payload per invocation, so submit line by line:
+
+``` bash
+cirrus manage deployment-name get-input-payloads \
+    --collections-workflow "sar-test_workflow" --state FAILED --rerun |
+while IFS= read -r payload; do
+    printf '%s' "$payload" | cirrus manage deployment-name process
+done
+```
+
+Under the hood the Cirrus CLI searches the AWS DynamoDB state database for records
+matching the query parameters. Using these state database records, the
+original payloads are retrieved from the Cirrus deployment S3 bucket.
+The `--rerun` flag adds a flag to the process block of the payload. These
+payloads are returned as new line delimited JSONs for easier stream
+processing.
+
+The available query parameters are:
+
+- `collections-workflow` (string): collections workflow field in StateDB
+- `since` (string): takes an integer and then a value of 'd' for days, 'h' for
+  hours, or 'm' for minutes and only runs items that were last updated in the
+  state database within that time period, e.g. `10h` looks back 10 hours (no space between integer and unit).
+- `limit` (int): limit how many records are returned from stateDB query
+- `error-prefix` (string): a string prefix in an error string. Useful if
+  multiple records failed as a result of the same bug.
+- `state` (string): the state of the record. Must be one of the following:
+  `PROCESSING`, `SUCCEEDED`, `FAILED`, `INVALID`, `ABORTED`, `CLAIMED`
