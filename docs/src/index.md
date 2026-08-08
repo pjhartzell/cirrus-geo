@@ -45,6 +45,6 @@ external processes, such as indexing into a STAC API.
 
     Manage and interact with Cirrus deployments from the command line.
 
-    [:octicons-arrow-right-24: The Cirrus CLI](cli/00_intro.md)
+    [:octicons-arrow-right-24: The Cirrus CLI](cli/using-the-cli.md)
 
 </div>

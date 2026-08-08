@@ -8,7 +8,7 @@ main stack and the minimal workflow stack are deployed, and `.env.aws` (or
 your shell.
 
 All commands below use the Cirrus CLI (`cirrus`). See the
-[CLI reference](../cli/00_intro.md) for the full command tree.
+[CLI reference](../cli/using-the-cli.md) for the full command tree.
 
 ## 1. Submit a payload
 

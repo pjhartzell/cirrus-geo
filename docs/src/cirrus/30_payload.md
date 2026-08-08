@@ -46,7 +46,7 @@ contain a `workflow` field. `id` must match the [ID format](#id-format).
 A payload's `id` field tracks the individual execution of a workflow and must
 match `<collections>/workflow-<workflow>/<itemids>`, where `workflow` is the
 workflow name from the process definition. If a submitted payload has no
-`id`, the [`cirrus` CLI](../cli/00_intro.md) and the process Lambda function can
+`id`, the [`cirrus` CLI](../cli/using-the-cli.md) and the process Lambda function can
 generate one:
 
 - `collections` is taken from the process definition's `collections` field if

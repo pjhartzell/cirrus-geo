@@ -46,7 +46,7 @@ flowchart TB
   create the resources above (`CAPABILITY_NAMED_IAM` is required for the main
   stack deploy).
 - Python 3.12+ for Lambda function packaging.
-- The Cirrus CLI installed — see [Installing](../cli/01_install.md).
+- The Cirrus CLI installed — see [Installing](../cli/using-the-cli.md#installing).
 - For the LocalStack path: Docker, to run LocalStack via `compose.yml`.
 
 ## Configure deployment variables
@@ -325,5 +325,5 @@ curl "http://localhost:4566/restapis/${API_ID}/dev/_user_request_/collection/wor
 - [Concepts & architecture](20_arch.md) for how these pieces fit together.
 - [Payloads](30_payload.md) for the payload format the CLI and workflows
   consume.
-- [CLI reference](../cli/00_intro.md) for the rest of the `cirrus` command
+- [CLI reference](../cli/using-the-cli.md) for the rest of the `cirrus` command
   tree.

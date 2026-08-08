@@ -102,10 +102,7 @@ nav:
           - Lambda functions: components/functions/index.md
           - Tasks: components/tasks/index.md
       - CLI:
-          - Overview: cli/00_intro.md
-          - Installing: cli/01_install.md
-          - Authentication: cli/02_auth.md
-          - Deployments: cli/03_deployments.md
+          - Using the CLI: cli/using-the-cli.md
           - CLI reference: cli/reference.md
           - Common CLI workflows: cli/04_commands.md
       - Library API:
