@@ -503,8 +503,15 @@ One page per task, code-verified per its brief above.
       per-command flag prose replaced with cookbook/reference links; kept the
       unique material (validation contrast, `get-state` 60 s backoff, worked
       state-record JSON — verified against statedb.py and deployment.py).*
-- [ ] 3.4 Payload schema: canonicalize the `replace`/rerun rule; add the
+- [x] 3.4 Payload schema: canonicalize the `replace`/rerun rule; add the
       no-underscores-in-workflow-names constraint beside the ID format.
+      *Rule derived from `payload_manager.py` `process()` + `statedb.py`
+      `claim_processing` and stated per state, including the two cases the old
+      prose left implicit: `INVALID` is skipped by default, and `PROCESSING`
+      stays blocked even with `replace` (DynamoDB condition). Old `#replace`
+      anchor renamed to `#the-replace-field-and-reruns`; no inbound `#` links
+      existed. The stale `cirrus.lib.errors.InvalidInput` reference in
+      `update_state.py:20-23` is already covered by the coverage-gaps note.*
 - [ ] 3.5 Workflows: canonical homes for naming, ErrorPath/CausePath, retry pattern,
       payload-size ceiling; "Design guidance" heading over the best-practices items.
 - [ ] 3.6 Feeders: trim the payload-validation restatement to a link.

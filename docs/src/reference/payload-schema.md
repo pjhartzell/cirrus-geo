@@ -31,9 +31,19 @@ generate a single output item.
 | features     | [[Item](#item)]                               | An array of STAC-like input items                                           |
 | process      | [[Process Definition](#process-definition)]   | **REQUIRED** An array of process definitions, at least one                  |
 
-Cirrus validates the payload before starting a workflow (`CirrusPayload.validate`):
-`process` must be an array with at least one entry, and the first entry must
-contain a `workflow` field. `id` must match the [ID format](#id-format).
+`CirrusPayload` is a `cirrus.lib.cirrus_payload.CirrusPayload`, a subclass of
+stac-task's `stactask.payload.Payload` (itself a `dict`). Its `validate()`
+method runs stac-task's own validation first, then Cirrus-specific checks:
+
+- **stac-task** (`Payload.validate`): resolves `process_definition`,
+  `workflow_options`, `task_options_dict`, `upload_options`,
+  `collection_mapping`, `items_as_dicts`, `collection_matchers`, and
+  `collection_options` — raising `TypeError` if any of these are malformed —
+  and rejects a payload that sets both `collection_matchers` and the legacy
+  `upload_options.collections` (they're mutually exclusive).
+- **Cirrus** (`CirrusPayload.validate`): `process` must be an array with at
+  least one entry, the first entry must contain a `workflow` field, and `id`
+  must match the [ID format](#id-format).
 
 !!! note
     A `process` array with more than one entry, or with an entry that is
@@ -41,19 +51,39 @@ contain a `workflow` field. `id` must match the [ID format](#id-format).
     parameters for a single execution. See [Workflow
     chaining](../building-pipelines/chaining-workflows.md).
 
+Validation beyond the payload's own structure — whether the input items
+themselves are usable — is left to individual workflow tasks. A task that
+receives input it can't process should raise an `InvalidInput` exception
+(`stactask.exceptions.InvalidInput`), which the
+[`update-state`](lambda-functions.md#update-state) function maps to the
+`INVALID` state in the state database.
+
 ## ID format
 
 A payload's `id` field tracks the individual execution of a workflow and must
-match `<collections>/workflow-<workflow>/<itemids>`, where `workflow` is the
-workflow name from the process definition. If a submitted payload has no
-`id`, the [`cirrus` CLI](../cli/using-the-cli.md) and the process Lambda function can
-generate one:
+match the pattern `<collections>/workflow-<workflow>/<itemids>`
+(`cirrus.lib.utils.PAYLOAD_ID_REGEX`, `(?P<collections>.+)/workflow-(?P<workflow>[^/]+)/(?P<itemids>.+)`),
+where `workflow` is the workflow name from the process definition. If a
+submitted payload has no `id`, the [Cirrus CLI](../cli/using-the-cli.md) and
+the [`process`](lambda-functions.md#process) function can generate one
+(`CirrusPayload.set_id`):
 
 - `collections` is taken from the process definition's `collections` field if
   present, otherwise it is derived from the sorted, `/`-joined set of
   `collection` values across the input `features` (or `none` if no item
   declares a collection).
 - `itemids` is the sorted, `/`-joined set of item `id` values from `features`.
+
+!!! warning "Workflow names must not contain underscores"
+    The state database's partition key joins `collections` and `workflow`
+    with an underscore (`StateDB.join_collections_workflow`), and reverses
+    the join by splitting on the *last* underscore
+    (`StateDB.split_collections_workflow`) — the `collections` segment may
+    itself contain underscores, but `workflow` may not, or the split
+    misparses the key. A workflow name containing an underscore produces a
+    payload `id` that state-database lookups and updates for that execution
+    will resolve incorrectly. See [State Database: Key
+    schema](state-database.md#key-schema).
 
 ## Item
 
@@ -71,9 +101,8 @@ concerned, the only field an item needs is `id`.
 | id           | string   | **REQUIRED** An ID for this item    |
 
 Each workflow task has its own requirements for the items it processes, and
-may perform additional validation. A task that receives a payload failing its
-validation should raise an `InvalidInput` exception, which marks the
-execution in the state database as `INVALID`.
+may perform additional validation beyond what `CirrusPayload.validate`
+checks — see [Validation](#cirrus-payload) above.
 
 In the following example, the input item is a partial STAC Item using STAC
 fields but missing most required fields (e.g., `geometry`, `datetime`). It
@@ -112,23 +141,78 @@ current (or next, when chaining) workflow execution.
 
 | Field Name        | Type                                 | Description                                                                                                                                       |
 | ----------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| workflow          | string                               | **REQUIRED** Name of the workflow to run                                                                                                          |
+| workflow          | string                               | **REQUIRED** Name of the workflow to run. Must not contain underscores — see [ID format](#id-format).                                            |
 | collections       | string                               | Overrides the derived `collections` segment of a generated payload `id`                                                                           |
-| replace           | bool                                 | If true, reruns the workflow regardless of the payload's current state (see [below](#replace))                                                    |
+| replace           | bool                                 | If true, allows a rerun of the workflow that would otherwise be skipped based on the payload's current state (see [below](#the-replace-field-and-reruns)) |
 | upload_options    | [Upload Options](#upload-options)    | Parameters controlling how task-uploaded assets are stored and published                                                                          |
 | workflow_options  | Map\<str, object\>                   | Parameters merged into every task's `parameters` for this workflow execution                                                                      |
 | tasks             | Map\<string, Map\<str, object\>\>    | A dictionary of task names (keys), each containing a dictionary of parameters for that task                                                       |
 | chain_filter      | string                               | JSONPath filter applied to the previous workflow's output features (chaining only). See [Workflow chaining](../building-pipelines/chaining-workflows.md). |
 
-### replace
+### The replace field and reruns
 
-By default, `PayloadManagers.process` only (re)starts a workflow execution
-for a payload `id` whose current state database entry is `FAILED`,
-`ABORTED`, `CLAIMED`, or has no entry at all — an `id` already `PROCESSING`
-or `SUCCEEDED` is skipped. Setting `"replace": true` in the process
-definition bypasses that check for every state except `PROCESSING` — a
-payload with an execution already underway is skipped regardless, enforced
-by a condition on the state database claim.
+This is the canonical description of when a (re)submitted payload actually
+starts a workflow execution versus getting skipped, and how `replace`
+changes that. It is enforced in two places:
+
+1. **`PayloadManagers.process`** (`cirrus.lib.payload_manager`), called by
+   the [`process`](lambda-functions.md#process) function, looks up the
+   payload's current state in the state database and computes
+   `_replace = replace or process_definition.get("replace", False)`
+   (the `process()` method itself also takes a `replace` argument, used by
+   the [migration tooling](#replace-in-migrations) below). It then decides
+   per payload:
+
+    ```python
+    elif (
+        state in (StateEnum.FAILED, StateEnum.ABORTED, StateEnum.CLAIMED, None)
+        or _replace
+    ):
+        # attempt to claim and start the workflow
+    else:
+        # skip: wfem.skipping(...)
+    ```
+
+2. **`StateDB.claim_processing`**, called during that attempt, enforces a
+   DynamoDB condition expression that fails if the record's current state
+   begins with `PROCESSING` or `CLAIMED`. This closes the race between two
+   concurrent attempts to process the same payload — it cannot be bypassed
+   by `replace`.
+
+Combining the two, for each state a payload record can be in:
+
+| Current state  | Default (no `replace`) | With `replace: true`                                                                                     |
+| -------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------- |
+| *(no record)*  | Runs                    | Runs                                                                                                        |
+| `CLAIMED`      | Runs                    | Runs — resolves against the pending execution ARN already in the record rather than starting a new one     |
+| `PROCESSING`   | Skipped                 | Skipped — blocked by the DynamoDB condition regardless of `replace`                                         |
+| `SUCCEEDED`    | Skipped                 | Runs                                                                                                        |
+| `FAILED`       | Runs                    | Runs                                                                                                        |
+| `INVALID`      | Skipped                 | Runs                                                                                                        |
+| `ABORTED`      | Runs                    | Runs                                                                                                        |
+
+In short: without `replace`, a resubmission runs only if the payload has no
+state database record yet, or its current state is `FAILED`, `ABORTED`, or
+`CLAIMED`; `SUCCEEDED` and `INVALID` are skipped. Setting `"replace": true`
+in the process definition also allows reruns from `SUCCEEDED` and `INVALID`.
+A payload currently `PROCESSING` is always skipped — `replace` cannot
+override an execution already underway.
+
+A skipped payload is announced via a `WorkflowEventManager.skipping` event
+(`ALREADY_PROCESSING`, `ALREADY_CLAIMED`, `ALREADY_SUCCEEDED`, or
+`ALREADY_INVALID` — see [Monitoring](../operating/monitoring.md)). Each claim
+appends a new Step Functions execution ARN to the state database's
+`executions` list rather than replacing it, so a payload rerun with
+`replace: true` accumulates multiple entries — see [State Database:
+Fields](state-database.md#fields).
+
+#### replace in migrations
+
+`Deployment.yield_workflow_items` (`cirrus.management.deployment`) accepts a
+`rerun` argument; when true, it sets `payload["process"][0]["replace"] = True`
+on each yielded payload before returning it, giving migration and
+backfill tooling the same rerun semantics described above without callers
+setting the field by hand.
 
 ### tasks
 
@@ -142,8 +226,8 @@ its list of available parameters.
 ## Upload Options
 
 `upload_options` in the process definition controls how a task uploads and
-publishes an item's data assets. See the stac-task
-`upload_item_assets_to_s3` function.
+publishes an item's data assets. See stac-task's `upload_item_assets_to_s3`
+function (`stactask.asset_io`).
 
 | Field Name      | Type               | Description                                                                                      |
 | --------------- | ------------------ | ------------------------------------------------------------------------------------------------ |
@@ -155,10 +239,11 @@ publishes an item's data assets. See the stac-task
 ### path_template
 
 `path_template` controls the output location of an item's uploaded assets
-using metadata from the item itself. The template can contain fixed strings
-along with variables substituted from the item. Variables resolve, in order,
-against the item's own attributes, then its `properties`, then its
-`extra_fields`. A few variables carry special meaning for STAC Items:
+using metadata from the item itself, via pystac's `LayoutTemplate`. The
+template can contain fixed strings along with variables substituted from the
+item. Variables resolve, in order, against the item's own attributes, then
+its `properties`, then its `extra_fields`. A few variables carry special
+meaning for STAC Items:
 
 | Template variable    | Description                                                                               |
 | -------------------- | ----------------------------------------------------------------------------------------- |
@@ -206,5 +291,5 @@ their existing `collection`.
 !!! note
     Older payloads may instead set `upload_options.collections` — a mapping
     of output collection name to a JSONPath expression matched against
-    items. stac-task deprecates this in favor of `collection_matchers`; the
-    two are mutually exclusive on a single payload.
+    items. stac-task deprecates this in favor of `collection_matchers`;
+    `CirrusPayload.validate` rejects a payload that sets both.
