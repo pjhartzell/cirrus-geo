@@ -608,8 +608,11 @@ One page per task, code-verified per its brief above.
       event type only — the state database records FAILED. Updated the
       cookbook's inbound `#rerun-tasks` anchor to `#rerunning-payloads`.
       Timestream oddity found during verification appended to decision 4.*
-- [ ] 3.13 Small cross-links: chaining → payload schema `chain_filter`; consider
-      `invoke-lambda` in the cookbook's debugging scenarios.
+- [x] 3.13 Small cross-links: chaining → payload schema `chain_filter`; consider
+      `invoke-lambda` in the cookbook's debugging scenarios. *Both done: the
+      chaining page links the process-definition table; the cookbook gains an
+      "Invoke a Lambda function directly" section (name resolution and response
+      handling verified against `deployment.py:267-286`).*
 
 ### Phase 4 — cleanup
 

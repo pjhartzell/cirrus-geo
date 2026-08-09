@@ -65,6 +65,21 @@ name:
 cirrus manage name-dev get-workflow-definition my-workflow
 ```
 
+## Invoke a Lambda function directly
+
+`invoke-lambda` calls one of the deployment's Lambda functions synchronously
+with an event from stdin, bypassing SQS and Step Functions entirely. This is
+useful for exercising a single function in isolation, e.g. running `process`
+against a payload directly instead of enqueuing it:
+
+``` bash
+<payload.json cirrus manage name-dev invoke-lambda process
+```
+
+Use the function's short name as it appears in `cirrus manage name-dev
+list-lambdas` (the deployment's resource prefix is added and stripped
+automatically). The command prints the function's JSON response.
+
 ## Check state and stored payloads
 
 ``` bash

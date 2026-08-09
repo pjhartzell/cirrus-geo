@@ -103,8 +103,10 @@ When a successive workflow in a chain doesn't need every item produced by
 the preceding workflow, chaining supports filtering the output items via a
 [JSONPath](https://goessner.net/articles/JsonPath/index.html) filter
 expression. Set the filter in the successive workflow's process definition
-using the `chain_filter` key. For example, to keep only items with an `id`
-starting with `SWE` and a `confidence` property greater than 80:
+using the `chain_filter` key (see the
+[process definition reference](../reference/payload-schema.md#process-definition)).
+For example, to keep only items with an `id` starting with `SWE` and a
+`confidence` property greater than 80:
 
 ```json
 {
