@@ -628,7 +628,11 @@ One page per task, code-verified per its brief above.
       2.5-deferred README re-pointing: four doc bullets now target the new
       site paths (stable alias, directory URLs) and the architecture image
       path updated to `docs/src/images/`.*
-- [ ] 4.3 Site-wide internal link + anchor check over the built HTML.
+- [x] 4.3 Site-wide internal link + anchor check over the built HTML.
+      *Scripted pass over all 31 built pages: every internal href resolves to
+      an existing page/asset and every fragment to an element id; zero dead
+      links or anchors (root-absolute URLs in 404.html excluded as
+      deploy-time-only, as in the Session-3 check).*
 - [ ] 4.4 Final verification sweep (grep CLIrrus/COMPLETED/serverless; every state
       enumeration includes CLAIMED; no empty section headers), then delete this file
       in the closing commit.
