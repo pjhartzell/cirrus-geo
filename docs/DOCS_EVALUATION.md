@@ -383,6 +383,14 @@ Consolidated from OPEN_QUESTIONS.md and DOCS_PLAN.md so both files can be retire
    `public-c2-notify-v2` timings, Sentinel-2 C1 L2A baseline back-processing
    stats — operator knowledge about a downstream deployment, kept per this
    plan's brief). Confirm or correct from operational experience.
+8. **stac-task packaging conventions on the Tasks page** (3.9 audit,
+   `docs/src/building-pipelines/tasks.md`): the Docker progression's
+   `src/task/task.py` layout, the `CMD ["task.handler"]` Lambda handler
+   string, and the Dockerfile examples (`lambgeo/lambda-gdal` etc.) are
+   stac-task/Lambda packaging conventions with no in-repo source.
+   `stactask.task.Task.handler` exists as a classmethod, consistent with the
+   examples, but the exact handler-string resolution was not verifiable here.
+   Confirm against a working task repo or stac-task docs.
 
 ## Disposition of the planning documents
 
@@ -559,8 +567,14 @@ One page per task, code-verified per its brief above.
       hedged "SubmitJob 30KiB" and "50/sec API limit" numbers as unverifiable;
       trimmed the 26-type Spot instance list to three illustrative entries.
       AWS-behavior claims kept on this page parked under decision 7.*
-- [ ] 3.9 Tasks: add the logging contract and the
+- [x] 3.9 Tasks: add the logging contract and the
       `stactask.exceptions.InvalidInput` statement; fold the one-bullet list.
+      *Deviations: logging contract verified against `cirrus/lib/logging.py`
+      (five reserved parent loggers, `CIRRUS_LOG_LEVEL`, adapter extras `id` /
+      `stac_version` / `aws_request_id`, parent-propagation disable). The
+      Docker progression's stac-task packaging conventions (`task.handler`
+      handler string, Dockerfile examples) are external conventions with no
+      in-repo source — kept as illustrations, parked as decision 8.*
 - [ ] 3.10 Using the CLI: rewrite the merged page (one install incantation; CLI-user
       IAM permissions + `CIRRUS_CLI_IAM_ARN`; deployment discovery with a real SSM
       example and `cirrus list-deployments`; explain `mgmt`/prefix matching).
