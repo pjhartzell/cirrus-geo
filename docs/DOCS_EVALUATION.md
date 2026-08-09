@@ -586,8 +586,15 @@ One page per task, code-verified per its brief above.
       `cloudformation/cli/ssm_parameters.yaml` creates. Dropped the old
       page's deprecated `cirrus-mgmt` PyPI digression. Permissions stated as
       capabilities traced from management source, not a policy document.*
-- [ ] 3.11 Deployment: env var table, quotas, "Scaling and throughput" section
+- [x] 3.11 Deployment: env var table, quotas, "Scaling and throughput" section
       (queue-splitting tip refined, reserved-concurrency-16 ceiling, Batch knobs).
+      *Deviations: env var table covers all 13 `CIRRUS_*` vars found by source
+      sweep, with `CIRRUS_CLI_IAM_ARN` as a pointer to Using the CLI
+      (orchestrator cross-checked the sweep — no misses). Stack and parameter
+      tables re-verified against main.yaml — already accurate. Queue-splitting
+      rewrite notes `ScalingConfig.MaximumConcurrency` is not in the in-repo
+      template (illustrative YAML labeled as such). No quota numbers restored,
+      per decision 2.*
 - [ ] 3.12 Monitoring & troubleshooting: refine the absorbed rerun section (rule by
       link, not table); annotate the lookalike event-type pairs.
 - [ ] 3.13 Small cross-links: chaining → payload schema `chain_filter`; consider

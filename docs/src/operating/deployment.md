@@ -50,8 +50,8 @@ Workflow definitions (Step Functions state machines) deploy as their own
 CloudFormation stacks, independent of the main stack, so they can be
 iterated on without touching core infrastructure. A workflow stack only
 needs `ResourcePrefix` to match the main stack's — from there it names its
-state machine `${ResourcePrefix}-<workflow-name>`, matching the
-`CIRRUS_BASE_WORKFLOW_ARN` prefix (`arn:aws:states:<region>:<account>:stateMachine:${ResourcePrefix}-`)
+state machine `${ResourcePrefix}-WORKFLOW_NAME`, matching the
+`CIRRUS_BASE_WORKFLOW_ARN` prefix (`arn:aws:states:REGION:ACCOUNT:stateMachine:${ResourcePrefix}-`)
 that the Process Lambda and CLI use to start and reference executions. See
 `cloudformation/workflows/minimal/state_machine.yaml` for the smallest
 complete example, walked through in the quickstart.
@@ -89,11 +89,38 @@ is what the `api` function's `/stats` endpoint reads by default.
 
 `cirrus.lib.eventdb.EventDB` also supports recording events to a Timestream
 database via a `CIRRUS_EVENT_DB_AND_TABLE` environment variable
-(`<database>|<table>`), and the API Lambda falls back to it when configured.
+(`DATABASE\|TABLE`), and the API Lambda falls back to it when configured.
 No template in `cloudformation/` provisions a Timestream database or sets
 this variable — it is a legacy code path, not something the current
 CloudFormation deploy wires up. Use `EnableWorkflowMetrics` for workflow
 event metrics in a CloudFormation deployment.
+
+## Environment variables
+
+Cirrus code reads its configuration entirely from `CIRRUS_*` environment
+variables — no config file. `core/functions.yaml` sets them on each Lambda
+function from stack parameters and outputs; `cli/ssm_parameters.yaml`
+publishes the deployment-scoped subset to Parameter Store for the Cirrus CLI
+to read at run time (see [deployment discovery](../cli/using-the-cli.md#deployment-discovery)).
+
+| Variable | Set on (Lambda) | Read by | Purpose |
+| --- | --- | --- | --- |
+| `CIRRUS_LOG_LEVEL` | api, process, update-state, pre-batch, post-batch | `cirrus.lib.logging` | Log level for the Cirrus logging config; defaults to `DEBUG` if unset. Set from the `LogLevel` stack parameter. |
+| `CIRRUS_DATA_BUCKET` | api, process, update-state | `api.py` | S3 bucket holding the STAC catalog the `api` function's root endpoint reads (`catalog.json`). Set from `CirrusDataBucket`. |
+| `CIRRUS_PAYLOAD_BUCKET` | api, process, update-state, pre-batch, post-batch | `cirrus.lib.payload_bucket.PayloadBucket` | S3 bucket for execution, oversized, batch, and invalid payloads (see [Payload Bucket](../reference/payload-bucket.md)). Set from `CirrusPayloadBucket`; required — `PayloadBucket` raises if unset. |
+| `CIRRUS_PAYLOAD_ROOT_PREFIX` | api, process, update-state, pre-batch, post-batch | `cirrus.lib.payload_bucket.PayloadBucket` | Root key prefix under which payload bucket objects are organized; defaults to `cirrus`. Set from the `PayloadRootPrefix` stack parameter. |
+| `CIRRUS_STATE_DB` | api, process, update-state | `cirrus.lib.statedb.StateDB` | DynamoDB state table name. Set from `StateTable`; required — `StateDB` raises if unset. |
+| `CIRRUS_WORKFLOW_EVENT_TOPIC_ARN` | process, update-state | `cirrus.lib.events` | SNS topic ARN workflow state-change events are published to. Set from `WorkflowEventTopicArn`. |
+| `CIRRUS_WORKFLOW_LOG_GROUP` | process, update-state | `cirrus.lib.events` | CloudWatch log group workflow events are written to for metric extraction; empty string disables it. Set from `WorkflowMetricLogGroup` (only non-empty when `EnableWorkflowMetrics` is `true`). |
+| `CIRRUS_WORKFLOW_METRIC_NAMESPACE` | api | `cirrus.lib.events.WorkflowMetricReader` | CloudWatch metrics namespace the `api` function's `/stats` endpoint reads from; empty string disables metric reads. Set from `WorkflowMetricNamespace` (only non-empty when `EnableWorkflowMetrics` is `true`). |
+| `CIRRUS_BASE_WORKFLOW_ARN` | process | `cirrus.lib.payload_manager` | Base Step Functions state machine ARN prefix (`arn:aws:states:REGION:ACCOUNT:stateMachine:RESOURCE_PREFIX-`) used to build execution ARNs. Set from a `!Sub` expression in `core/functions.yaml`, not a passed-through parameter. |
+| `CIRRUS_PUBLISH_TOPIC_ARN` | update-state | `update_state.py` | SNS topic ARN output items are published to on successful completion; unset means publishing is skipped. Set from `PublishTopicArn`. |
+| `CIRRUS_PROCESS_QUEUE_URL` | update-state | `update_state.py` | Process SQS queue URL chained payloads are enqueued to; unset means chaining is skipped. Set from `ProcessQueueUrl`. |
+| `CIRRUS_EVENT_DB_AND_TABLE` | none | `cirrus.lib.eventdb.EventDB` | `DATABASE\|TABLE` pair for the Timestream event-recording fallback. No template sets this — see [above](#workflow-event-metrics). |
+| `CIRRUS_PREFIX` | none (SSM only) | `cirrus.management.deployment` | Prefix used by the Cirrus CLI to identify a deployment's Lambda functions and build workflow ARNs. Published to Parameter Store from `ResourcePrefix` by `cli/ssm_parameters.yaml`; not a Lambda environment variable. |
+
+`CIRRUS_CLI_IAM_ARN` is a CLI-only, optional SSM parameter (not set by any
+template) covered in [Assuming a role](../cli/using-the-cli.md#assuming-a-role-cirrus_cli_iam_arn).
 
 ## AWS service quotas and limits
 
@@ -108,10 +135,11 @@ adjustable via a service quota increase request; limits are not.
 
 ### Quotas
 
-- **Lambda concurrent executions**: defaults to 1,000 per account per
-  region, shared across all functions. The Process Lambda has a reserved
-  concurrency of 16 (`core/functions.yaml`); size the account-level quota
-  for your expected parallel workflow volume. See
+- **Lambda concurrent executions**: an account-per-region quota shared
+  across all functions; reserving concurrency for one function (as the
+  process Lambda does — see [Scaling and throughput](#scaling-and-throughput))
+  reduces what is available to the rest. Size the account-level quota for
+  the deployment's expected parallel workflow volume. See
   [AWS Lambda quotas](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html).
 - **Step Functions open executions**: 1,000,000 open executions per account
   per region for Standard workflows (Cirrus workflow state machines are
@@ -145,26 +173,45 @@ adjustable via a service quota increase request; limits are not.
   if submitting many Batch jobs in a burst. See
   [AWS Batch service quotas](https://docs.aws.amazon.com/batch/latest/userguide/service_limits.html).
 
-## Processing queue priority
+## Scaling and throughput
 
-<!-- TODO(phase-3.11): refine into the "Scaling and throughput" section -->
+Three independent points determine how much processing volume a deployment
+can push through concurrently: the process Lambda's reserved concurrency,
+the process queue's structure, and the AWS Batch compute environment sizing
+for workflows that use Batch tasks.
 
-By default, there is only one `process` queue. This can cause difficulty when
-doing back-processing or failure re-runs, as thousands of older,
-lower-priority payloads can pile up in front of newly-generated,
-higher-priority payloads. A solution is to create an additional "bulk" queue
-and put the lower-priority payloads into it.
+### Process Lambda concurrency
 
-Alongside the existing `ProcessQueue` and `ProcessDeadLetterQueue` resources
-(`cloudformation/core/base.yaml`), define a `ProcessBulkQueue` and associated
-dead-letter queue with the same settings. Then give the process Lambda a
-second event source mapping, using each mapping's
-`ScalingConfig.MaximumConcurrency` to divide the Lambda's concurrency between
-the queues — the in-repo mapping is `ProcessLambdaEventSourceMapping` in
-`cloudformation/core/functions.yaml`:
+`ProcessLambda` in `core/functions.yaml` sets `ReservedConcurrentExecutions:
+16`, capping the process Lambda at 16 concurrent invocations regardless of
+the account-level Lambda concurrency quota. Since each invocation claims and
+starts workflow executions for one SQS batch (up to `BatchSize: 10` payloads,
+set on `ProcessLambdaEventSourceMapping`), this reserved concurrency is the
+practical ceiling on how many workflow executions can be *started*
+concurrently — it does not limit how many Step Functions executions can run
+once started. Raise it by editing `ReservedConcurrentExecutions` in
+`core/functions.yaml` and redeploying the functions stack; reserving more
+concurrency for one function reduces the pool available to the rest of the
+account, so weigh it against the account's overall Lambda concurrency quota
+(see [AWS Lambda quotas](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)).
+
+### Process queue priority
+
+By default, `core/base.yaml` creates a single `ProcessQueue`. Because the
+process Lambda's event source mapping (`ProcessLambdaEventSourceMapping`)
+consumes it in arrival order and shares the same 16-way reserved
+concurrency, thousands of older, lower-priority payloads (a backfill or a
+bulk re-run) can queue ahead of newly generated, higher-priority payloads
+and delay them.
+
+Splitting into a priority and a bulk queue addresses this: define a second
+queue (with its own dead-letter queue, mirroring `ProcessQueue` and
+`ProcessDeadLetterQueue`) and give the process Lambda a second event source
+mapping pointed at it, each with a `ScalingConfig.MaximumConcurrency` to
+divide the Lambda's 16-way concurrency between the two queues:
 
 ```yaml
-# Illustrative — extends the in-repo templates with a second queue.
+# Illustrative — extends the in-repo core/functions.yaml with a second queue.
 ProcessLambdaEventSourceMapping:
   Type: AWS::Lambda::EventSourceMapping
   Properties:
@@ -184,13 +231,25 @@ ProcessLambdaBulkEventSourceMapping:
       MaximumConcurrency: 4
 ```
 
-No Cirrus code reads a bulk-queue environment variable —
-`CIRRUS_PROCESS_QUEUE_URL` remains the default queue used by workflow
-chaining and `cirrus manage ... process`. Routing to the bulk queue is the
-producer's choice: point bulk [feeders](../building-pipelines/feeders.md) (or
-bulk rerun scripts) at the `ProcessBulkQueue` URL instead of the default
-process queue URL. The process Lambda handles messages from either queue
-identically.
+`ScalingConfig.MaximumConcurrency` is not set on the in-repo
+`ProcessLambdaEventSourceMapping`, so it currently draws from the full
+reserved concurrency; adding a second mapping means capping both explicitly,
+since the two together should not exceed the 16-way reservation above.
+
+No Cirrus code reads a bulk-queue environment variable — `CIRRUS_PROCESS_QUEUE_URL`
+remains the single queue used by workflow chaining (`update-state`) and
+`cirrus manage ... process`. Routing to a bulk queue is the producer's
+choice: point bulk [feeders](../building-pipelines/feeders.md) or backfill
+scripts at the bulk queue's URL directly. The process Lambda handles
+messages from either queue identically.
+
+### Batch-backed workflows
+
+Workflows with Batch tasks are bound by the Batch compute environment
+instead of Lambda concurrency. `MinvCpus`/`MaxvCpus` on the compute
+environment set the idle floor and the concurrent-job ceiling; see
+[Compute environment](../building-pipelines/batch-infrastructure.md#compute-environment)
+for how those interact with instance allocation and `AllocationStrategy`.
 
 ## Required deploy permissions
 
