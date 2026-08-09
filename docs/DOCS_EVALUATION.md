@@ -370,6 +370,14 @@ Consolidated from OPEN_QUESTIONS.md and DOCS_PLAN.md so both files can be retire
    schema requires STAC-like items in, but nothing enforces STAC out; the
    "highly-interoperable, metadata-first" language was not traceable to a code
    constraint. Restore reworded if the framing matters, or leave out.
+7. **Batch page claims not verifiable in-repo** (3.7 audit,
+   `docs/src/building-pipelines/batch-workflow-structure.md`): kept —
+   `Batch.AWSBatchException` as the SubmitJob throttling error name and Spot
+   reclamation as a routine retry cause (both AWS service behavior, no in-repo
+   source), and the two Earth Search anecdotes (Landsat `public-c2-notify-v2`
+   timings, Sentinel-2 C1 L2A baseline back-processing stats — operator
+   knowledge about a downstream deployment, kept per this plan's brief).
+   Confirm or correct from operational experience.
 
 ## Disposition of the planning documents
 
@@ -528,8 +536,14 @@ One page per task, code-verified per its brief above.
       the payload schema page (`#id-format`). Adjacent claims re-verified
       against utils.py, payload_manager.py, and cloudformation/core — no fixes
       needed.*
-- [ ] 3.7 Batch workflow structure: full deferred audit; single retry-JSON instance
+- [x] 3.7 Batch workflow structure: full deferred audit; single retry-JSON instance
       linking to Workflows; promote the Earth Search anecdotes under a named heading.
+      *Deviations: fixed a bug in the worked ASL example — the `Fail` state used
+      static `Error`/`Cause` with JSONPath strings, which ASL treats as literals;
+      now `ErrorPath`/`CausePath`. Replaced the example's YAML `!GetAtt` intrinsics
+      (invalid inside a JSON ASL document) with placeholder ARNs. Retry semantics
+      and the `url`/`url_out` contract reduced to links to their canonical homes.
+      In-repo-unverifiable claims parked as decision 7.*
 - [ ] 3.8 Batch infrastructure: restructure (declare-first, hazards into a bounded
       "Updating Batch resources safely" section); tone pass; verify against
       templates.

@@ -1,115 +1,71 @@
-# Batch tasks in workflows
+# Batch workflow structure
 
-Using Batch tasks in workflows requires a few additional steps than using
-Lambda tasks.
+A Batch task participates in a workflow differently than a Lambda task.
+Step Functions invokes Lambda directly and passes the state input as the
+Lambda payload; AWS Batch has no equivalent input channel, so a Batch job
+submission cannot carry a Cirrus Payload directly. Cirrus works around this
+with two built-in Lambda functions, `pre-batch` and `post-batch`, that a
+workflow runs immediately before and after each Batch task.
 
-Lambdas integrate more directly with Step Functions than Batch, which has
-additional layer of infrastructure in-between. As a result, users must keep a
-few more things in mind when using to Batch tasks.
+This page covers how a workflow's ASL (Amazon States Language) definition
+should be structured around a Batch task. For the CloudFormation resources
+behind a Batch task itself — job definitions, compute environments, job
+queues, IAM — see [Batch infrastructure](batch-infrastructure.md).
 
-## `pre-batch` and `post-batch`
+## The `pre-batch`/`post-batch` contract
 
-Because Batch tasks cannot take the input payload natively like Lambda and
-must redirect through S3, Cirrus provides the built-in
-[`pre-batch`](../reference/lambda-functions.md#pre-batch) Lambda function to assist.
-`pre-batch` takes an input payload, uploads it to S3, and returns a JSON
-object with two keys: `url`, the S3 URL of the uploaded payload, and
-`url_out`, the S3 URL where the Batch task must write its output. It should
-always run immediately preceding a Batch task.
+`pre-batch` uploads the input payload to the payload bucket and returns
+`url` and `url_out`; the Batch job reads its input from `url` and must write
+its output to `url_out`; `post-batch` reads the output from `url_out` and
+returns it to the state machine, or, on job failure, raises the underlying
+error from the job's logs. See
+[Lambda functions: pre-batch](../reference/lambda-functions.md#pre-batch) and
+[post-batch](../reference/lambda-functions.md#post-batch) for the full
+contract, including how `post-batch` reconstructs errors from CloudWatch
+logs.
 
-Similarly, Batch does not integrate returned payloads with Step Functions
-nearly as well as Lambda, so Cirrus has a built-in
-[`post-batch`](../reference/lambda-functions.md#post-batch) Lambda function for post-batch
-operations. `post-batch` pulls the output payload from S3 (at `url_out`) and
-returns it in the case of a successful Batch execution. In the case of a
-Batch error, `post-batch` will scrape the container logs for an exception or
-other error message, and raise it within the Step Functions execution. This
-"bubbles" Batch task errors up to the workflow, where they can be handled
-within the state machine or used to fail the execution with error context
-that is ultimately pushed into the state database, increasing error
-visibility and assisting with troubleshooting.
+A workflow must run `pre-batch` immediately before a Batch task step and
+`post-batch` immediately after, passing `url` and `url_out` through the
+Batch task's parameters so `post-batch` can find the output.
 
-Therefore, like `pre-batch`, a `post-batch` step should always immediately
-follow a Batch task step.
+## Group the three steps in a `Parallel` block
 
-## Put it all together with a `parallel` block
+A Batch task in a workflow is really three Step Functions steps:
+`pre-batch`, the Batch task, and `post-batch`. Because they only make sense
+together, they should share error handling and retries — if any one of the
+three fails in a way that isn't retried, the whole group should fail.
 
-Instead of simply being able to have a single step in a step function for a
-Batch task, we end up with three steps. Because of the way they operate
-together, we can think of the `pre-batch` -\> Batch task -\> `post-batch`
-triad as a single step from the perspective of error handling and retries. That
-is, if we encounter an error anywhere in that set of three, we either want to
-fail them all or retry them all together.
-
-Enter the step function `parallel` block. Step functions provide this control
-primitive to allow users to define one or more branches in a workflow that can
-execute in parallel. Interestingly for us, `parallel` supports both `Catch` and
-`Retry` policies for error handling, which provides us with the control we
-need for Batch.
+Step Functions' `Parallel` state supports `Retry` and `Catch` like a `Task`
+state, and accepts one or more branches. Using `Parallel` with a single
+branch groups the three steps into one unit from the perspective of retries
+and failure, without actually running anything concurrently.
 
 ### Error handling
 
-It is essential that workflows properly handle errors when using Batch, as
-there are more things that can go wrong than when using Lambda. For example,
-when too many Step Functions are trying to create a new Batch Job, a
-AWSBatchException is thrown. When the EC2 instance that a Batch Job is running
-on is reclaimed, as happens frequently with Spot instances at scale, a retry
-should occur so the Batch Job is attempted again. This is why it is recommended
-to use a Parallel block with retry to wrap the Batch steps.
+Failures are more varied with Batch than with Lambda. A `SubmitJob` call can
+fail with `Batch.AWSBatchException` when too many jobs are submitted too
+quickly. A running job can be killed and need to be retried when its
+underlying EC2 instance is reclaimed, which happens routinely with Spot
+instances at scale. Wrapping the Batch task step in a `Parallel` block with a
+`Retry` policy handles both cases without retrying `pre-batch` or
+`post-batch` unnecessarily.
 
-It is also critical to ensure that errors are properly passed out of the state
-machine so that they can be accessed by the `update-state` lambda via the
-EventBridge event. This is done by properly configuring the fail state to
-contain errors so that stack track information from say a failure in a
-container is passed out to the step function for proper preservation in the
-state database. The example below demonstrates how the `Fail` state in your
-`state-machine.json` should be configured to pass out errors. More
-information can be found in AWS documentation for [Fail state definition examples](https://docs.aws.amazon.com/step-functions/latest/dg/state-fail.html)
+The `Parallel` block's own `Catch` must route to a `Fail` state that uses
+`ErrorPath`/`CausePath` (not static `Error`/`Cause`) so the error captured
+from a failed Batch job or Lambda function is preserved rather than replaced
+with a fixed string — see [Workflows: Capturing
+errors](workflows.md#capturing-errors) for why this matters and how
+`update-state` consumes it.
 
-### Additional considerations
+For retry `IntervalSeconds`/`BackoffRate`/`MaxAttempts`/`JitterStrategy`
+semantics, see [Workflows: Retry with backoff and
+jitter](workflows.md#retry-with-backoff-and-jitter).
 
-Batch does not perform well when there are many jobs that run quickly. For
-example, if a task filters out a significant number of payloads quickly, the
-overhead of placing the jobs onto compute resources will dominate the runtime,
-and will result in a slow and inefficient pipeline. A few examples in Earth
-Search are:
+### Example
 
-- **Landsat SNS topic (public-c2-notify-v2)**: Includes many "Real-Time" (RT)
-  scenes that are ignored. These result in a runtime of only a few seconds. If
-  these were run with Batch, there would be a few minute overhead for job
-  placement (incurring the cost of the EC2 instances for that time) for only a
-  few seconds of actual use.
-  - Even without the aforementioned RT scenes, Landsat ingest uses Lambda
-    instead of Batch because the task is only performing a metadata-to-metadata
-    conversion that takes tens of seconds per scene. The overhead for Batch is
-    far greater than the actual runtime, and the task runtime is both low (much
-    less than the Lambda maximum of 15 minutes) and consistent.
-- **Sentinel-2 Collection 1 Level-L2A**: This collection only includes items
-  with a "processing baseline" value of 05.00 or higher. All newly-acquired
-  scenes have this processing baseline, but when back-processing the catalog,
-  about half of the scenes have an older baseline and are immediately ignored.
-  This meant that half of the Batch Jobs ran for seconds and half ran for 5-10
-  minutes. The batch jobs that ran for seconds caused a significant increase in
-  cost and decrease in throughput. A better solution would have been to have an
-  initial Lambda that checked only if the processing baseline was appropriate,
-  and only allowed the Batch job to run if so.
-
-Another consideration is with error handing and InvalidInputs. Tasks that raise
-InvalidInput exceptions are indicating that the payload can never be processed
-correctly. A trivial example of this would be a process payload with only an ID
-value and no other information. Contrast that scenario with a valid payload
-that fails because of something that can be corrected, such as a code bug.
-
-### Minimal example
-
-Let's see an example of a `state-machine.json` workflow using a `Parallel`
-block to group the set of Batch operations together. Notice how the example
-uses `parallel` with only a single branch defined, but that fits the Batch
-use-case perfectly.
-
-``` JSON
+```json
 {
-    "Comment": "Example workflow using parallel to make a 'batch group'",
+    "Comment": "Example workflow using Parallel to group a Batch task with pre-batch/post-batch",
     "StartAt": "batch-group",
     "States": {
         "batch-group": {
@@ -122,7 +78,7 @@ use-case perfectly.
                             "Type": "Task",
                             "Resource": "arn:aws:states:::lambda:invoke",
                             "Parameters": {
-                                "FunctionName": "!GetAtt pre-batch.Arn",
+                                "FunctionName": "arn:aws:lambda:us-east-1:123456789012:function:my-prefix-pre-batch",
                                 "Payload.$": "$"
                             },
                             "OutputPath": "$.Payload",
@@ -180,7 +136,7 @@ use-case perfectly.
                             "Type": "Task",
                             "Resource": "arn:aws:states:::lambda:invoke",
                             "Parameters": {
-                                "FunctionName": "!GetAtt post-batch.Arn",
+                                "FunctionName": "arn:aws:lambda:us-east-1:123456789012:function:my-prefix-post-batch",
                                 "Payload.$": "$"
                             },
                             "OutputPath": "$.Payload",
@@ -230,7 +186,7 @@ use-case perfectly.
             "Type": "Task",
             "Resource": "arn:aws:states:::lambda:invoke",
             "Parameters": {
-                "FunctionName": !GetAtt publish.Arn,
+                "FunctionName": "arn:aws:lambda:us-east-1:123456789012:function:my-prefix-publish",
                 "Payload.$": "$"
             },
             "End": true,
@@ -259,25 +215,60 @@ use-case perfectly.
         },
         "failure": {
             "Type": "Fail",
-            "Error": "$.error.Error",
-            "Cause": "$.error.Cause"
+            "ErrorPath": "$.error.Error",
+            "CausePath": "$.error.Cause"
         }
     }
 }
 ```
 
-## Batch retries vs step function retries
+The Batch task step catches its own errors (`Catch` routing to `post-batch`
+on `States.ALL`) so that `post-batch` always runs, even after a Batch job
+failure, and can turn the raw Batch failure into the underlying container
+error before it propagates further. The outer `Parallel` block then retries
+or fails the whole `pre-batch`/Batch/`post-batch` group as a unit.
 
-Whenever possible, using the step function retry semantics over those provided by
-Batch is preferred. While Batch retries can be used without having to manage the
-additional complexity of the `parallel` block, Batch retries regardless of
-error type, while step function retries allow matching specific error types,
-allowing users more granular control over when to retry or fail.
+## Batch retries vs. Step Functions retries
 
-Additionally, retrying within the step function shows the retry as a separate
-step than the first. This makes it much more obvious to users investigating
-failures that a retry happened and what the initial error was. Batch retries
-are more or less hidden from the step functions.
+Prefer Step Functions' `Retry` (as above) over relying on AWS Batch's own
+job retry configuration. Batch retries apply uniformly regardless of failure
+reason, while Step Functions `Retry` blocks match specific error types,
+giving more control over what gets retried versus failed outright.
+Step Functions retries also appear as distinct steps in the execution
+history, making a retried attempt and its original failure visible to anyone
+investigating the run; Batch's own retries are internal to the job and are
+not reflected in the state machine execution.
 
-For these reasons, the overhead of the `parallel` block is worth the
-investment.
+## When Batch overhead dominates
+
+Submitting and scheduling a Batch job carries overhead — job placement onto
+a compute resource can take minutes — that is fixed regardless of how long
+the job itself runs. When a task's actual work is short, that overhead can
+dominate the total runtime and cost, which is a signal to use a Lambda task
+instead (see [Tasks: Lambda vs Batch](tasks.md#lambda-vs-batch)). Two
+examples from Earth Search:
+
+- Ingesting Landsat's `public-c2-notify-v2` SNS topic includes many
+  "Real-Time" scenes that are filtered out after a few seconds of work.
+  Running that filtering step as a Batch job would spend minutes of job
+  placement overhead (and the corresponding EC2 cost) on a few seconds of
+  actual use. More generally, Landsat ingest uses Lambda rather than Batch
+  throughout, since it performs only a metadata-to-metadata conversion
+  taking tens of seconds per scene — well under the Lambda timeout, and
+  consistent enough that Batch's overhead is never worth it.
+- The Sentinel-2 Collection 1 Level-2A collection only includes items with a
+  processing baseline of 05.00 or higher. When back-processing the full
+  catalog, roughly half the scenes had an older baseline and were discarded
+  immediately, while the other half ran a full 5-10 minute Batch job. The
+  discarded half still paid Batch's placement overhead, increasing cost and
+  reducing throughput. A Lambda step to check the processing baseline first,
+  ahead of the Batch job, would have avoided that cost for the discarded
+  half.
+
+## Batch errors and `InvalidInput`
+
+A task that determines its input can never be processed — as opposed to a
+transient or code failure — should raise the same `InvalidInput` exception
+used by Lambda tasks so the execution is recorded as `INVALID` rather than
+`FAILED`; see [Lambda functions: update-state](../reference/lambda-functions.md#update-state)
+for the exception classes recognized and how the distinction is used.
