@@ -575,9 +575,17 @@ One page per task, code-verified per its brief above.
       Docker progression's stac-task packaging conventions (`task.handler`
       handler string, Dockerfile examples) are external conventions with no
       in-repo source — kept as illustrations, parked as decision 8.*
-- [ ] 3.10 Using the CLI: rewrite the merged page (one install incantation; CLI-user
+- [x] 3.10 Using the CLI: rewrite the merged page (one install incantation; CLI-user
       IAM permissions + `CIRRUS_CLI_IAM_ARN`; deployment discovery with a real SSM
       example and `cirrus list-deployments`; explain `mgmt`/prefix matching).
+      *Deviations: precedence corrected mid-review — the deployment's
+      `CIRRUS_CLI_IAM_ARN` parameter wins over `--iam-arn`
+      (`deployment.py:73`, env value first, flag is the `.get()` fallback);
+      the subagent's draft had it backwards. `CIRRUS_CLI_IAM_ARN` described as
+      optional — it is not among the parameters
+      `cloudformation/cli/ssm_parameters.yaml` creates. Dropped the old
+      page's deprecated `cirrus-mgmt` PyPI digression. Permissions stated as
+      capabilities traced from management source, not a policy document.*
 - [ ] 3.11 Deployment: env var table, quotas, "Scaling and throughput" section
       (queue-splitting tip refined, reserved-concurrency-16 ceiling, Batch knobs).
 - [ ] 3.12 Monitoring & troubleshooting: refine the absorbed rerun section (rule by

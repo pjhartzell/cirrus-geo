@@ -1,149 +1,152 @@
 # Using the CLI
 
-## Introduction
+The Cirrus CLI (the `cirrus` command) is a command-line tool for operating an
+existing Cirrus deployment: listing and invoking Lambda functions, submitting
+and rerunning workflows, inspecting Step Functions executions, querying the
+DynamoDB state database, and fetching stored payloads. It is built with
+[click](https://click.palletsprojects.com/) and ships as part of the
+`cirrus-geo` package.
 
-Cirrus itself is [STAC](https://stacspec.org/)-based geospatial processing pipeline platform deployed
-on AWS and is a constellation of associated pieces of AWS infrastructure. The
-pieces of a Cirrus deployment like the lambdas, SQS, S3 buckets and other can be
-managed and interacted with using common AWS management tools like the AWS GUI
-or AWS CLI.
-
-However the nature of a Cirrus deployment can make direct
-management via AWS tools difficult to do things like batch reruns, manage
-deployments, individual lambda invocations, and more. There can be multiple
-cirrus deployments and Cirrus infrastructure may co-exist in an AWS account with non Cirrus resources further complicating this management. The Cirrus CLI was built to simplify dealing with these issues.
-
-## What Is the Cirrus CLI?
-
-To ease the management of a cirrus deployment the cirrus-geo library has a
-built in command line tool designed to streamline the developer
-experience when using and interacting with a Cirrus deployment.
-
-The Cirrus CLI is a python tool built using the [click](https://click.palletsprojects.com/en/stable/) library with commands
-specific to Cirrus. Example use cases would be to list all available cirrus
-deployments, list lambdas in a given deployment, and even directly trigger a
-workflow with an input Payload by sending the payload directly to the SQS queue
-monitored by the `process` lambda, and more.
-
-## What if I'm using an older version of Cirrus?
-
-You can use the [older CLI tool](https://pypi.org/project/cirrus-mgmt/) which is a standalone module and can be
-installed via pip.
-
-## How To Use the Cirrus CLI?
-
-A few simple steps are all it takes to set up the Cirrus CLI for use.
-
-1. Install
-2. Authenticate
-3. Run commands
-
-## Cirrus CLI Quick Start
-
-If you understand the broader background and structure of Cirrus, cirrus
-deployments and the cirrus CLI tool and you want to jump right into using the
-CLI tool here is what an example workflow might look like. These are one way of accomplishing these steps, personal and organizational requirements may differ.
-
-1. Install requirements
-
-    ``` bash
-    pipx install 'cirrus-geo[cli]'
-    ```
-
-2. Authenticate (if necessary)
-
-    ``` bash
-    aws sso login --profile your-config-profile-here
-    ```
-
-3. Use the Cirrus CLI
-
-    ``` bash
-    cirrus mgmt deployment-name-here list-lambdas
-    ```
-
-And that's it! If you would like more in depth explanations on how to use the
-tool, please proceed.
+This page covers installing the CLI, authenticating it against AWS, and how
+it discovers a deployment's resources. For a tour of the commands themselves,
+see [Common CLI workflows](common-workflows.md); for the full option listing
+of every command, see the [CLI reference](reference.md). To deploy Cirrus
+itself, see the [Quickstart](../getting-started/quickstart.md) instead — this
+page assumes a deployment already exists.
 
 ## Installing
 
-Built using python [click](https://click.palletsprojects.com/en/stable/) library and included in the broader [cirrus-geo](https://github.com/cirrus-geo/cirrus-geo)
-library, you can install the CLI tool on its own or alongside other project
-requirements. A standalone CLI installation might look like
+Install the CLI with [pipx](https://pipx.pypa.io/):
 
-``` bash
+```bash
 pipx install 'cirrus-geo[cli]'
 ```
 
-Another way is to use a more modern tool like `uv` to run specific CLI
-commands in an ephemeral environment.
+The `[cli]` extra pulls in the dependencies the management commands need
+(`click`, `backoff`, `click-option-group`) without requiring the rest of the
+`cirrus-geo` package.
 
-``` bash
-uvx --from 'cirrus-geo[cli]' cirrus [COMMAND]
+To run a single command without installing anything, use
+[`uvx`](https://docs.astral.sh/uv/guides/tools/) to fetch and run the CLI in
+an ephemeral environment:
+
+```bash
+uvx --from 'cirrus-geo[cli]' cirrus version
 ```
 
-## Authentication
+## Credentials
 
-Because the Cirrus CLI interacts directly with AWS resources via the AWS python API
-with the boto3 library, you will have to be authenticated with AWS. We
-recommend following your organization's best practice recommendations for
-authentication. One way you could do so is to use the [AWS CLI tool](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
+The CLI calls AWS APIs directly through `boto3`, so it needs a set of AWS
+credentials before any command that touches a deployment will work. Any
+credential source `boto3` understands works — a named profile, environment
+variables, an instance role, and so on. `cirrus` also accepts `--profile` and
+`--region` options (before the subcommand) to select a specific AWS CLI
+profile or region for the session.
 
-Look [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) for an in depth explanation of authentication options with the AWS
-command line tool and how to configure SSO login.
+If your organization uses AWS IAM Identity Center (SSO), configure a profile
+once with `aws configure sso`, then start each session with:
 
-The Cirrus CLI will only need to be installed once, but authenticating with AWS
-will be necessary for each new session as AWS credentials expire and must be
-refreshed every so often. This can be easily accomplished with the AWS CLI
-single sign on (SSO) option.
-
-After you have built your config file according to organizational or personal
-preference you can login with
-
-``` bash
-aws sso login --profile your-named-profile
+```bash
+aws sso login --profile your-profile-name
 ```
 
-Once you have successfully SSO'd setup will be complete for the Cirrus CLI
+SSO sessions expire and need to be refreshed periodically; if a command fails
+with an SSO-related error, the CLI reports it directly and tells you to run
+`aws sso login` again.
 
-## The Cirrus CLI and Cirrus Deployments
+### Required permissions
 
-The Cirrus CLI is designed around interacting with a different cirrus deployments. Many
-of the commands are focused on interacting with a specific cirrus 'deployment',
-like invoking a specific workflow to run in a specific deployment. A 'cirrus
-deployment' can be considered to be the collection of related AWS resources for
-a single cirrus deployment. For the Cirrus CLI, a 'deployment' is represented as a
-collection of essential environment variables that are necessary to interact
-with the correct AWS resources for a deployment, like relevant ARNs or SQS queue
-URLs. These environment variables for connecting to the correct resources are
-stored in the [AWS Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html)
+The identity the CLI runs as needs permission to call the AWS APIs behind the
+commands you use. In broad terms, that identity must be allowed to:
 
-### Deployments and Parameter Store
+- Read SSM Parameter Store parameters under `/cirrus/deployments/` and
+  `/deployment/<name>/` (deployment discovery — see below).
+- Read and invoke Lambda functions in the deployment (`list-lambdas`,
+  `invoke-lambda`).
+- Send messages to the deployment's SQS process queue (`process`,
+  `run-workflow`).
+- Read and write objects in the deployment's payload bucket (payload
+  retrieval, oversized-payload upload).
+- Read and query the deployment's DynamoDB state table (`get-state`,
+  `query`, `get-input-payloads`, and workflow-status polling).
+- Describe Step Functions state machines and executions, and read their
+  event history (`get-execution*`, `get-workflow-definition`).
+- Read CloudWatch Logs (`get-lambda-logs`, `get-batch-logs`).
 
-As previously mentioned, using the Cirrus CLI requires knowing deployment specific
-environment variables to make AWS API calls to the correct resources. These
-environment variables are stored in the AWS Parameter Store. For example, the
-`process` lambda requires the "CIRRUS_PAYLOAD_BUCKET" environment variable to
-know what bucket to dump payloads into for storage. When running commands on a
-specific deployment the Cirrus CLI will automatically retrieve these environment
-variables based on the deployment name you pass.
+Which of these you actually need depends on which commands you run — a user
+who only lists deployments and tails logs needs far less than one running
+`run-workflow` and `migrate`. Scope credentials to the commands the identity
+is expected to use rather than granting all of the above by default.
 
-### Parameter Store
+### Assuming a role: `CIRRUS_CLI_IAM_ARN`
 
-The parameter store has a hierarchical storage system centered around the use of
-`/` in parameter names. More information on parameter hierarchies can be found
-on the [AWS parameter store documentation](https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-paramstore-hierarchies.html). This hierarchial organization is
-used to ensure deployments can be found under common prefixes, and enables for
-easy use if you wish to directly search the parameter store yourself.
+A deployment's parameter set can include a `CIRRUS_CLI_IAM_ARN` value (or you
+can pass an ARN directly with `cirrus manage <deployment> --iam-arn
+<role-arn> ...`). When set, the CLI calls `sts:AssumeRole` on that ARN using
+your current credentials and uses the resulting temporary credentials — under
+the session name `cirrus_cli_session` — for every AWS call made against that
+deployment. This lets a deployment centralize the permissions above on a
+single role instead of granting them to every user's own identity directly;
+your own credentials only need `sts:AssumeRole` on the target role. If both
+are present, the deployment's `CIRRUS_CLI_IAM_ARN` parameter takes precedence
+and the `--iam-arn` option is ignored.
 
-The Cirrus CLI utilizes the parameter store to store these critical environment
-variables for different deployments. When you run a command on a specific
-named cirrus deployment the Cirrus CLI first retrieves the environmental variables for
-that cirrus deployment from the parameter store and then uses them to execute
-commands like `list-lambdas`
+## Deployment discovery
 
-A pointer system is used to identify the parameter store prefix for a given
-deployment to ensure that we can search and retrieve only the environment
-variables for a given deployment without having to parse a large amount of
-returned parameters. Using this pointer the Cirrus CLI can then retrieve the related
-environment variables.
+Most CLI commands operate against a specific deployment, identified by name.
+Rather than requiring you to know a deployment's Lambda names, queue URLs, or
+table names, the CLI looks them up from SSM Parameter Store at run time.
+
+Each deployment publishes a pointer parameter at `/cirrus/deployments/<name>`
+whose value identifies where the deployment's own configuration parameters
+live — by default, under `/deployment/<name>/`. That prefix holds one
+parameter per configuration value the CLI needs, including
+`CIRRUS_PAYLOAD_BUCKET`, `CIRRUS_STATE_DB`, `CIRRUS_PROCESS_QUEUE_URL`,
+`CIRRUS_BASE_WORKFLOW_ARN`, and `CIRRUS_PREFIX` (used to identify the
+deployment's Lambda functions by name).
+
+```mermaid
+flowchart LR
+    A["cirrus manage name-dev list-lambdas"] --> B["GetParameter\n/cirrus/deployments/name-dev"]
+    B --> C["GetParametersByPath\n/deployment/name-dev/*"]
+    C --> D["AWS API calls using the\nresolved configuration"]
+```
+
+`cirrus list-deployments` lists every deployment name visible under
+`/cirrus/deployments/` for the current credentials:
+
+```bash
+cirrus list-deployments
+```
+
+The reference CloudFormation in this repository
+(`cloudformation/cli/ssm_parameters.yaml`) creates both the pointer and the
+configuration parameters for a deployment automatically as part of the
+regular deploy; you do not create or maintain them by hand unless you are
+integrating the CLI with an unmanaged deployment.
+
+## Running commands against a deployment
+
+Deployment-scoped commands live under `cirrus manage <deployment-name>`.
+`mgmt` is a registered alias for `manage`, and both `manage` and its
+subcommands support prefix matching — any unambiguous leading substring of a
+command name resolves to that command. For example, these are equivalent:
+
+```bash
+cirrus manage name-dev list-lambdas
+cirrus mgmt name-dev list-lambdas
+cirrus mgmt name-dev list-l
+```
+
+A minimal end-to-end example: install the CLI, authenticate, and list the
+Lambda functions in a deployment.
+
+```bash
+pipx install 'cirrus-geo[cli]'
+aws sso login --profile your-profile-name
+cirrus mgmt name-dev list-lambdas
+```
+
+From here, [Common CLI workflows](common-workflows.md) walks through running
+workflows, inspecting executions, querying the state database, and the rest
+of the command set.
