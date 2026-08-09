@@ -10,6 +10,13 @@ results can trigger indexing into a STAC API (such as
 [stac-server](https://github.com/stac-utils/stac-server)) or feed further
 processing.
 
+The design intent is STAC in, STAC out: input items are STAC-like by
+schema requirement, and workflows are meant to emit complete STAC items —
+that is what the publish topic and downstream STAC tooling assume. Only the
+input side is enforced, though; nothing in the framework validates what a
+workflow's final task returns, so a pipeline can deviate on output (or, to a
+lesser degree, input) shape where its consumers allow it.
+
 The `cirrus` Python package (installed as the `cirrus-geo` distribution)
 provides both the [Cirrus CLI](../cli/using-the-cli.md) for deploying and
 operating a Cirrus instance, and `cirrus.lib`, the library used by the
@@ -105,6 +112,15 @@ status; if every task completes, the execution succeeds.
 Cirrus originated as, and continues to be used as, the processing pipeline
 behind [Earth Search](https://www.element84.com/earth-search/), Element 84's
 public STAC catalog of open Earth observation data.
+
+In practice, deployments span workloads from tens of items to millions:
+Earth Search has processed collections of millions of items through Cirrus,
+at sustained rates where AWS account quotas — not the framework — became the
+practical ceiling. See [Scaling and
+throughput](../operating/deployment.md#scaling-and-throughput) for the knobs
+that govern throughput and [AWS service quotas and
+limits](../operating/deployment.md#aws-service-quotas-and-limits) for the
+quotas a high-volume deployment runs into.
 
 ## Glossary
 
