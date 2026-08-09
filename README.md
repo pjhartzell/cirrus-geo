@@ -9,7 +9,7 @@ implemented using a scalable architecture deployed on AWS. Cirrus provides the g
 infrastructure for processing, allowing a user to focus on implementing the specific
 processing logic for their data.
 
-![architecture-overview](docs/src/cirrus/images/arch-overview.png)
+![architecture-overview](docs/src/images/arch-overview.png)
 
 As input, Cirrus takes a STAC ItemCollection along with a `process` definition block.
 That input is called a "payload" and follows the `Payload` model defined in the
@@ -44,16 +44,17 @@ Guide](CONTRIBUTING.md).
 Documentation for deploying, using, and customizing Cirrus is contained
 within the [docs](https://cirrus-geo.github.io/cirrus-geo/) directory:
 
-- Learn how to [get
-  started](https://cirrus-geo.github.io/cirrus-geo/stable/cirrus/10_intro.html)
-- Understand the
-  [architecture](https://cirrus-geo.github.io/cirrus-geo/stable/cirrus/20_arch.html)
-  of Cirrus and key concepts
-- [Use](https://cirrus-geo.github.io/cirrus-geo/stable/cirrus/30_payload.html)
-  Cirrus to process input data and publish resulting STAC Items
-- Cirrus features several [component
-  types](https://cirrus-geo.github.io/cirrus-geo/stable/cirrus/60_components.html)
-  that each represent a specific role within the Cirrus architecture
+- Understand [how Cirrus
+  works](https://cirrus-geo.github.io/cirrus-geo/stable/getting-started/how-cirrus-works/)
+  — the architecture, components, and key concepts
+- Deploy Cirrus and run a test workflow with the
+  [quickstart](https://cirrus-geo.github.io/cirrus-geo/stable/getting-started/quickstart/)
+- [Build
+  pipelines](https://cirrus-geo.github.io/cirrus-geo/stable/building-pipelines/workflows/)
+  from workflows, tasks, and feeders
+- Look up the [Cirrus Payload
+  schema](https://cirrus-geo.github.io/cirrus-geo/stable/reference/payload-schema/)
+  used to process input data and publish resulting STAC Items
 
 ## About
 

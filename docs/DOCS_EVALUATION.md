@@ -622,7 +622,12 @@ One page per task, code-verified per its brief above.
       sources), 5.4 (decision 1), OPEN_QUESTIONS items (decisions 2–4). Also
       removed the codespell exclude for DOCS_PLAN.md from
       .pre-commit-config.yaml.*
-- [ ] 4.2 Re-point the landing page cards at the new nav.
+- [x] 4.2 Re-point the landing page cards at the new nav. *Payloads card
+      replaced with Building pipelines (→ Workflows, the section's first page);
+      cut the index paragraph duplicating the concepts opening. Also did the
+      2.5-deferred README re-pointing: four doc bullets now target the new
+      site paths (stable alias, directory URLs) and the architecture image
+      path updated to `docs/src/images/`.*
 - [ ] 4.3 Site-wide internal link + anchor check over the built HTML.
 - [ ] 4.4 Final verification sweep (grep CLIrrus/COMPLETED/serverless; every state
       enumeration includes CLAIMED; no empty section headers), then delete this file
