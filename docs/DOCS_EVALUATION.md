@@ -616,8 +616,12 @@ One page per task, code-verified per its brief above.
 
 ### Phase 4 — cleanup
 
-- [ ] 4.1 Delete DOCS_PLAN.md and OPEN_QUESTIONS.md (contents captured above and in
-      git history).
+- [x] 4.1 Delete DOCS_PLAN.md and OPEN_QUESTIONS.md (contents captured above and in
+      git history). *Live carry-overs confirmed captured before deletion: batch
+      audits (3.7/3.8), cli intro register (3.10), docstring PR (Upstream
+      sources), 5.4 (decision 1), OPEN_QUESTIONS items (decisions 2–4). Also
+      removed the codespell exclude for DOCS_PLAN.md from
+      .pre-commit-config.yaml.*
 - [ ] 4.2 Re-point the landing page cards at the new nav.
 - [ ] 4.3 Site-wide internal link + anchor check over the built HTML.
 - [ ] 4.4 Final verification sweep (grep CLIrrus/COMPLETED/serverless; every state

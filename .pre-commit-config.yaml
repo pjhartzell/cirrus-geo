@@ -41,7 +41,7 @@ repos:
         entry: codespell
         language: system
         files: ^(docs/|README\.md)
-        exclude: ^docs/(build/|DOCS_PLAN\.md)
+        exclude: ^docs/build/
       - id: pymarkdown
         name: PyMarkdown
         description: "PyMarkdown - GitHub Flavored Markdown and CommonMark Compliant Linter"
