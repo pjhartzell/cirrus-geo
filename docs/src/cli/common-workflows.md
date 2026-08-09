@@ -107,7 +107,7 @@ while IFS= read -r payload; do
 done
 ```
 
-See the [monitoring guide](../operating/monitoring.md#rerun-tasks) for which
+See [Rerunning payloads](../operating/monitoring.md#rerunning-payloads) for which
 states rerun under which conditions.
 
 ## Template payloads

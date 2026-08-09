@@ -358,6 +358,10 @@ Consolidated from OPEN_QUESTIONS.md and DOCS_PLAN.md so both files can be retire
 4. **Three possibly-unintended `api.py` behaviors** documented as-written
    (`urljoin(None)` on missing domainName, literal `items` route shadowing, dropped
    `nextkey` token): fix in code (docs follow-up required) or leave documented.
+   Related, found during 3.12: `WorkflowEventManager.timed_out`
+   (`src/cirrus/lib/events.py:688-694`) writes its Timestream record with
+   `StateEnum.INVALID` while `statedb.set_failed` records FAILED — likely a
+   copy-paste bug in the deprecated Timestream path; not documented anywhere.
 5. **Scaling claims dropped from the concepts page** (old
    `docs/src/getting-started/intro.md:6-9,52-66`, pre-3.1 git history): "tens to
    millions of items" and the horizontal/vertical scaling section could not be
@@ -595,8 +599,15 @@ One page per task, code-verified per its brief above.
       rewrite notes `ScalingConfig.MaximumConcurrency` is not in the in-repo
       template (illustrative YAML labeled as such). No quota numbers restored,
       per decision 2.*
-- [ ] 3.12 Monitoring & troubleshooting: refine the absorbed rerun section (rule by
+- [x] 3.12 Monitoring & troubleshooting: refine the absorbed rerun section (rule by
       link, not table); annotate the lookalike event-type pairs.
+      *Deviations: found and fixed a second broken `xargs` rerun pipe this page
+      carried (1.1 only fixed the operations page's copy). Corrected the
+      `ALREADY_INVALID` row (replace applies) and split FAILED/TIMED_OUT/INVALID
+      by `update_state.py`'s actual error-type routing, noting `TIMED_OUT` is an
+      event type only — the state database records FAILED. Updated the
+      cookbook's inbound `#rerun-tasks` anchor to `#rerunning-payloads`.
+      Timestream oddity found during verification appended to decision 4.*
 - [ ] 3.13 Small cross-links: chaining → payload schema `chain_filter`; consider
       `invoke-lambda` in the cookbook's debugging scenarios.
 

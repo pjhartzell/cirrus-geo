@@ -30,16 +30,8 @@ cirrus manage DEPLOYMENT_NAME query \
 
 `get-input-payloads` accepts the same filters but resolves each match to its
 input payload in the payload bucket and streams the payloads themselves —
-useful for piping failed payloads back into `process` for a rerun with the
-`--rerun` flag:
-
-```bash
-cirrus manage DEPLOYMENT_NAME get-input-payloads \
-    --collections-workflow "sar-test_flow" \
-    --state FAILED \
-    --since 7d \
-    --rerun | xargs -0 -L 1 echo | cirrus manage DEPLOYMENT_NAME process
-```
+useful for feeding failed payloads back into `process` for a rerun with the
+`--rerun` flag. See [Rerunning payloads](#rerunning-payloads) below.
 
 All three commands accept the same filter set: `--collections-workflow`
 (required), `--state` (one of `PROCESSING`, `SUCCEEDED`, `FAILED`,
@@ -63,16 +55,31 @@ the `process` and `update-state` functions. The full set of event types
 | `STARTED_PROCESSING` | The claimed execution actually starts. |
 | `ALREADY_CLAIMED` | `process` skips a payload already in the `CLAIMED` state. |
 | `ALREADY_PROCESSING` | `process` skips a payload already in the `PROCESSING` state. |
-| `ALREADY_SUCCEEDED` | `process` skips a payload already in the `SUCCEEDED` state (unless the process definition sets `replace: true`). |
-| `ALREADY_INVALID` | `process` skips a payload already in the `INVALID` state. |
+| `ALREADY_SUCCEEDED` | `process` skips a payload already in the `SUCCEEDED` state (unless `replace` applies — see [Rerunning payloads](#rerunning-payloads)). |
+| `ALREADY_INVALID` | `process` skips a payload already in the `INVALID` state (unless `replace` applies). |
 | `DUPLICATE_ID_ENCOUNTERED` | A duplicate payload ID is dropped during processing. |
 | `SUCCEEDED` | `update-state` records a successful Step Functions execution. |
-| `FAILED` | `update-state` records a failed execution. |
-| `TIMED_OUT` | `update-state` records an execution that timed out. |
-| `INVALID` | `update-state` records a failed execution whose error type is an invalid-input error. |
+| `FAILED` | `update-state` records a failed execution whose error type is neither an invalid-input error nor a timeout. |
+| `TIMED_OUT` | `update-state` records an execution that timed out (Step Functions `TIMED_OUT` status, or a `FAILED` status whose error type is `TimedOutError`). |
+| `INVALID` | `update-state` records a failed execution whose error type is `cirrus.lib.errors.InvalidInput` or `stactask.exceptions.InvalidInput`. |
 | `ABORTED` | `update-state` records an aborted execution. |
-| `RECORD_EXTRACT_FAILED` | `process` cannot extract a payload from an incoming message. |
-| `NOT_A_PROCESS_PAYLOAD` | `process` cannot construct a valid payload from an extracted record. |
+| `RECORD_EXTRACT_FAILED` | `process` cannot pull a payload out of the raw incoming message — `utils.extract_record` raises before any payload JSON exists (malformed SQS/SNS envelope, for example). No payload ID is available yet. |
+| `NOT_A_PROCESS_PAYLOAD` | `process` extracted a payload from the message, but the extracted content isn't a valid Cirrus payload — constructing a `PayloadManager` from it raises (missing `id`, malformed `process` block, etc.). |
+
+`RECORD_EXTRACT_FAILED` and `NOT_A_PROCESS_PAYLOAD` are easy to confuse: both
+mean `process` rejected an incoming message before a workflow could start,
+but the first fires when the message itself can't be parsed into a payload,
+and the second fires when a payload was parsed but fails validation as a
+Cirrus payload.
+
+`FAILED`, `TIMED_OUT`, and `INVALID` are also related — all three originate
+from a Step Functions execution that did not succeed, and `update-state`
+distinguishes them only by inspecting the execution's error type. A timeout
+inside the state machine surfaces as Step Functions status `TIMED_OUT`, but a
+task that raises its own timeout error before the state machine's own timer
+fires shows up as status `FAILED` with error type `TimedOutError`; both are
+recorded as `TIMED_OUT`. Note that `TIMED_OUT` is only an event type, not a
+state — the state database records a timed-out execution as `FAILED`.
 
 Each event carries the payload ID, a timestamp, and — where applicable — the
 Step Functions execution ARN, input/output payload URLs, and an error
@@ -169,53 +176,29 @@ See [Lambda logs](../building-pipelines/tasks.md#lambda-logs) for the
 request-ID filtering pattern that isolates a single invocation's logs, and
 the [CLI reference](../cli/common-workflows.md) for full command usage.
 
-<!-- TODO(phase-3.12): refine — state-eligibility rule by link to payload schema -->
+## Rerunning payloads
 
-## Rerun tasks
+A common recovery action is to re-run payloads after fixing whatever caused
+them to fail — a task bug, bad input, a transient AWS error. `get-input-payloads
+--rerun` resolves matching state database records back to their input
+payloads and marks each one so `process` will accept it for a fresh
+execution from states that would otherwise be skipped:
 
-One of the most common actions is to re-run failed tasks. For example, it is
-common when running the task to discover code bugs that cause the task to fail,
-fix them, and then want to re-run the task.
-
-This can be done with the `get-input-payloads` Cirrus CLI command. This command offers
-a way to retrieve payloads in bulk based on user supplied query parameters.
-The output of `get-input-payloads` can then be passed into the `process` command
-to rerun the tasks that meet your conditions. The `--rerun` flag can be
-passed to `get-input-payloads` to add the `.process.replace: true` parameter.
-
-Adding this parameter when queuing a payload will result in the payload being
-rerun if the payload is in the following states in the StateDB: `SUCCEEDED`,
-`FAILED`, `INVALID`, `ABORTED`, or `CLAIMED`. Checks are in place so that a
-state of `PROCESSING` will result in the payload being skipped. (Without the
-`replace` parameter, only payloads in `FAILED`, `ABORTED`, or `CLAIMED` states,
-or payloads with no state database record, are run.)
-
-The output is NDJSON — one payload per line — and `process` enqueues one
-payload per invocation, so submit line by line:
-
-``` bash
-cirrus manage deployment-name get-input-payloads \
-    --collections-workflow "sar-test_workflow" --state FAILED --rerun |
+```bash
+cirrus manage DEPLOYMENT_NAME get-input-payloads \
+    --collections-workflow "sar-test_workflow" --state FAILED --since 7d --rerun |
 while IFS= read -r payload; do
-    printf '%s' "$payload" | cirrus manage deployment-name process
+    printf '%s' "$payload" | cirrus manage DEPLOYMENT_NAME process
 done
 ```
 
-Under the hood the Cirrus CLI searches the AWS DynamoDB state database for records
-matching the query parameters. Using these state database records, the
-original payloads are retrieved from the Cirrus deployment S3 bucket.
-The `--rerun` flag adds a flag to the process block of the payload. These
-payloads are returned as new line delimited JSONs for easier stream
-processing.
+`--rerun` sets `process[0].replace: true` on each returned payload. `process`
+enqueues one payload per invocation, so the output — NDJSON, one payload per
+line — is submitted line by line rather than piped in bulk. See the
+[CLI reference](../cli/reference.md) or the
+[query-the-state-database-in-bulk workflow](../cli/common-workflows.md#query-the-state-database-in-bulk)
+for the full set of `get-input-payloads` filters.
 
-The available query parameters are:
-
-- `collections-workflow` (string): collections workflow field in StateDB
-- `since` (string): takes an integer and then a value of 'd' for days, 'h' for
-  hours, or 'm' for minutes and only runs items that were last updated in the
-  state database within that time period, e.g. `10h` looks back 10 hours (no space between integer and unit).
-- `limit` (int): limit how many records are returned from stateDB query
-- `error-prefix` (string): a string prefix in an error string. Useful if
-  multiple records failed as a result of the same bug.
-- `state` (string): the state of the record. Must be one of the following:
-  `PROCESSING`, `SUCCEEDED`, `FAILED`, `INVALID`, `ABORTED`, `CLAIMED`
+Which recorded states actually restart a workflow, and exactly what
+`replace: true` changes, is defined once, canonically, in
+[The replace field and reruns](../reference/payload-schema.md#the-replace-field-and-reruns).
