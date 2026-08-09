@@ -370,14 +370,19 @@ Consolidated from OPEN_QUESTIONS.md and DOCS_PLAN.md so both files can be retire
    schema requires STAC-like items in, but nothing enforces STAC out; the
    "highly-interoperable, metadata-first" language was not traceable to a code
    constraint. Restore reworded if the framing matters, or leave out.
-7. **Batch page claims not verifiable in-repo** (3.7 audit,
-   `docs/src/building-pipelines/batch-workflow-structure.md`): kept —
-   `Batch.AWSBatchException` as the SubmitJob throttling error name and Spot
-   reclamation as a routine retry cause (both AWS service behavior, no in-repo
-   source), and the two Earth Search anecdotes (Landsat `public-c2-notify-v2`
-   timings, Sentinel-2 C1 L2A baseline back-processing stats — operator
-   knowledge about a downstream deployment, kept per this plan's brief).
-   Confirm or correct from operational experience.
+7. **Batch page claims not verifiable in-repo** (3.7/3.8 audits,
+   `docs/src/building-pipelines/batch-workflow-structure.md` and
+   `batch-infrastructure.md`): kept — `Batch.AWSBatchException` as the
+   SubmitJob throttling error name, Spot reclamation as a routine retry cause,
+   launch-template version caching at compute-environment creation,
+   replace-only compute environments, job-definition revision behavior on
+   rollback, job-queue deletion killing jobs, the 50-per-Region compute
+   environment/job queue quota, `SpotIamFleetRole` / allocation-strategy
+   semantics, NAT data-processing charges (all AWS service behavior, no
+   in-repo source), and the two Earth Search anecdotes (Landsat
+   `public-c2-notify-v2` timings, Sentinel-2 C1 L2A baseline back-processing
+   stats — operator knowledge about a downstream deployment, kept per this
+   plan's brief). Confirm or correct from operational experience.
 
 ## Disposition of the planning documents
 
@@ -544,9 +549,16 @@ One page per task, code-verified per its brief above.
       (invalid inside a JSON ASL document) with placeholder ARNs. Retry semantics
       and the `url`/`url_out` contract reduced to links to their canonical homes.
       In-repo-unverifiable claims parked as decision 7.*
-- [ ] 3.8 Batch infrastructure: restructure (declare-first, hazards into a bounded
+- [x] 3.8 Batch infrastructure: restructure (declare-first, hazards into a bounded
       "Updating Batch resources safely" section); tone pass; verify against
-      templates.
+      templates. *Deviations: IAM section rewritten around the instance-role /
+      job-role (`JobRoleArn`) split per CHANGELOG v0.7.0, which also removed the
+      builtin `BatchServiceRole` — the page now recommends omitting
+      `ServiceRole`. Added the previously-unstated fact that Cirrus declares no
+      Batch resources itself (verified against cloudformation/). Dropped the
+      hedged "SubmitJob 30KiB" and "50/sec API limit" numbers as unverifiable;
+      trimmed the 26-type Spot instance list to three illustrative entries.
+      AWS-behavior claims kept on this page parked under decision 7.*
 - [ ] 3.9 Tasks: add the logging contract and the
       `stactask.exceptions.InvalidInput` statement; fold the one-bullet list.
 - [ ] 3.10 Using the CLI: rewrite the merged page (one install incantation; CLI-user
