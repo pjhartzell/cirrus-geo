@@ -39,8 +39,9 @@ Cirrus pipelines are built from four kinds of pieces:
   workflow. A task takes a Cirrus Payload as input and returns a Cirrus
   Payload as output, doing the actual processing in between — for example,
   transforming data to data, data to metadata, or metadata to metadata. Tasks
-  run on Lambda or AWS Batch and are written against the `stac-task`
-  library; task code lives outside this repository, in each deployment's own
+  run on Lambda or AWS Batch and are typically written with the `stac-task`
+  library (recommended, not required — the contract is the payload in and
+  out); task code lives outside this repository, in each deployment's own
   task images.
 - **[Workflows](../building-pipelines/workflows.md)** are [AWS Step
   Functions](https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html)
