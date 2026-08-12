@@ -27,12 +27,17 @@ restructure; the full plan is at `git show 1183402:docs/DOCS_EVALUATION.md`).
 ## Terminology
 
 - "the Cirrus CLI" in prose; `cirrus` for the command.
-- "task" in prose is reserved for stac-task processing units: user-authored
-  code taking a Cirrus Payload in and returning one out. `pre-batch` and
-  `post-batch` are framework Lambda functions, not Cirrus tasks — they
-  appear as ASL `Task` states in workflow definitions like any Lambda
-  invocation, but they ship with the core stack and move payloads around
-  rather than processing them.
+- "task" in prose is reserved for the pipeline's processing units:
+  user-authored code taking a Cirrus Payload in and returning one out
+  (inline, or by S3 `url` reference for payloads too large to pass between
+  steps). Tasks are typically built with stac-task — recommended, not
+  required; the framework's only stac-task couplings are `CirrusPayload`
+  subclassing its `Payload` and `update-state` recognizing
+  `stactask.exceptions.InvalidInput`. `pre-batch` and `post-batch` are
+  framework Lambda functions, not Cirrus tasks: the workflow author does
+  wire them in explicitly as ASL `Task` states around each Batch step, but
+  they ship with the core stack and move payloads around rather than
+  processing them.
 - States per `StateEnum` (`src/cirrus/lib/enums.py`): PROCESSING, SUCCEEDED,
   FAILED, INVALID, ABORTED, CLAIMED. Never COMPLETED (renamed in 2.0).
 - Workflow event types (`WFEventType`) are not states — events also fire for
