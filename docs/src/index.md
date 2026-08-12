@@ -1,9 +1,19 @@
 # Cirrus
 
-Cirrus is a [STAC](https://stacspec.org/)-based geospatial processing pipeline
-platform, implemented using a scalable architecture deployed on AWS. Cirrus
-provides the generic infrastructure for processing, allowing a user to focus on
-implementing the specific processing logic for their data.
+Cirrus is a [STAC](https://stacspec.org/)-based geospatial processing
+pipeline platform built on serverless AWS infrastructure. The framework
+supplies the machinery every pipeline needs — queueing, workflow dispatch,
+state tracking, publishing — so a deployment supplies only its own
+processing logic: tasks, the workflows that sequence them, and the feeders
+that submit work.
+
+Cirrus is the processing pipeline behind
+[Earth Search](https://www.element84.com/earth-search/), Element 84's public
+STAC catalog of open Earth observation data, and has processed collections
+of millions of items at sustained rates where AWS account quotas, not the
+framework, became the practical ceiling. See
+[Scaling and throughput](operating/deployment.md#scaling-and-throughput)
+for the knobs that govern throughput.
 
 <div class="grid cards" markdown>
 
@@ -40,11 +50,3 @@ implementing the specific processing logic for their data.
     [:octicons-arrow-right-24: The Cirrus CLI](cli/using-the-cli.md)
 
 </div>
-
-Cirrus is the processing pipeline behind
-[Earth Search](https://www.element84.com/earth-search/), Element 84's public
-STAC catalog of open Earth observation data. Earth Search has processed
-collections of millions of items through Cirrus, at sustained rates where
-AWS account quotas, not the framework, became the practical ceiling. See
-[Scaling and throughput](operating/deployment.md#scaling-and-throughput)
-for the knobs that govern throughput.
