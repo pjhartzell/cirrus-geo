@@ -173,7 +173,7 @@ logs (see [Lambda logs](tasks.md#lambda-logs)).
 The `Payload.$: "$"` parameter passes the full state input (the Cirrus
 Payload) to the Lambda function unmodified.
 
-See [Batch tasks in workflows](batch-workflow-structure.md) for the
+See [Wiring a Batch task into a workflow](batch-workflow-structure.md) for the
 additional `pre-batch`/`post-batch` structure that AWS Batch tasks require.
 
 ## Retry with backoff and jitter

@@ -103,7 +103,7 @@ A task running in Batch that determines its input can never be processed
 should raise the same `InvalidInput` exception a Lambda task would (see
 [Logging and error contract](#logging-and-error-contract) below) so the
 execution is recorded as `INVALID` rather than `FAILED` — see
-[Batch workflow structure: Batch errors and `InvalidInput`](batch-workflow-structure.md#batch-errors-and-invalidinput).
+[Batch errors and `InvalidInput`](batch-workflow-structure.md#batch-errors-and-invalidinput).
 
 ## Lambda vs Batch
 

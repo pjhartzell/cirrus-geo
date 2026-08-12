@@ -122,9 +122,9 @@ work, uploads any generated assets to the data bucket, and returns an updated
 payload for the next task. `pre-batch` and `post-batch` are not tasks
 themselves — they are framework Lambda functions, shipped with the core
 stack, that work around the fact that a Batch job submission cannot carry a
-large JSON payload directly. The workflow author does have to wire them in:
-a [batch workflow](../building-pipelines/batch-workflow-structure.md)
-defines them as states immediately before and after each Batch task. If any task
+large JSON payload directly. The workflow author does have to wire them in
+as states immediately before and after each Batch task — see [Wiring a Batch
+task into a workflow](../building-pipelines/batch-workflow-structure.md). If any task
 fails, the workflow's `Fail` state routes the execution to a failed terminal
 status; if every task completes, the execution succeeds.
 

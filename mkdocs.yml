@@ -90,12 +90,12 @@ nav:
       - Quickstart: getting-started/quickstart.md
       - Follow a payload through Cirrus: getting-started/follow-a-payload.md
   - Building pipelines:
-      - Workflows: building-pipelines/workflows.md
-      - Chaining workflows: building-pipelines/chaining-workflows.md
       - Tasks:
           - Tasks: building-pipelines/tasks.md
-          - Batch workflow structure: building-pipelines/batch-workflow-structure.md
+          - Wiring a Batch task into a workflow: building-pipelines/batch-workflow-structure.md
           - Batch infrastructure: building-pipelines/batch-infrastructure.md
+      - Workflows: building-pipelines/workflows.md
+      - Chaining workflows: building-pipelines/chaining-workflows.md
       - Feeders: building-pipelines/feeders.md
   - Deploying & operating:
       - Deployment: operating/deployment.md

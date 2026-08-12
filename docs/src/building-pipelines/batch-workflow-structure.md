@@ -1,4 +1,4 @@
-# Batch workflow structure
+# Wiring a Batch task into a workflow
 
 A Batch task participates in a workflow differently than a Lambda task.
 Step Functions invokes Lambda directly and passes the state input as the

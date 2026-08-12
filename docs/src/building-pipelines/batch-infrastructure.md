@@ -9,7 +9,7 @@ queue, and IAM roles.
 This page covers those CloudFormation resources. For how a Batch task
 participates in a workflow's ASL definition (`pre-batch`/`post-batch`, the
 `Parallel` wrapper, retries), see
-[Batch workflow structure](batch-workflow-structure.md).
+[Wiring a Batch task into a workflow](batch-workflow-structure.md).
 
 ## Declaring a Batch task
 
@@ -143,15 +143,15 @@ submission time. The task's entry point must read its input from that URL
 and write its (possibly modified) output payload to `url_out`, so that the
 built-in [`post-batch`](../reference/lambda-functions.md#post-batch) Lambda
 function, which the workflow runs immediately after, can find it. See
-[Batch workflow structure](batch-workflow-structure.md) for how `url` and
+[Wiring a Batch task into a workflow](batch-workflow-structure.md) for how `url` and
 `url_out` are threaded through the workflow's `Parameters`, and
 [Lambda functions](../reference/lambda-functions.md#pre-batch) for the full
 `pre-batch`/`post-batch` contract.
 
 **Resource requirements.** `ResourceRequirements` sets the VCPU, MEMORY, and
 optionally GPU requirements for the job. These values are defaults for
-submitted jobs and can be overridden per submission (see [Batch workflow
-structure](batch-workflow-structure.md)). The compute environment uses these
+submitted jobs and can be overridden per submission (see [Wiring a Batch task into a
+workflow](batch-workflow-structure.md)). The compute environment uses these
 requirements, together with its `AllocationStrategy`, to pick an
 instance type for the job.
 
