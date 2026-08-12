@@ -92,8 +92,8 @@ nav:
   - Building pipelines:
       - Workflows: building-pipelines/workflows.md
       - Chaining workflows: building-pipelines/chaining-workflows.md
-      - Tasks: building-pipelines/tasks.md
-      - Batch:
+      - Tasks:
+          - Tasks: building-pipelines/tasks.md
           - Batch workflow structure: building-pipelines/batch-workflow-structure.md
           - Batch infrastructure: building-pipelines/batch-infrastructure.md
       - Feeders: building-pipelines/feeders.md
