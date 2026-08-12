@@ -13,22 +13,24 @@ trigger indexing into a STAC API (such as
 processing. Storing output items and their assets anywhere else — a data
 bucket, a catalog — is the job of task code, not the framework.
 
-The design intent is STAC in, STAC out: input items are STAC-like by
-schema requirement, and workflows are meant to emit complete STAC items —
-that is what the publish topic and downstream STAC tooling assume. Only the
-input side is enforced, though; nothing in the framework validates what a
-workflow's final task returns, so a pipeline can deviate on output (or, to a
-lesser degree, input) shape where its consumers allow it.
+The design intent is STAC in, STAC out: input items are meant to be STAC
+items, and workflows are meant to emit complete ones — that is what the
+publish topic and downstream STAC tooling assume. Neither side is validated
+for STAC conformance, though. Input validation is structural — a `process`
+definition naming a workflow, a conformant payload `id` — and nothing in
+the framework checks what a workflow's final task returns, so a pipeline
+can deviate on item shape where its consumers allow it.
 
 The `cirrus` Python package (installed as the `cirrus-geo` distribution)
 provides both the [Cirrus CLI](../cli/using-the-cli.md) for interacting with
 a deployed Cirrus instance — running workflows, fetching payloads and logs,
 querying state — and `cirrus.lib`, the library the framework's own Lambda
-functions are built on. Feeder authors can reuse `cirrus.lib` for payload
-handling and state queries; task authors mostly interact with
-[stac-task](https://github.com/stac-utils/stac-task) instead, though
-`cirrus.lib.logging` is useful for matching the framework's structured log
-format.
+functions are built on. User code can import `cirrus.lib` too: a Python
+feeder can build and validate payloads with its `CirrusPayload` class, and
+task authors — who mostly interact with
+[stac-task](https://github.com/stac-utils/stac-task) instead — can use
+`cirrus.lib.logging` to match the framework's
+[JSON log format](../building-pipelines/tasks.md#structured-logging).
 
 ## Components
 
