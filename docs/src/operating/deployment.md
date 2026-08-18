@@ -179,6 +179,9 @@ Three independent points determine how much processing volume a deployment
 can push through concurrently: the process Lambda's reserved concurrency,
 the process queue's structure, and the AWS Batch compute environment sizing
 for workflows that use Batch tasks.
+[Earth Search](https://www.element84.com/earth-search/) has processed
+collections of millions of items through Cirrus; at those volumes the
+practical ceiling was AWS account quotas, not the framework.
 
 ### Process Lambda concurrency
 
