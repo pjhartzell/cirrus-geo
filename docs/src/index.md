@@ -1,25 +1,17 @@
 # Cirrus
 
 Cirrus is a [STAC](https://stacspec.org/)-based geospatial processing
-framework built on serverless AWS infrastructure. Work moves through it as
-payloads: JSON documents pairing inputs with instructions. The inputs are
-STAC items or references to data elsewhere; the instructions name the
-workflow to run and carry any settings its tasks need. Outputs collect in
-the payload as well. As it moves through a workflow, each task returns it
-updated, typically with new or modified STAC items.
+framework built on serverless AWS infrastructure. It supplies the parts
+that are the same in every processing pipeline — queueing, workflow
+execution, state tracking, publishing — so you can focus on your
+processing code. And because inputs and outputs are STAC items, results
+are immediately ready for ingest into a STAC catalog or use in another
+Cirrus workflow.
 
-Building a pipeline on Cirrus means writing three things: tasks, which do
-the processing; workflows, which arrange tasks in sequence; and feeders,
-which build payloads and push them onto a queue. The framework does the
-rest. It reads each payload off the queue, starts the requested workflow,
-and tracks the payload's state through to success or failure. When a
-workflow succeeds, Cirrus publishes any output STAC items to an SNS topic.
-From there a STAC catalog can ingest them, or another pipeline can process
-them further.
-
-The pipelines that populate
+Cirrus is proven in production. The pipelines that populate
 [Earth Search](https://www.element84.com/earth-search/), Element 84's
-public STAC catalog of open Earth observation data, are built on Cirrus.
+public STAC catalog of open Earth observation data, run on Cirrus for
+both daily ingest and full-catalog reprocessing.
 
 <div class="grid cards" markdown>
 
