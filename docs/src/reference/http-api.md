@@ -1,115 +1,68 @@
 # HTTP API
 
-The [`api`](lambda-functions.md#api) Lambda function serves a
-read-only HTTP API over the [state database](state-database.md) and workflow
-event metrics. It is fronted by an Amazon API Gateway REST API, provisioned
-by `cloudformation/core/api.yaml` and wired into the deployment by the
-`ApiStack` nested stack in `cloudformation/main.yaml`. There is no Lambda
-function URL; API Gateway is the only entry point.
+The [`api`](lambda-functions.md#api) Lambda function serves a read-only HTTP API over the [state database](state-database.md) and workflow event metrics. `cloudformation/core/api.yaml` fronts it with an Amazon API Gateway REST API. There is no Lambda function URL. All handler logic is in `src/cirrus/lambda_functions/api.py`.
 
 ## URL structure
 
-`cloudformation/core/api.yaml` creates a `AWS::ApiGateway::RestApi` with a
-`GET` method on the root resource and a `{proxy+}` greedy resource with a
-`GET` method, both integrated with the `api` Lambda via `AWS_PROXY`
-integration. The API is deployed to a single stage named `dev`
-(`ApiStage.StageName`), giving an invoke URL of the form:
+The REST API has a `GET` method on the root resource and a `GET` method on a `{proxy+}` resource, both integrated with the function as `AWS_PROXY`. It is deployed to a single stage named `dev`, so the invoke URL is:
 
 ```text
 https://<api-id>.execute-api.<region>.amazonaws.com/dev/<path>
 ```
 
-`<api-id>` and the full invoke URL are exposed as the `ApiGatewayUrl` and
-`ApiGatewayId` outputs of both `core/api.yaml` and the top-level
-`main.yaml` stack. Authorization is `NONE` on both methods — the API is
-unauthenticated at the API Gateway layer.
-
-Because the REST API only defines `GET` methods, any other HTTP verb is
-rejected by API Gateway itself before the Lambda is invoked.
+Both `core/api.yaml` and `main.yaml` expose the invoke URL and API ID as the `ApiGatewayUrl` and `ApiGatewayId` outputs. Authorization is `NONE` on both methods, so the API is unauthenticated. API Gateway rejects any verb other than `GET` before the function is invoked.
 
 ## Path handling
 
-`lambda_handler` (`src/cirrus/lambda_functions/api.py:264`) builds the
-routed path from the raw API Gateway proxy event: it splits `event["path"]`
-on `/`, drops empty segments, and strips a leading segment if it matches
-the deployment stage (`event["requestContext"]["stage"]`, i.e. `dev`). The
-remaining segments are rejoined with `/` to form `payload_id`, which is
-then matched against the routes below. Because the `dev` stage prefix is
-stripped, the examples in this page use the path as it appears after the
-stage — i.e. what you'd request at
-`https://<api-id>.execute-api.<region>.amazonaws.com/dev/<path>`.
+`lambda_handler` splits the request path on `/`, drops empty segments, and drops a leading segment equal to the stage name. The remaining segments are rejoined with `/` and matched against the routes below. Paths in this page are written as they appear after the stage.
 
 ## Routes
 
-All routes respond to `GET` only and return a JSON body. CORS is open on
-every response: `response()` (`api.py:113`) adds
-`Access-Control-Allow-Origin: *` and `Access-Control-Allow-Credentials: true`
-to every reply, including errors.
+Every route responds to `GET` with a JSON body. Every response, including errors, carries `Access-Control-Allow-Origin: *` and `Access-Control-Allow-Credentials: true`.
 
-| Path | Handler logic | Description |
-| --- | --- | --- |
-| `/` | `get_root` (`api.py:134`), called at `api.py:306` | Deployment root catalog with links to each collections/workflow summary. |
-| `/stats` | `get_stats` (`api.py:210`), called at `api.py:308` | Aggregate workflow-event counts by state, daily/hourly/rolling-hour. |
-| `/<collections>/workflow-<workflow>` | `summary` (`api.py:250`), called at `api.py:328` | Per-state record counts for a collections/workflow pair. |
-| `/<collections>/workflow-<workflow>/items` | `StateDB.get_items_page`, called at `api.py:345` | Paginated list of state database records for a collections/workflow pair. |
-| `/<collections>/workflow-<workflow>/<itemids>` | `StateDB.get_dbitem` / `dbitem_to_item`, called at `api.py:359` | Single state database record for one payload ID. |
+| Path | Returns |
+| --- | --- |
+| `/` | A catalog-like root with links to each collections-workflow summary |
+| `/stats` | Aggregate workflow-event counts by state: daily, hourly, and rolling hour |
+| `/<collections>/workflow-<workflow>` | Per-state record counts for one collections-workflow |
+| `/<collections>/workflow-<workflow>/items` | A page of state database records for one collections-workflow |
+| `/<collections>/workflow-<workflow>/<itemids>` | The state database record for one payload ID |
 
-Route dispatch (`api.py:304`-`360`) is a sequence of checks against
-`payload_id`, not a router with named parameters:
+Dispatch is a sequence of checks on the rejoined path rather than a router:
 
-1. Empty path → root.
-2. `stats` → stats.
-3. Any path without the literal substring `/workflow-` → 400 (see
-   [Errors](#errors)).
-4. Otherwise the path is parsed with `StateDB.payload_id_to_key`
-   (`src/cirrus/lib/statedb.py:777`), which splits on `/workflow-` to get
-   `collections_workflow`, then splits the remainder on the first `/` to
-   get `itemids`. If `itemids` is empty, it's the collections/workflow
-   summary route; if `itemids == "items"`, it's the paginated items route;
-   any other value is treated as the item-ID portion of a specific
-   `payload_id` and looked up directly.
+1. An empty path is the root.
+2. `stats` is the stats route.
+3. A path without the substring `/workflow-` returns 400.
+4. Anything else is parsed by `StateDB.payload_id_to_key`, which splits on `/workflow-` and then splits the remainder on its first `/`. An empty item-ID part is the summary route, the literal `items` is the page route, and any other value is looked up as a payload ID.
 
-Because `itemids == "items"` is a literal string match, a payload whose
-item-ID portion is literally `items` is not reachable through the
-single-item route — it resolves to the paginated `items` route instead.
+Because the page route is selected by the literal string `items`, a payload whose item-ID segment is exactly `items` cannot be fetched through the single-record route.
 
 ## Query parameters
 
-Parsed once in `lambda_handler` (`api.py:291`-`302`) and applied to the
-summary and items routes:
+Parsed once per request and applied to the summary and page routes.
 
 | Parameter | Applies to | Default | Notes |
 | --- | --- | --- | --- |
-| `state` | summary, items | none (unfiltered) | One of `PROCESSING`, `SUCCEEDED`, `FAILED`, `INVALID`, `ABORTED`, `CLAIMED` (`StateEnum`). Selects the `state_updated` GSI in `StateDB.query`. |
-| `since` | summary, items | none (unfiltered) | Look-back window relative to now, parsed by `parse_since` (`src/cirrus/lib/utils.py:31`): an integer immediately followed by `d`, `h`, or `m` — e.g. `since=10d`. No space between the number and the unit; `parse_since` raises `ValueError` on any other format. |
-| `limit` | summary, items | `100000` | Cast with `int()`; a non-integer value raises an unhandled `ValueError` (500 from the Lambda runtime, not a JSON error response). For the summary route, counts above `limit` are reported as the string `"<limit>+"` instead of an exact number (`StateDB.get_counts`). |
-| `nextkey` | items only | none | A `payload_id` returned as `nextkey` in a previous `items` response; used to fetch the next page via `StateDB.get_items_page`. |
-| `sort_ascending` | items only | `0` (descending) | Parsed as `bool(int(...))`; pass `1` for ascending. |
-| `sort_index` | items only | `updated` | Forwarded to `StateDB.query`; `"default"` uses the table's primary key (sorted by `itemids`) instead of a GSI. |
+| `state` | summary, page | unfiltered | One of `PROCESSING`, `SUCCEEDED`, `FAILED`, `INVALID`, `ABORTED`, `CLAIMED` |
+| `since` | summary, page | unfiltered | Look-back window: an integer immediately followed by `d`, `h`, or `m`, for example `10d`. Any other form raises an unhandled `ValueError` |
+| `limit` | summary, page | `100000` | Cast with `int()`. A non-integer raises an unhandled `ValueError`. On the summary route, a count above `limit` is reported as the string `"<limit>+"` |
+| `nextkey` | page | none | The `payload_id` of the last record in the previous page |
+| `sort_ascending` | page | `0` | Parsed as `bool(int(...))`. `1` sorts ascending |
+| `sort_index` | page | `updated` | Passed to `StateDB.query`. `default` uses the table's primary key, sorted by item IDs, instead of an index |
 
-Unrecognized query parameters are read via `.get()` calls with defaults and
-are otherwise ignored.
+Unrecognized parameters are ignored.
 
-## Root (`/`)
+## Root
 
-`get_root` (`api.py:134`) reads `catalog.json` from the data bucket
-(`s3://<CIRRUS_DATA_BUCKET>/catalog.json`) and returns a STAC-catalog-like
-object:
+`get_root` reads `s3://<CIRRUS_DATA_BUCKET>/catalog.json`, which Cirrus does not create, and returns:
 
-- `id`: `"<catalog id>-state-api"`.
-- `description`: `"<catalog description> State API"`.
-- `links`: a `self` link to the API root, one `child` link per
-  collections/workflow pair found under the catalog's `cirrus.workflows`
-  object (title `"<collections> - <workflow>"`, href
-  `<root_url>/<collections>/workflow-<workflow>`), and a `stac` link
-  pointing at the `catalog.json` object itself.
+- `id`: the catalog's `id` with `-state-api` appended.
+- `description`: the catalog's `description` followed by a space and `State API`.
+- `links`: a `self` link to the API root, one `child` link per entry under the catalog's `cirrus.workflows` object, titled `<collections> - <workflow>` and pointing at `/<collections>/workflow-<workflow>`, and a `stac` link to the `catalog.json` object.
 
-`root_url` is derived from the incoming request
-(`https://<domain><requestContext.path>/`); if API Gateway doesn't supply a
-`domainName` in `requestContext` the function falls back to `root_url =
-None`, and links are built with `urljoin(None, ...)`.
+The root URL is built from the request's `domainName` and `path`. If API Gateway supplies no `domainName`, `root_url` is `None` and `get_root` raises a `TypeError` from `urljoin`.
 
-```json title="Example response — illustrative values"
+```json title="Example response, illustrative values"
 {
   "id": "my-deployment-state-api",
   "description": "My Deployment State API",
@@ -123,62 +76,29 @@ None`, and links are built with `urljoin(None, ...)`.
 
 ## `/stats`
 
-`get_stats` (`api.py:210`) returns aggregate workflow-event counts grouped
-by state, keyed under `state_transitions`:
+`get_stats` returns counts grouped by state under `state_transitions`:
 
-- `daily`: 60-day window, one entry per day.
-- `hourly`: 36-hour window, one entry per hour.
-- `hourly_rolling`: the current partial hour plus the prior hour, queried
-  separately and concatenated.
+- `daily`: one entry per day over the last 60 days.
+- `hourly`: one entry per hour over the last 36 hours.
+- `hourly_rolling`: the current partial hour and the previous hour, queried separately and concatenated.
 
-Each entry has the shape `{"period": <str>, "interval": <str>, "states":
-[{"state": <str>, "unique_count": <int>, "count": <int>}, ...]}`. `period`
-is a date or timestamp string; `interval` is the literal string `"day"` or
-`"hour"`.
+Each entry has the shape `{"period": <str>, "interval": "day" | "hour", "states": [{"state": <str>, "unique_count": <int>, "count": <int>}, ...]}`.
 
-Data source, in order of preference:
+The source is CloudWatch metrics when `CIRRUS_WORKFLOW_METRIC_NAMESPACE` is set, which a default main-stack deployment does. Counts come from `WorkflowMetricReader`, reshaped by `filter_for_dashboard`: the `CLAIMED_PROCESSING` and `STARTED_PROCESSING` event types are reported as `CLAIMED` and `PROCESSING`, and event types that are not state names, such as `ALREADY_PROCESSING`, are dropped. On this path `unique_count` equals `count`. When the namespace is unset, the function falls back to the deprecated Timestream event database, and when neither is configured it returns:
 
-1. If `WorkflowMetricReader.enabled()` is true (`CIRRUS_WORKFLOW_METRIC_NAMESPACE`
-   is set to a non-empty namespace), counts come from CloudWatch metrics via
-   `WorkflowMetricReader.aggregated_by_event_type` /
-   `query_hour`, reshaped by `filter_for_dashboard` (`api.py:164`). That
-   function renames the `CLAIMED_PROCESSING` and `STARTED_PROCESSING`
-   workflow-event types to `CLAIMED` and `PROCESSING` respectively, and
-   drops any event type that isn't a `StateEnum` value (i.e. non-terminal
-   diagnostic events like `ALREADY_PROCESSING` or
-   `DUPLICATE_ID_ENCOUNTERED` are excluded from `/stats`).
-2. Otherwise, `EventDB` (Timestream) is queried directly via `daily`/`hourly`
-   in `src/cirrus/lib/eventdb.py`, gated by the `CIRRUS_EVENT_DB_AND_TABLE`
-   environment variable. This is a deprecated fallback path — see
-   [Monitoring](../operating/monitoring.md#workflow-events).
-3. If neither is configured, `EventDB._query` raises `EventsDisabledError`,
-   which `get_stats` catches and returns `None` for.
-
-The top-level `cloudformation/main.yaml` defaults `EnableWorkflowMetrics`
-to `'true'`, deploying the metrics stack and passing its
-`${ResourcePrefix}-workflow` namespace into the functions stack — so a
-default main-stack deployment has the CloudWatch source enabled and
-`/stats` returns data. `CIRRUS_EVENT_DB_AND_TABLE` is never set by the
-in-repo templates. With `EnableWorkflowMetrics` set to `'false'` (or when
-deploying `core/functions.yaml` standalone, where `WorkflowMetricNamespace`
-defaults to `''`), both sources are disabled and `/stats` returns:
-
-```json title="/stats — 404 when no metrics source is configured"
+```json title="/stats with no metrics source"
 {
   "error": "Endpoint /stats is not enabled because timeseries database is not configured"
 }
 ```
 
-with HTTP status `404`. See [Monitoring](../operating/monitoring.md#workflow-events)
-for the workflow-metrics machinery behind this endpoint.
+with status 404. See [Workflow events](workflow-events.md#destinations).
 
-## Collections/workflow summary (`/<collections>/workflow-<workflow>`)
+## Summary
 
-`summary` (`api.py:250`) splits `collections_workflow` back into
-`collections` and `workflow` (on the last underscore) and returns per-state
-counts:
+`/<collections>/workflow-<workflow>` splits the partition key on its last underscore and returns one count per state:
 
-```json title="Example response — illustrative values"
+```json title="Example response, illustrative values"
 {
   "collections": "sentinel2",
   "workflow": "publish",
@@ -193,72 +113,38 @@ counts:
 }
 ```
 
-`counts` has one key per `StateEnum` member. Each value is produced by
-`StateDB.get_counts`, which queries the `state_updated` GSI for that state
-(honoring `since`, `limit`, `sort_ascending`, `sort_index`) and returns
-either an integer or, if the count exceeds `limit`, the string
-`"<limit>+"`.
+Each count comes from `StateDB.get_counts` over the `state_updated` index, honoring `since` and `limit`. The sort parameters do not apply.
 
-## Items page (`/<collections>/workflow-<workflow>/items`)
+## Items page
 
-Returns a page of state database records:
+`/<collections>/workflow-<workflow>/items` returns `{"items": [...]}`. The page comes from `StateDB.get_items_page`, filtered by `state` and `since` and paged by `limit`, `nextkey`, `sort_ascending`, and `sort_index`. Each record is converted by `StateDB.dbitem_to_item` and then `to_current`, so it has the fields listed under [State database: Fields](state-database.md#fields) plus the legacy `catid` and `catalog` aliases.
 
-```json title="Response shape"
-{
-  "items": [ { "...": "see fields below" } ]
-}
-```
+The response contains only `items`. `get_items_page` computes a continuation token, but `lambda_handler` rebuilds the body without it. To page, pass the `payload_id` of the last returned record as `nextkey`.
 
-`items` is built from `StateDB.get_items_page`, filtered by `state` and
-`since` and paginated by `limit`/`nextkey`/`sort_ascending`/`sort_index`.
-Each raw item is converted with `StateDB.dbitem_to_item`
-(`src/cirrus/lib/statedb.py:708`) and then `to_current`
-(`src/cirrus/lib/statedb.py:24`) before being added to the response — see
-[state database fields](state-database.md#fields) for the full field list
-(`payload_id`, `collections`, `workflow`, `items`, `state`, `created`,
-`updated`, `input_payload_url`, `output_payload_url`, and conditionally
-`executions`, `outputs`, `last_error`, `claimed_at`). `to_current` also adds
-the legacy `catid`/`catalog` aliases documented on that page.
+## Single record
 
-The response contains only the `items` array. `StateDB.get_items_page`
-computes a `nextkey` continuation token from DynamoDB's
-`LastEvaluatedKey`, but `lambda_handler` (`api.py:354`) rebuilds the
-response body with only `items`, so the token is never returned to the
-client. To paginate, pass the `payload_id` of the last item in the current
-page as the `nextkey` query parameter of the next request — the
-continuation key is derived from that record's attributes.
-
-## Single item (`/<collections>/workflow-<workflow>/<itemids>`)
-
-Returns one state database record — the same per-item shape as an entry in
-the `items` array above — for the given `payload_id`
-(`<collections>/workflow-<workflow>/<itemids>`). Built from
-`StateDB.get_dbitem` → `dbitem_to_item` → `to_current`.
+`/<collections>/workflow-<workflow>/<itemids>` returns the record for that payload ID in the same shape as one entry of the items page.
 
 ## Errors
 
-| Condition | Status | Body |
-| --- | --- | --- |
-| Path doesn't contain `/workflow-` and isn't `""` or `stats` | 400 | `"<path> not found"` (plain string, not an object) — `<path>` is `event["requestContext"]["path"]`, which is `None` if API Gateway didn't populate `domainName`. |
-| `/stats` requested with no metrics source configured | 404 | `{"error": "Endpoint /stats is not enabled because timeseries database is not configured"}` |
-| `payload_id` not found in the state database (single-item route) | unhandled `PayloadNotFoundError` from `StateDB.get_dbitem` | Not caught in `lambda_handler` — surfaces as a Lambda invocation error, not a JSON error response. |
-| Malformed `since` (e.g. missing unit suffix, space before the unit) | unhandled `ValueError` from `parse_since` | Not caught — Lambda invocation error. |
-| Non-integer `limit` | unhandled `ValueError` from `int()` | Not caught — Lambda invocation error. |
+| Condition | Result |
+| --- | --- |
+| Path is not empty, not `stats`, and lacks `/workflow-` | 400 with the plain string `"<path> not found"`, where `<path>` is the request context path |
+| `/stats` with no metrics source configured | 404 with the JSON error above |
+| Payload ID not found on the single-record route | Unhandled `PayloadNotFoundError`. A Lambda invocation error, not a JSON response |
+| Malformed `since` | Unhandled `ValueError` |
+| Non-integer `limit` | Unhandled `ValueError` |
 
-There is no route-level 404 for well-formed but non-matching paths beyond
-the `/workflow-` substring check above — any path containing `/workflow-`
-is assumed to parse into a valid `collections_workflow`/`itemids` key.
+Any path containing `/workflow-` is assumed to parse into a valid key. There is no 404 for a well-formed but unknown collections-workflow; the summary route returns zero counts.
 
-## Access and data sources
+## Data sources and permissions
 
 | Source | Used for | Configuration |
 | --- | --- | --- |
-| State database (DynamoDB) | Summary, items, single-item routes | `CIRRUS_STATE_DB` env var, set from `StateTable` in `cloudformation/core/functions.yaml`. `ApiLambdaRole` grants `dynamodb:Query`, `Scan`, `GetItem`, `DescribeTable` on the table and its indexes. |
-| Data bucket (S3) | Root route (`catalog.json`) | `CIRRUS_DATA_BUCKET` env var. `ApiLambdaRole` grants `s3:ListBucket`, `GetObject`, `GetBucketLocation` on `CirrusDataBucket*`. |
-| [Payload bucket](payload-bucket.md) (S3) | `input_payload_url`/`output_payload_url` fields on item responses | `CIRRUS_PAYLOAD_BUCKET` / `CIRRUS_PAYLOAD_ROOT_PREFIX` env vars, read indirectly through `StateDB`'s `PayloadBucket` instance — these are constructed URLs, not objects the `api` function reads directly. |
-| CloudWatch metrics | `/stats` (preferred source) | `CIRRUS_WORKFLOW_METRIC_NAMESPACE` env var; `ApiLambdaRole` conditionally grants `cloudwatch:GetMetricData`, `GetMetricStatistics`, `ListMetrics` when `WorkflowMetricNamespace` is non-empty. |
-| Timestream (`EventDB`) | `/stats` (deprecated fallback) | `CIRRUS_EVENT_DB_AND_TABLE` env var (pipe-separated `database\|table`); not set by the reference CloudFormation. |
+| State table | Summary, page, and single-record routes | `CIRRUS_STATE_DB`. The role grants `dynamodb:Query`, `Scan`, `GetItem`, and `DescribeTable` on the table and its indexes |
+| Data bucket | Root route | `CIRRUS_DATA_BUCKET`. The role grants `s3:ListBucket`, `GetObject`, and `GetBucketLocation` |
+| [Payload bucket](payload-bucket.md) | The `input_payload_url` and `output_payload_url` fields on records | `CIRRUS_PAYLOAD_BUCKET` and `CIRRUS_PAYLOAD_ROOT_PREFIX`. The URLs are constructed, not read, so no S3 permission on this bucket is needed |
+| CloudWatch metrics | `/stats` | `CIRRUS_WORKFLOW_METRIC_NAMESPACE`. `cloudwatch:GetMetricData`, `GetMetricStatistics`, and `ListMetrics` are granted only when the namespace is non-empty |
+| Timestream | `/stats` fallback, deprecated | `CIRRUS_EVENT_DB_AND_TABLE`. Not set by any template |
 
-The `ApiLambda` resource (`cloudformation/core/functions.yaml`) runs with a
-15-second timeout and 256 MB memory, and is not part of the payload
-processing path — it only reads state, never writes it.
+The function runs with a 15-second timeout and 256 MB of memory. It reads state and never writes it.

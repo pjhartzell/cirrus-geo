@@ -15,7 +15,7 @@ Standard Step Functions workflow — are pay-per-use with no idle-cost
 servers, so running through this guide and tearing the stacks back down
 costs a small fraction of a dollar. The only component billed regardless of
 traffic is the NAT gateway created when the VPC is enabled (see
-[VPC considerations](../operating/deployment.md#vpc-considerations)); the
+[VPC](../operating/deployment.md#vpc)); the
 LocalStack path and the `EnableVpc=false` AWS variant below avoid it
 entirely.
 

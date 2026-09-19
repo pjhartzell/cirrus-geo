@@ -125,7 +125,7 @@ A workflow that invokes a Lambda function uses the
 `Parameters.FunctionName` rather than as the state's `Resource` directly.
 This produces additional metadata in the execution history, including the
 Lambda request ID, which can be used to filter the function's CloudWatch
-logs (see [Lambda logs](tasks.md#lambda-logs)).
+logs (see [Isolating one Lambda invocation](../operating/monitoring.md#isolating-one-lambda-invocation)).
 
 ```json
 {

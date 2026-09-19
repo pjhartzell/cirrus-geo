@@ -42,39 +42,6 @@ Lambda tasks use the [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/w
 runtime. Lambda has the advantage of quick startup and easy management, but
 carries restrictions like short timeouts and fixed resource limits.
 
-<a id="lambda-logs"></a>
-
-**Logs**
-
-Lambda functions running in AWS write logs to CloudWatch Logs, with all
-invocations of a given Lambda function writing to the same log group. When
-Lambda reuses execution environments, multiple invocations write to the same
-log stream, potentially interleaving their logs and making it difficult to
-isolate logs for a specific invocation.
-
-Each Lambda invocation has a unique request ID (provided in the Lambda
-context parameter as `context.aws_request_id`) that can be injected into log
-messages to enable filtering. For example, you can use the AWS CLI to filter
-logs by request ID:
-
-``` bash
-aws logs filter-log-events \
-    --log-group-name '/aws/lambda/cirrus-pre-batch' \
-    --filter-pattern '5ebd5f70-6dbe-4ea5-bd81-e5b69a4d0824'
-```
-
-where the `--filter-pattern` value is the Lambda request ID.
-
-When Lambda tasks are invoked in Step Functions using the
-`arn:aws:states:::lambda:invoke` resource pattern (as shown in the
-[workflow definitions](workflows.md) documentation), the request ID is
-exposed in the Step Functions execution history metadata. The
-`get-execution-events` management command with the `--with-log-metadata`
-flag retrieves this metadata, and the `get-lambda-logs` command uses the
-request ID to filter CloudWatch logs for a specific Lambda invocation. See
-the [CLI commands](../cli/common-workflows.md) documentation for usage
-examples.
-
 ### Batch tasks
 
 Batch tasks use [AWS Batch](https://docs.aws.amazon.com/batch/latest/userguide/what-is-batch.html)
@@ -273,7 +240,7 @@ logger.info("processing %d items", len(payload["features"]))
 
 Every log record from this adapter carries the payload `id` as structured
 context, which makes it possible to filter logs for a specific execution
-alongside the Lambda request ID (see [Logs](#lambda-logs) above).
+alongside the Lambda request ID (see [Isolating one Lambda invocation](../operating/monitoring.md#isolating-one-lambda-invocation)).
 
 ### Raising `InvalidInput`
 
