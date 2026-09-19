@@ -1,6 +1,6 @@
 # Using the CLI
 
-The Cirrus CLI, the `cirrus` command, operates an existing deployment: it submits and reruns payloads, inspects executions, queries the state database, fetches stored payloads and logs, and invokes the framework's Lambda functions directly. It is part of the `cirrus-geo` package, built with [click](https://click.palletsprojects.com/), and its code lives under `cirrus.management`.
+The Cirrus CLI, the `cirrus` command, operates an existing deployment. It submits and reruns payloads, inspects executions, queries the state database, fetches stored payloads and logs, and invokes the framework's Lambda functions directly. It is part of the `cirrus-geo` package, built with [click](https://click.palletsprojects.com/), and its code lives under `cirrus.management`.
 
 This page covers installation, credentials, and how the CLI finds a deployment. Worked examples are in [Common workflows](common-workflows.md), and every command's options are in the [Command reference](reference.md). Deploying Cirrus itself is the [Quickstart](../getting-started/quickstart.md).
 
@@ -42,7 +42,7 @@ Scope the grant to the commands the identity uses.
 
 ### Assuming a role
 
-If the deployment's Parameter Store entries include `CIRRUS_CLI_IAM_ARN`, or the command is given `cirrus manage <deployment> --iam-arn <role-arn>`, the CLI calls `sts:AssumeRole` on that ARN with the current credentials and uses the temporary credentials, under the session name `cirrus_cli_session`, for every call against that deployment. The caller then needs only `sts:AssumeRole` on the role, and the permissions above live on the role. When both are present, the Parameter Store value wins and `--iam-arn` is ignored. No template creates the parameter; add it by hand when wanted.
+A deployment can name a role for the CLI to assume, either as a `CIRRUS_CLI_IAM_ARN` entry in its Parameter Store configuration or as `cirrus manage <deployment> --iam-arn <role-arn>` on the command line. The CLI calls `sts:AssumeRole` on that ARN with the current credentials and uses the temporary credentials, under the session name `cirrus_cli_session`, for every call against that deployment. The caller then needs only `sts:AssumeRole` on the role, and the permissions above live on the role. When both are present, the Parameter Store value wins and `--iam-arn` is ignored. No template creates the parameter; add it by hand when wanted.
 
 ## Deployment discovery
 

@@ -27,13 +27,19 @@ The CloudFormation templates in `cloudformation/` create the right-hand column. 
 1. A [feeder](../building-pipelines/feeders.md) sends the payload to the process queue.
 2. [`process`](../reference/lambda-functions.md#process) takes it off the queue, validates it, claims it in the [state database](../reference/state-database.md), uploads it to the [payload bucket](../reference/payload-bucket.md), and starts an execution of the state machine named `${ResourcePrefix}-<workflow>` with the payload as input.
 3. The state machine runs its [tasks](../building-pipelines/tasks.md). Each receives the payload the previous one returned. A Lambda task gets it as its event; a Batch task gets it through S3, with `pre-batch` and `post-batch` on either side. Tasks upload the assets they produce to a data bucket and point the items at them.
-4. When the execution ends, EventBridge invokes [`update-state`](../reference/lambda-functions.md#update-state) with the status, input, and output. It records `SUCCEEDED`, `FAILED`, `INVALID`, or `ABORTED`. On success it also stores the output payload, publishes each output item to the publish topic, and, if the payload's `process` array has more entries, builds the next payload and sends it back to the queue.
+4. When the execution ends, EventBridge invokes [`update-state`](../reference/lambda-functions.md#update-state) with the status, input, and output. It records `SUCCEEDED`, `FAILED`, `INVALID`, or `ABORTED`. On success it also stores the output payload and publishes each output item to the publish topic. If the payload's `process` array has more entries, it builds the next payload and sends it back to the queue.
 
 `process` and `update-state` announce each of these steps as a [workflow event](../reference/workflow-events.md), which is what dashboards and alerts consume. To watch a payload take this path with the CLI, see [Follow a payload through Cirrus](follow-a-payload.md).
 
 ## Workflows are Step Functions state machines
 
-A [workflow](../building-pipelines/workflows.md) is an Amazon States Language definition. Cirrus asks three things of it: the state machine's name follows the convention above, so `process` can find it and `update-state` is told when it finishes; its `Fail` state carries the failing task's error forward, so the state database records why; and its final output is the payload, since that is what `update-state` stores and publishes. Everything else, which tasks run, in what order, with what retries, is the workflow author's.
+A [workflow](../building-pipelines/workflows.md) is an Amazon States Language definition. Cirrus asks three things of it:
+
+- The state machine's name follows the convention above, so `process` can find it and `update-state` is told when it finishes.
+- Its `Fail` state carries the failing task's error forward, so the state database records why.
+- Its final output is the payload, since that is what `update-state` stores and publishes.
+
+Which tasks run, in what order, and with what retries is the workflow author's decision.
 
 Tasks run on Lambda or on [AWS Batch](../building-pipelines/batch-infrastructure.md). A Batch job cannot receive a payload directly, so a workflow wraps each Batch task in `pre-batch` and `post-batch` states; see [Batch tasks in a workflow](../building-pipelines/batch-workflow-structure.md).
 

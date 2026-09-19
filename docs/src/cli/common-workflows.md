@@ -10,7 +10,15 @@ Commands that take a payload read it from standard input, so a payload comes in 
 <payload.json cirrus manage name-dev run-workflow
 ```
 
-`run-workflow` validates the payload, enqueues it, polls the state database every 15 seconds until the record leaves `PROCESSING`, and prints the output payload. It exits `0` on `SUCCEEDED`, `10` on any other terminal state, printing the record's `last_error`, and `11` if the workflow is still running when `--timeout` seconds, default 3600, have elapsed. The exit code makes it usable in scripts and smoke tests. `--poll-interval` changes the polling period.
+`run-workflow` validates the payload, enqueues it, and polls the state database every 15 seconds until the record leaves `PROCESSING`. Then it prints the output payload and exits with a code that scripts and smoke tests can check:
+
+| Exit code | Meaning |
+| --- | --- |
+| `0` | `SUCCEEDED`; the output payload is printed |
+| `10` | Any other terminal state; the record's `last_error` is printed |
+| `11` | Still `PROCESSING` after `--timeout` seconds, default 3600 |
+
+`--poll-interval` changes the polling period.
 
 To enqueue without waiting:
 

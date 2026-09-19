@@ -17,7 +17,17 @@ Cirrus deploys to AWS as a set of nested CloudFormation stacks from the template
 
 A separate bootstrap stack, `bootstrap/bootstrap.yaml`, creates the bucket `${ResourcePrefix}-deployment-artifacts-<account-id>` that `aws cloudformation package` uploads Lambda code and nested templates to. It is deployed before the main stack and is not nested under it.
 
-Resource names derive from `ResourcePrefix`. The buckets are `${ResourcePrefix}-data-<account-id>` and `${ResourcePrefix}-payload-<account-id>`, the state table is `${ResourcePrefix}-state`, the queues are `${ResourcePrefix}-process`, `${ResourcePrefix}-process-dlq`, and `${ResourcePrefix}-update-state-dlq`, the topics are `${ResourcePrefix}-publish` and `${ResourcePrefix}-workflow-event`, and each Lambda function is `${ResourcePrefix}-<name>`.
+Resource names derive from `ResourcePrefix`:
+
+| Resource | Name |
+| --- | --- |
+| Data bucket | `${ResourcePrefix}-data-<account-id>` |
+| Payload bucket | `${ResourcePrefix}-payload-<account-id>` |
+| State table | `${ResourcePrefix}-state` |
+| Process queue and its dead-letter queue | `${ResourcePrefix}-process`, `${ResourcePrefix}-process-dlq` |
+| `update-state` dead-letter queue | `${ResourcePrefix}-update-state-dlq` |
+| Publish and workflow-event topics | `${ResourcePrefix}-publish`, `${ResourcePrefix}-workflow-event` |
+| Lambda functions | `${ResourcePrefix}-<name>` |
 
 ## Main stack parameters
 
@@ -44,7 +54,13 @@ Each workflow is its own CloudFormation stack, deployed separately from the main
 
 `core/vpc.yaml` creates a VPC with one public and one private subnet in a single availability zone, an internet gateway, a NAT gateway with an Elastic IP in the public subnet, and S3 and DynamoDB gateway endpoints on the private route table.
 
-When `EnableVpc` is `true`, the functions stack attaches all five Lambda functions to the private subnet through a security group that allows all inbound traffic from the VPC CIDR and all outbound traffic, and attaches the `AWSLambdaVPCAccessExecutionRole` managed policy to their roles. When it is `false`, no VPC stack is created, the functions run without a `VpcConfig`, the `api`, `update-state`, `pre-batch`, and `post-batch` roles get `AWSLambdaBasicExecutionRole` instead, and the `VpcId`, `PrivateSubnetIds`, `PublicSubnetIds`, and `LambdaSecurityGroupId` stack outputs are omitted. The `process` role carries `AWSLambdaVPCAccessExecutionRole` in both cases.
+When `EnableVpc` is `true`, the functions stack attaches all five Lambda functions to the private subnet. The security group allows all inbound traffic from the VPC CIDR and all outbound traffic, and each role gets the `AWSLambdaVPCAccessExecutionRole` managed policy.
+
+When it is `false`:
+
+- No VPC stack is created and the functions run without a `VpcConfig`.
+- The `api`, `update-state`, `pre-batch`, and `post-batch` roles get `AWSLambdaBasicExecutionRole` instead. The `process` role carries `AWSLambdaVPCAccessExecutionRole` either way.
+- The `VpcId`, `PrivateSubnetIds`, `PublicSubnetIds`, and `LambdaSecurityGroupId` stack outputs are omitted.
 
 The NAT gateway and Elastic IP are billed hourly whether or not traffic flows through them, so disable the VPC for sandbox deployments unless a function must reach a resource that is only reachable from inside a VPC. Cirrus's own S3 and DynamoDB traffic uses the gateway endpoints and never crosses the NAT gateway.
 
@@ -72,7 +88,7 @@ Cirrus code reads all configuration from `CIRRUS_*` environment variables. `core
 
 ## Required deploy permissions
 
-The main stack creates named IAM roles, so `aws cloudformation deploy` needs `--capabilities CAPABILITY_NAMED_IAM`. The deploying identity needs permission to create S3 buckets, a DynamoDB table, SQS queues, SNS topics, Lambda functions, an EventBridge rule, API Gateway resources, SSM parameters, IAM roles, and, when `EnableVpc` is `true`, VPC networking resources.
+The main stack creates named IAM roles, so `aws cloudformation deploy` needs `--capabilities CAPABILITY_NAMED_IAM`. The deploying identity needs permission to create every resource type in the [stack layout](#stack-layout): S3 buckets, a DynamoDB table, SQS queues, SNS topics, Lambda functions, an EventBridge rule, API Gateway resources, SSM parameters, and IAM roles. With `EnableVpc` it also needs VPC networking permissions.
 
 ## Deleting a deployment
 

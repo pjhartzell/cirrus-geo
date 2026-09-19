@@ -42,7 +42,7 @@ A task reads its parameters from `Task.parameters`, which merges the process def
 
 A task runs as a Lambda function or an AWS Batch job. Both can be built from one container image; the choice is about runtime limits.
 
-Lambda suits a task that finishes within its 15-minute maximum timeout, fits in 10 GB of memory and 10 GB of ephemeral storage, and does not need to choose its CPU count, which Lambda sets in proportion to memory. Batch suits a task that runs longer, needs more memory or storage, a specific vCPU-to-memory ratio, or a GPU, or is more manageable as a separately built image. A Batch task also needs [its own CloudFormation resources](batch-infrastructure.md) and the [`pre-batch` and `post-batch` states](batch-workflow-structure.md) around it in the workflow, so Lambda is the lower-overhead default.
+Lambda suits a task that finishes within the 15-minute maximum timeout and fits in 10 GB of memory and 10 GB of ephemeral storage. Lambda sets CPU in proportion to memory, so a task cannot choose its core count. Batch suits a task that runs longer, needs more memory or storage, a specific vCPU-to-memory ratio, or a GPU. A Batch task also needs [its own CloudFormation resources](batch-infrastructure.md) and the [`pre-batch` and `post-batch` states](batch-workflow-structure.md) around it in the workflow, so Lambda is the lower-overhead default.
 
 ### When Batch overhead dominates
 

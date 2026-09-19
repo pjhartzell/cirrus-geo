@@ -1,6 +1,6 @@
 # Feeders
 
-A feeder is whatever puts a [Cirrus Payload](../reference/payload-schema.md) on the process queue. Cirrus ships none: `src/` has no feeder base class or CLI subcommand, and `cloudformation/` provisions no feeder resources. Discovering new data, choosing a workflow, and building the payload are the deployment's own code, run on its own compute, whether that is a Lambda function behind an S3 event notification, a scheduled job that polls an external API, or a person running `cirrus manage <deployment> process` from a shell.
+A feeder is whatever puts a [Cirrus Payload](../reference/payload-schema.md) on the process queue. Cirrus ships none: `src/` has no feeder base class or CLI subcommand, and `cloudformation/` provisions no feeder resources. Discovering new data, choosing a workflow, and building the payload are the deployment's own code, run on its own compute. That can be a Lambda function behind an S3 event notification, a scheduled job that polls an external API, or a person running `cirrus manage <deployment> process` from a shell.
 
 ## What the queue accepts
 
@@ -8,7 +8,7 @@ The [`process`](../reference/lambda-functions.md#process) function is the queue'
 
 - a Cirrus Payload, as JSON;
 - a reference of the form `{"url": "s3://bucket/key"}` to a payload object, which `process` fetches. Its role can read any bucket, so the object does not have to be in the payload bucket;
-- an SNS delivery envelope whose `Message` field holds either of the above, which is what an SNS subscription to the queue produces when raw message delivery is off.
+- an SNS delivery envelope whose `Message` field holds either of the above, which is what SNS delivers when the queue is subscribed to a topic without raw message delivery.
 
 The payload must pass `CirrusPayload.validate`: a `process` array with at least one entry, a `workflow` name in the first entry, and, if present, an `id` in the `<collections>/workflow-<workflow>/<itemids>` form. A missing `id` is generated from the items and workflow name; see [ID format](../reference/payload-schema.md#id-format). A message that cannot be parsed or fails validation is uploaded to the payload bucket's invalid prefix and, after five receives, moved to the dead-letter queue. See [Monitoring: Dead-letter queues](../operating/monitoring.md#dead-letter-queues).
 
@@ -18,7 +18,7 @@ SQS accepts messages up to 256 KB. A larger payload must be stored in S3 and sen
 
 The queue is `${ResourcePrefix}-process`. Its URL is the `ProcessQueueUrl` output of the main stack and the `CIRRUS_PROCESS_QUEUE_URL` entry under the deployment's Parameter Store prefix. The feeder's identity needs `sqs:SendMessage` on the queue.
 
-A feeder can also publish to an SNS topic subscribed to the queue, which suits a trigger that already arrives as an SNS notification. No such topic exists in this repository's templates. The two topics the base stack creates, `${ResourcePrefix}-publish` and `${ResourcePrefix}-workflow-event`, are outputs, not inputs. The following is one way to add one, in the style of the templates in `cloudformation/core/`:
+A feeder can also publish to an SNS topic that the queue is subscribed to, which suits a trigger that already arrives as an SNS notification. No such topic exists in this repository's templates. The two topics the base stack creates, `${ResourcePrefix}-publish` and `${ResourcePrefix}-workflow-event`, are outputs, not inputs. The following is one way to add one, in the style of the templates in `cloudformation/core/`:
 
 ```yaml
 # Illustrative. Not part of the in-repo templates. ProcessQueueArn and

@@ -128,7 +128,7 @@ A task that invokes a Lambda function uses the `arn:aws:states:::lambda:invoke` 
 
 `"Payload.$": "$"` passes the whole state input, the Cirrus Payload, to the function. `update-state` parses the execution's final output as a Cirrus Payload, so the last state's output must be the payload, not a wrapper around it.
 
-A Batch task needs `pre-batch` and `post-batch` states around it and a different retry structure. See [Batch tasks in a workflow](batch-workflow-structure.md).
+A workflow mixes Lambda and Batch tasks freely; Batch is a property of a task, not of the workflow. A Batch task needs `pre-batch` and `post-batch` states around it and a different retry structure. See [Batch tasks in a workflow](batch-workflow-structure.md).
 
 ## Retry with backoff and jitter
 

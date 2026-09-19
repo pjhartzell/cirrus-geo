@@ -4,7 +4,7 @@ This walks through deploying Cirrus infrastructure and running a minimal
 test workflow through it with the Cirrus CLI, using the CloudFormation
 templates in [`cloudformation/`](https://github.com/cirrus-geo/cirrus-geo/tree/main/cloudformation).
 Every step below has an AWS tab and a [LocalStack](https://www.localstack.cloud/)
-tab — pick AWS to deploy to a real account, or LocalStack to run the same
+tab. Pick AWS to deploy to a real account, or LocalStack to run the same
 stacks against a local Docker container with no AWS account required.
 
 Every resource the templates create is billed per use except the NAT gateway and Elastic IP the VPC stack adds, which are billed hourly. The LocalStack path and the `ENABLE_VPC="false"` variant below avoid them. See [VPC](../operating/deployment.md#vpc).
@@ -31,7 +31,7 @@ flowchart TB
   create the resources above (`CAPABILITY_NAMED_IAM` is required for the main
   stack deploy).
 - Python 3.12 or later, to run the Lambda packaging script.
-- The Cirrus CLI installed — see [Installing](../cli/using-the-cli.md#installing).
+- The Cirrus CLI installed; see [Installing](../cli/using-the-cli.md#installing).
 - For the LocalStack path: Docker, to run LocalStack via `compose.yml`, in
   place of AWS credentials.
 
@@ -65,7 +65,7 @@ sourced from an example file at the project root:
     | `PUBLIC_SUBNET_CIDR` | `10.1.1.0/24` | Public subnet CIDR |
 
     Set `ENABLE_VPC="false"` to skip the VPC stack and its hourly-billed NAT
-    gateway — the minimal workflow below needs no VPC-only resources.
+    gateway. The minimal workflow below needs no VPC-only resources.
 
 === "LocalStack"
 
@@ -82,7 +82,7 @@ sourced from an example file at the project root:
     pointed at the local LocalStack endpoint (`AWS_ENDPOINT_URL=http://localhost:4566`,
     and placeholder credentials `testing`/`testing` hard-coded to guard
     against an accidental deploy to a real AWS account). It has no VPC
-    variables — the LocalStack deploy always runs with `EnableVpc=false`.
+    variables, because the LocalStack deploy always runs with `EnableVpc=false`.
 
     `docker compose up -d -V` starts LocalStack from `compose.yml` at the
     project root.
@@ -140,7 +140,7 @@ Creates the S3 bucket used to stage packaged Lambda code and templates:
 === "LocalStack"
 
     `localstack-provision.bash deploy` (next step) packages the Lambda
-    functions automatically before deploying — no separate packaging command
+    functions automatically before deploying, so no separate packaging command
     is needed.
 
 ### 3. Package and deploy the main stack
@@ -237,7 +237,7 @@ touching core infrastructure. A minimal workflow is provided under
 === "LocalStack"
 
     Already deployed as part of `./bin/localstack-provision.bash deploy` in
-    [step 3](#3-package-and-deploy-the-main-stack) — no separate command
+    [step 3](#3-package-and-deploy-the-main-stack), so no separate command
     needed.
 
 The minimal workflow is a single Step Functions `Choice` state that checks
@@ -252,7 +252,7 @@ template with `succeed`, `replace`, and `id_suffix` template variables. Render
 it with `cirrus payload template` and pass it to `cirrus manage run-workflow`,
 which submits the payload, polls the state database until the execution
 reaches a terminal state, and prints the output payload. This command is
-identical on both AWS and LocalStack — the CLI reads deployment endpoints
+identical on both AWS and LocalStack, because the CLI reads deployment endpoints
 from the environment configured in the previous steps:
 
 ```bash

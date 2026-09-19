@@ -12,7 +12,7 @@ This page covers the state machine definition around a Batch task. The CloudForm
 
 A Batch task in a workflow is really three Step Functions steps:
 `pre-batch`, the Batch task, and `post-batch`. Because they only make sense
-together, they should share error handling and retries — if any one of the
+together, they should share error handling and retries: if any one of the
 three fails in a way that isn't retried, the whole group should fail.
 
 Step Functions' `Parallel` state supports `Retry` and `Catch` like a `Task`
@@ -33,7 +33,7 @@ instances at scale. Wrapping the Batch task step in a `Parallel` block with a
 The `Parallel` block's own `Catch` must route to a `Fail` state that uses
 `ErrorPath`/`CausePath` (not static `Error`/`Cause`) so the error captured
 from a failed Batch job or Lambda function is preserved rather than replaced
-with a fixed string — see [Workflows: Capturing
+with a fixed string. See [Workflows: Capturing
 errors](workflows.md#capturing-errors) for why this matters and how
 `update-state` consumes it.
 

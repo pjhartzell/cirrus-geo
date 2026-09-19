@@ -4,9 +4,9 @@ A Cirrus deployment exposes four places to look when tracking work: the state da
 
 ## State database
 
-The [state database](../reference/state-database.md) holds one record per payload ID. The fields to read first are `state_updated`, whose prefix is the current state, `last_error`, present on `FAILED` and `INVALID` records, and `executions`, the list of Step Functions execution ARNs attempted for the payload, most recent last.
+The [state database](../reference/state-database.md) holds one record per payload ID. Three fields answer most questions. `state_updated` begins with the current state. `last_error` is present on `FAILED` and `INVALID` records. `executions` lists every Step Functions execution ARN attempted for the payload, most recent last.
 
-The Cirrus CLI reads records with `get-state` for one payload ID, `query` for records matching a collections-workflow, state, time window, or error prefix, and `get-input-payloads` for the input payloads behind those records. See [Check state and stored payloads](../cli/common-workflows.md#check-state-and-stored-payloads) and [Query the state database in bulk](../cli/common-workflows.md#query-the-state-database-in-bulk).
+The Cirrus CLI reads records three ways: `get-state` for one payload ID, `query` for the records matching a collections-workflow and optional state, time window, or error prefix, and `get-input-payloads` for the input payloads behind those records. See [Check state and stored payloads](../cli/common-workflows.md#check-state-and-stored-payloads) and [Query the state database in bulk](../cli/common-workflows.md#query-the-state-database-in-bulk).
 
 The same records are readable over HTTP through the [HTTP API](../reference/http-api.md), which also returns per-state counts for a collections-workflow.
 

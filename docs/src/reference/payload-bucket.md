@@ -4,7 +4,7 @@ The payload bucket is the S3 bucket where Cirrus stores payload JSON: the input 
 
 ## Configuration
 
-All bucket access goes through `PayloadBucket` in `cirrus.lib.payload_bucket`. `PayloadBucket.from_env` reads the bucket name from `CIRRUS_PAYLOAD_BUCKET`, raising `UndefinedPayloadBucketError` when it is unset, and the root prefix from `CIRRUS_PAYLOAD_ROOT_PREFIX`, default `cirrus`. Any bucket the functions can read and write serves. `cloudformation/core/base.yaml` creates `${ResourcePrefix}-payload-<account-id>` and sets both variables on the functions, but a deployment built with other tooling can point them anywhere.
+All bucket access goes through `PayloadBucket` in `cirrus.lib.payload_bucket`. `PayloadBucket.from_env` reads the bucket name from `CIRRUS_PAYLOAD_BUCKET` and the root prefix from `CIRRUS_PAYLOAD_ROOT_PREFIX`, default `cirrus`. It raises `UndefinedPayloadBucketError` when the bucket name is unset. Any bucket the functions can read and write serves. `cloudformation/core/base.yaml` creates `${ResourcePrefix}-payload-<account-id>` and sets both variables on the functions, but a deployment built with other tooling can point them anywhere.
 
 Every key Cirrus writes is under the root prefix, so the bucket can be shared with other content, or with a second Cirrus deployment using a different prefix, without key collisions.
 

@@ -152,14 +152,14 @@ are typically favored for compute-intensive geospatial processing.
 Compute environment scaling is governed by `MinvCpus`, `MaxvCpus`, and
 `AllocationStrategy`. As jobs are submitted, the compute environment
 allocates instances to match the total vCPU count requested by all
-in-flight jobs, up to `MaxvCpus` — which is therefore also the practical
+in-flight jobs, up to `MaxvCpus`, which is therefore also the practical
 ceiling on how many jobs can run concurrently. Setting `MinvCpus` above zero
 keeps that many vCPUs of instance capacity running at all times, which
 avoids cold-start latency for the first jobs of a burst at the cost of
 paying for idle capacity between bursts.
 
 `ComputeResources.InstanceRole` takes an IAM instance profile ARN, not a
-role ARN — see [IAM roles](#iam-roles).
+role ARN. See [IAM roles](#iam-roles).
 
 !!! note "Naming compute environments"
 
@@ -177,7 +177,7 @@ role ARN — see [IAM roles](#iam-roles).
 A job is submitted to a job queue, not directly to a compute environment.
 The queue holds submitted jobs when the compute environment is saturated,
 and `ComputeEnvironmentOrder` can list more than one compute environment
-per queue — for example, to prefer an On-Demand environment and overflow
+per queue, for example to prefer an On-Demand environment and overflow
 into a Spot environment. See the [AWS job queue CloudFormation
 reference](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-batch-jobqueue.html)
 for supported configuration, including [scheduling
@@ -188,17 +188,17 @@ for prioritizing jobs within a shared queue.
 
 A compute environment references two IAM identities:
 
-- `ServiceRole` — used by AWS Batch itself. Omit this property to use the
+- `ServiceRole` is used by AWS Batch itself. Omit this property to use the
   AWS-managed service-linked role; a custom role is only needed for
   non-standard Batch permissions.
-- `ComputeResources.InstanceRole` — the role for each EC2 container
+- `ComputeResources.InstanceRole` is the role for each EC2 container
   instance, supplied as an **instance profile** ARN rather than a role ARN.
   The instance role needs at minimum the
   `AmazonEC2ContainerServiceforEC2Role` managed policy so the ECS agent can
   register the instance and pull images; the example above pairs an
   `AWS::IAM::Role` with an `AWS::IAM::InstanceProfile` that references it.
 
-A separate role — the job definition's `ContainerProperties.JobRoleArn` — is
+A separate role, the job definition's `ContainerProperties.JobRoleArn`, is
 assumed by the running container itself and should carry the permissions
 the task's code needs (for example, S3 read/write on the payload bucket).
 Keeping the instance role and the job role separate means the ECS agent's
@@ -235,13 +235,13 @@ set with a consistent vCPU-to-memory ratio matching the job's
 oversized instance.
 
 Because Spot reclamation surfaces as a killed job, error handling in the
-workflow matters more with Spot than with On-Demand — see [Batch retries
+workflow matters more with Spot than with On-Demand. See [Batch retries
 vs. Step Functions retries](batch-workflow-structure.md#batch-retries-vs-step-functions-retries).
 
 ## Launch templates
 
 A launch template customizes the EC2 instances a compute environment
-starts — commonly to increase the root EBS volume size beyond its default,
+starts, most commonly to increase the root EBS volume size beyond its default,
 since a Batch job's `ResourceRequirements` cannot request disk space
 directly:
 
@@ -284,10 +284,10 @@ instance selection, and IAM permissions together, and increases the blast
 radius of any single resource change.
 
 **Batch quotas.** AWS limits an account to 50 compute environments and 50
-job queues per Region. A deployment with many Batch tasks — especially one
+job queues per Region. A deployment with many Batch tasks, especially one
 using the [blue/green update
 strategy](#downtime-unacceptable-bluegreen-updates) below, which
-doubles the resource count per task while a change is rolling out — needs
+doubles the resource count per task while a change is rolling out, needs
 enough quota headroom for that doubling, or needs to consolidate compute
 environments and job queues across tasks.
 
@@ -295,13 +295,13 @@ environments and job queues across tasks.
 processing charges for traffic leaving the VPC (for example, pulling images
 from ECR or reading/writing S3 in another Region). Where the security
 posture allows it, a public subnet avoids that cost. Restrict inbound
-access with security groups regardless — in particular, do not open SSH
+access with security groups regardless. In particular, do not open SSH
 (port 22) to compute instances.
 
 ## Updating Batch resources safely
 
 *The rest of this page covers failure modes that only matter when you
-**update** existing Batch infrastructure — job definition revisions,
+**update** existing Batch infrastructure: job definition revisions,
 compute environment replacement, job queue deletion. Skip this section
 until you need to change a Batch resource that is already deployed and
 processing jobs.*
@@ -321,7 +321,7 @@ old revision's deactivation and the state machine update fails with a
 reference to a deactivated revision.
 
 **A rolled-back deployment does not restore the previous job definition
-revision — it creates a new one.** If CloudFormation errors out during
+revision; it creates a new one.** If CloudFormation errors out during
 deployment and rolls back a job definition update, AWS Batch does not
 reactivate the original revision. Instead, CloudFormation redeploys the
 pre-update definition as a *new* revision:
@@ -333,7 +333,7 @@ Revision number      1   ->  2  ->  3
 
 Revision 2 (B) deactivates revision 1 on creation; on rollback, revision 3
 (A again) deactivates revision 2. The state machine, however, was never
-updated past its original reference to revision 1 — so after this sequence
+updated past its original reference to revision 1, so after this sequence
 it points at a deactivated revision permanently, not just for the
 deployment window. Fixing it requires another deployment or a manual state
 machine update.
@@ -353,8 +353,8 @@ requirements and how continuously the pipeline runs jobs.
 
 If jobs run continuously and any window of failed executions is
 unacceptable, avoid updating Batch resources in place. Instead, maintain
-two parallel copies of every Batch resource for a task — conventionally
-suffixed `RevA` and `RevB` — and alternate which copy is live:
+two parallel copies of every Batch resource for a task, conventionally
+suffixed `RevA` and `RevB`, and alternate which copy is live:
 
 ```text
 ReprojectBatchJobRevA              ReprojectBatchJobRevB
@@ -388,7 +388,7 @@ or newly started continue to use them.
 
 Once the deployment succeeds and running A jobs have drained, remove the A
 resources. The next update alternates back to A. In practice, copying every
-resource on each update — rather than only the one that changed — keeps
+resource on each update, rather than only the one that changed, keeps
 each revision fully self-consistent.
 
 This strategy doubles the Batch resource count per task while a revision

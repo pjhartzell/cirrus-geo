@@ -49,7 +49,7 @@ Events are not states. Several event types record a skip or rejection that leave
 
 When `CIRRUS_WORKFLOW_EVENT_TOPIC_ARN` is set, events are published to that SNS topic. The reference templates create it as `${ResourcePrefix}-workflow-event` in `cloudformation/core/base.yaml`. Publishes are batched, up to ten per request, and flushed when the invocation ends.
 
-The message body is the serialized event. Message attributes carry `event_type`, and, when the payload ID parses, `workflow` and `collections`, plus `error` when the event has one. A subscription filter policy on these attributes can select, for example, only `FAILED` events for one workflow.
+The message body is the serialized event. Message attributes carry `event_type`, and `error` when the event has one. When the payload ID parses, they also carry `workflow` and `collections`. A subscription filter policy on these attributes can select, for example, only `FAILED` events for one workflow.
 
 ### CloudWatch log group and metrics
 
