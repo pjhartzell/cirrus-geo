@@ -84,7 +84,7 @@ def build_payload(item: dict) -> dict:
             {
                 "workflow": workflow,
                 "upload_options": {
-                    "path_template": "${collection}/${id}",
+                    "path_template": "s3://my-data-bucket/${collection}/${id}",
                 },
             },
         ],

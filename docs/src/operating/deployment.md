@@ -68,7 +68,7 @@ Cirrus code reads all configuration from `CIRRUS_*` environment variables. `core
 | `CIRRUS_PREFIX` | SSM only | Cirrus CLI | `${ResourcePrefix}-`, with the trailing hyphen, used to list and invoke the deployment's Lambda functions |
 | `CIRRUS_EVENT_DB_AND_TABLE` | none | `EventDB` | Deprecated Timestream destination. Not set by any template. See [Workflow events](../reference/workflow-events.md#timestream-event-database-deprecated) |
 
-`CIRRUS_CLI_IAM_ARN` is an optional Parameter Store entry that no template creates. See [Assuming a role](../cli/using-the-cli.md#assuming-a-role-cirrus_cli_iam_arn).
+`CIRRUS_CLI_IAM_ARN` is an optional Parameter Store entry that no template creates. See [Assuming a role](../cli/using-the-cli.md#assuming-a-role).
 
 ## Required deploy permissions
 

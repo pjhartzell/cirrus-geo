@@ -1,223 +1,73 @@
 # Payload bucket
 
-The Cirrus payload bucket is an S3 bucket used to store workflow payloads
-that are either too large to pass inline through AWS service limits or
-that need to be persisted for state tracking, debugging, and retrieval
-after a workflow has finished executing.
-
-Together with the [StateDB](state-database.md), the payload bucket forms
-the record of a Cirrus deployment's work: where the StateDB tracks
-*that* an execution happened and *what state* it's in, the payload
-bucket stores the actual JSON payload content associated with each
-execution.
+The payload bucket is the S3 bucket where Cirrus stores payload JSON: the input and output of every execution, and transient copies of payloads that are too large to pass inline or that failed validation. Together with the [state database](state-database.md) it is the record of a deployment's work. The state database says what state a payload is in; the bucket holds the payloads themselves.
 
 ## Configuration
 
-Cirrus does not manage the payload bucket itself. The bucket is supplied
-to Cirrus code through the `CIRRUS_PAYLOAD_BUCKET` environment
-variable, and any S3 bucket that the running code has permission to read
-from and write to can serve as the payload bucket. A bucket provisioned
-alongside Cirrus (for example, via the reference CloudFormation in this
-repository) is one common way to satisfy this, but it is not a
-requirement.
+All bucket access goes through `PayloadBucket` in `cirrus.lib.payload_bucket`. `PayloadBucket.from_env` reads the bucket name from `CIRRUS_PAYLOAD_BUCKET`, raising `UndefinedPayloadBucketError` when it is unset, and the root prefix from `CIRRUS_PAYLOAD_ROOT_PREFIX`, default `cirrus`. Any bucket the functions can read and write serves. `cloudformation/core/base.yaml` creates `${ResourcePrefix}-payload-<account-id>` and sets both variables on the functions, but a deployment built with other tooling can point them anywhere.
 
-All Cirrus code that reads or writes payload objects goes through the
-`cirrus.lib.payload_bucket.PayloadBucket` class, which resolves the
-bucket name from `CIRRUS_PAYLOAD_BUCKET` at construction time. If the
-variable is not set when a `PayloadBucket` is created,
-`UndefinedPayloadBucketError` is raised.
+Every key Cirrus writes is under the root prefix, so the bucket can be shared with other content, or with a second Cirrus deployment using a different prefix, without key collisions.
 
-The root prefix under which all payload objects are organized can be
-customized via the optional `CIRRUS_PAYLOAD_ROOT_PREFIX` environment
-variable. When not set, it defaults to `cirrus`. This allows
-deployments that share a payload bucket with other systems to use a
-distinct namespace, avoiding key collisions.
+## Key layout
 
-Because Cirrus writes all of its objects under a single top-level
-prefix (see [Key Organization](#key-organization)), the payload bucket can also
-be shared with other, unrelated content without risk of key collisions.
+Keys are split by how long the object needs to live:
 
-## Key Organization
+- `<root>/tmp/` holds transient objects that are not needed once processing has moved on. A lifecycle rule is expected to expire them.
+- `<root>/executions/` holds each execution's input and output payload, which the CLI and HTTP API resolve from state database records and which nothing expires.
 
-All objects written by Cirrus live under a configurable top-level
-prefix (default `cirrus/`, controlled by
-`CIRRUS_PAYLOAD_ROOT_PREFIX`). Within that, keys are split into two
-distinct namespaces based on how long the data is expected to live:
+```text
+s3://<payload-bucket>/
+└── cirrus/                               # CIRRUS_PAYLOAD_ROOT_PREFIX
+    ├── tmp/
+    │   ├── oversized/<uuid>.json         # payloads too large to pass inline
+    │   ├── batch/<payload_id>/<uuid>.json
+    │   │                                 # input to a Batch job, written by pre-batch;
+    │   │                                 # the job writes <uuid>_out.json beside it
+    │   └── invalid/<uuid>.json           # messages process rejected
+    └── executions/<payload_id>/<execution_id>/
+        ├── input.json                    # written by process on claim
+        └── output.json                   # written by update-state on success
+```
 
-- `<root_prefix>/tmp/` — **ephemeral** storage for transient payloads
-  that the system does not need to retain once processing has moved on.
-  Objects under this prefix are expected to be cleaned up by a bucket
-  lifecycle rule (see [Lifecycle and Retention](#lifecycle-and-retention)).
-- `<root_prefix>/executions/` — **persistent** storage for
-  per-execution input and output payloads that Cirrus uses to link
-  workflow runs to their payload content.
+The prefixes are attributes of `PayloadBucket`, computed from the root prefix at construction. Code that needs a key should call the class rather than build one.
 
-The full layout is as follows (using the default `cirrus` prefix):
+A payload ID contains slashes, so keys under `executions/` and `tmp/batch/` fan out into several levels of S3 prefix, which makes every execution for a collection, workflow, or item set listable with an ordinary prefix query.
 
-    s3://<payload-bucket>/
-    └── cirrus/                               # configurable via CIRRUS_PAYLOAD_ROOT_PREFIX
-        ├── tmp/                              # ephemeral
-        │   ├── oversized/
-        │   │   └── <uuid>.json               # overflow for oversized payloads
-        │   ├── batch/
-        │   │   └── <payload_id>/
-        │   │       └── <uuid>.json           # payloads handed to batch tasks
-        │   └── invalid/
-        │       └── <uuid>.json               # payloads that failed validation
-        └── executions/                       # persistent
-            └── <payload_id>/
-                └── <execution_id>/
-                    ├── input.json            # payload as received
-                    └── output.json           # payload after workflow completed
+### Execution payloads
 
-The prefix values are derived from the configured root prefix and are
-exposed as instance attributes on `PayloadBucket`. They are the
-single source of truth for where each type of object is written.
+`process` writes the input payload to `executions/<payload_id>/<execution_id>/input.json` after claiming the payload and before starting the execution. If the payload arrived as a `{"url": ...}` reference, the referenced object is fetched and its content written, so the execution's input is always stored under this key. `update-state` writes the output payload to `output.json` beside it when the execution succeeds. A `FAILED`, `INVALID`, or `ABORTED` execution leaves only `input.json`.
 
-!!! note
+`<execution_id>` is the Step Functions execution name, a UUID5 that `PayloadManagers.gen_execution_arn` derives from the payload ID and the record's existing `executions` list. Because a payload can run more than once, one payload ID prefix can hold several execution directories, one per attempt.
 
-    Because a Cirrus `payload_id` has the form
-    `<collections>/workflow-<workflow_name>/<item_ids>` and contains
-    forward slashes, objects under `<root_prefix>/executions/` and
-    `<root_prefix>/tmp/batch/` fan out into multiple levels of S3
-    prefixes. This is intentional: it allows listing all executions for
-    a given collection, workflow, or item grouping with ordinary S3
-    prefix queries.
+The state database record's `executions` list plus the payload ID is therefore enough to locate both files for any attempt. `StateDB.dbitem_to_item` fills `input_payload_url` and `output_payload_url` this way from the most recent execution, and the CLI's `get-input-payload` and `get-output-payload` commands download those URLs.
 
-### Execution Payloads
+### Oversized payloads
 
-When a workflow execution is claimed by the `process` lambda, the
-input payload is written to:
+Cirrus passes payloads inline through Step Functions and EventBridge, and EventBridge embeds an execution's input and output as escaped strings inside its event. To stay under that limit, `PayloadManager.get_payload` compares the JSON-escaped length of a payload with `MAX_PAYLOAD_LENGTH`, 120,000 bytes in `cirrus.lib.payload_manager`, and when the payload is larger uploads it to `tmp/oversized/<uuid>.json` and returns `{"url": "s3://..."}` in its place. This happens in `process` when starting an execution and in `post-batch` when returning a Batch task's output.
 
-    <root_prefix>/executions/<payload_id>/<execution_id>/input.json
+The reference is resolved wherever a payload is read: `process` at intake, `CirrusPayload.from_event` in the other functions, and stac-task's `Task.handler` in a task. A Lambda task with its own handler must resolve it itself. The Cirrus CLI's `process` and `run-workflow` commands also upload a payload larger than the SQS message limit to this prefix and enqueue a reference.
 
-On successful completion, the `update-state` lambda writes the output
-payload to the sibling key:
+### Batch payloads
 
-    <root_prefix>/executions/<payload_id>/<execution_id>/output.json
+`pre-batch` writes the state input to `tmp/batch/<payload_id>/<uuid>.json` and returns that URL as `url` together with `url_out`, the same key with `_out.json` in place of `.json`, where the Batch job writes its output. The `<payload_id>/<uuid>.json` form, rather than `<uuid>/input.json`, is kept for compatibility with earlier versions.
 
-The `<execution_id>` component is the Step Functions execution name,
-which is deterministically derived from the payload ID and the current
-list of executions in the StateDB record (see
-`PayloadManagers.gen_execution_arn`). Because a single `payload_id`
-may be re-run — for example on `FAILED` or `ABORTED` states, or with
-`replace=True` — multiple `<execution_id>` children may exist under
-the same `payload_id` prefix, one per attempt.
+### Invalid payloads
 
-This layout is what makes the payload bucket and the StateDB addressable
-together: given a StateDB record, its `payload_id` plus the relevant
-entry from its `executions` list uniquely identify the corresponding
-`input.json` and `output.json` in the bucket. The management CLI's
-`get-input-payload` and `get-output-payload` commands rely on
-exactly this correspondence.
+When `process` cannot parse a message or the payload fails validation, it uploads the raw message to `tmp/invalid/<uuid>.json` and puts that URL on the [workflow event](workflow-events.md) it emits. This is diagnostic storage, expected to expire with the rest of `tmp/`. A deployment that needs to keep rejected inputs should copy them elsewhere from a subscriber to the workflow event topic.
 
-### Oversized Payloads
+## Lifecycle and retention
 
-Cirrus passes payloads between lambdas and Step Functions as JSON, but
-AWS EventBridge embeds the Step Functions input and output as escaped
-strings inside its own event envelope. To stay safely below the
-EventBridge event size limit, `PayloadManager` enforces a conservative
-`MAX_PAYLOAD_LENGTH` (120 KB) on the JSON-escaped payload length.
+The bucket the base stack creates has one lifecycle rule: objects under `<root>/tmp/` expire after 10 days. That is long enough for a payload to survive retries and a manual rerun. An operator supplying their own bucket should add the same rule. Shortening it risks expiring an object an in-flight retry still needs. Widening it to cover `executions/` deletes execution history, which breaks `get-input-payload` and `get-output-payload` for those executions.
 
-When a payload exceeds that limit, its contents are uploaded to:
+Nothing Cirrus-managed expires `executions/`. A deployment that wants to bound its growth can add its own rule on that prefix, knowing that any execution whose payloads expire becomes unreadable through the CLI and API even though its state database record remains.
 
-    <root_prefix>/tmp/oversized/<uuid>.json
+## Who reads and writes
 
-and replaced in-flight by a small reference object of the form
-`{"url": "s3://.../<root_prefix>/tmp/oversized/<uuid>.json"}`.
-Downstream code in `cirrus.lib.utils.payload_from_s3` transparently
-re-hydrates these references when the full payload is needed again.
-
-Because oversized payloads are only used as an overflow mechanism
-during a single execution, they live under `<root_prefix>/tmp/` and
-are expected to be cleaned up by the bucket's lifecycle rule.
-
-### Batch Payloads
-
-Tasks that are dispatched to AWS Batch cannot receive their payload
-inline, so `PayloadBucket.upload_batch_payload` writes the payload to:
-
-    <root_prefix>/tmp/batch/<payload_id>/<uuid>.json
-
-The Batch task is then invoked with a reference to this key. This path
-is also ephemeral and cleaned up by the lifecycle rule.
-
-!!! note
-
-    The key format `<payload_id>/<uuid>.json` (rather than simply
-    `<uuid>/input.json`) is retained for backwards compatibility with
-    earlier versions of `cirrus-lib`.
-
-### Invalid Payloads
-
-When a payload fails validation in a way that Cirrus wants to preserve
-for later inspection, it is uploaded to:
-
-    <root_prefix>/tmp/invalid/<uuid>.json
-
-This is intended as short-lived diagnostic storage, not a permanent
-archive of invalid inputs, which is why it lives under
-`<root_prefix>/tmp/`. If long-term retention of invalid payloads is
-required for a particular deployment, the recommended approach is to
-ship them out to a separate bucket or archive from the handling code
-rather than to alter the lifecycle of `<root_prefix>/tmp/`.
-
-## Lifecycle and Retention
-
-Cirrus assumes a simple retention model for the payload bucket:
-
-- Everything under `<root_prefix>/tmp/` is **ephemeral** and should be
-  removed by a bucket lifecycle rule. The reference CloudFormation in
-  this repository configures a 10-day expiration on the
-  `<root_prefix>/tmp/` prefix (derived from the configured
-  `PayloadRootPrefix`), which is a reasonable default that gives
-  oversized and batch payloads enough lifetime to survive retries,
-  backfills, and manual reprocessing.
-- Everything under `<root_prefix>/executions/` is **persistent** and
-  is not expired by any Cirrus-managed rule. These objects are the
-  primary mechanism for reconstructing the history of a workflow run
-  after the fact; losing them will break the `get-input-payload` and
-  `get-output-payload` CLI commands and make post-hoc debugging
-  significantly harder.
-
-Operators bringing their own payload bucket should configure a
-lifecycle rule on `<root_prefix>/tmp/` that matches this expectation.
-A 10-day expiration is a reasonable starting point; shortening it risks
-removing objects that are still in use by in-flight retries, and
-extending it past `<root_prefix>/tmp/` into other prefixes will
-silently delete execution history.
-
-Operators who need different retention semantics for execution payloads
-— for example, cost control on very high-throughput deployments — can
-add their own lifecycle rules targeting the
-`<root_prefix>/executions/` prefix, keeping in mind that any payload
-whose execution record is still referenced from the StateDB will become
-unreachable through the CLI once expired.
-
-## Access Patterns
-
-The payload bucket is accessed in a small number of well-defined
-places:
-
-- `process` lambda — uploads execution input payloads via
-  `PayloadBucket.upload_input_payload`, and uploads oversized
-  payloads via `PayloadBucket.upload_oversize_payload` before
-  invoking Step Functions.
-- `update-state` lambda — uploads execution output payloads via
-  `PayloadBucket.upload_output_payload` on successful completion.
-- Task code — reads oversized payloads via
-  `cirrus.lib.utils.payload_from_s3` and, for batch tasks, fetches
-  payload content from the batch prefix.
-- [Management CLI](../cli/common-workflows.md) — reads execution input
-  and output payloads via `PayloadBucket.get_input_payload_url` and
-  `PayloadBucket.get_output_payload_url`, which reconstruct the
-  deterministic S3 URL from a `payload_id` and `execution_id` pair
-  looked up in the StateDB.
-
-No Cirrus code writes directly to the bucket without going through
-`PayloadBucket`, and the prefix attributes are not intended to be
-re-implemented elsewhere. Downstream code that needs to locate a
-payload object by key should import the helpers from
-`cirrus.lib.payload_bucket` rather than constructing prefixes by
-hand, so that any future reorganization of the layout remains a
-single-file change.
+| Caller | Writes | Reads |
+| --- | --- | --- |
+| `process` | `executions/.../input.json`, `tmp/oversized/`, `tmp/invalid/` | `{"url": ...}` references from any bucket |
+| `update-state` | `executions/.../output.json` | Nothing; payloads come from the EventBridge event |
+| `pre-batch` | `tmp/batch/` | |
+| `post-batch` | `tmp/oversized/` when the output is large | `tmp/batch/..._out.json` |
+| Tasks | `tmp/batch/..._out.json` from a Batch job | `tmp/oversized/` and `tmp/batch/` |
+| Cirrus CLI | `tmp/oversized/` when enqueuing a large payload | `executions/` via state database records |

@@ -1,15 +1,11 @@
 # Payload schema
 
-A Cirrus Payload is a JSON object containing input metadata along with
-parameters for processing that metadata and associated data. A Cirrus payload
-is used to start a single execution of a workflow.
-
-At a high level, the payload looks like a GeoJSON FeatureCollection with an
-additional `process` field:
+A Cirrus Payload is the JSON object that moves through a pipeline: the input items and the instructions for processing them. One payload starts one execution of one workflow. The shape is a GeoJSON FeatureCollection with a `process` field added:
 
 ```json
 {
     "type": "FeatureCollection",
+    "id": "sentinel2/workflow-publish/S2A_1",
     "features": [
         { "<stac-item-1>": "..." },
         { "<stac-item-2>": "..." }
@@ -20,94 +16,43 @@ additional `process` field:
 }
 ```
 
-A workflow task may take one or more items as input, and could output one or
-more items. One common use case is to take in a single input item and
-generate a single output item.
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | string | Identifies the execution. See [ID format](#id-format). `process` generates one when it is absent |
+| `type` | string | Conventionally `FeatureCollection`. Not validated |
+| `features` | array of [Item](#item) | The input items. Must be an array when present, and must be present when `id` is, since the ID is derived from it |
+| `process` | array of [Process definition](#process-definition) | **Required**, with at least one entry. Entries after the first describe a [chain](../building-pipelines/chaining-workflows.md) |
 
-| Field Name   | Type                                          | Description                                                                 |
-| ------------ | --------------------------------------------- | --------------------------------------------------------------------------- |
-| id           | string                                        | An identifier for this execution. See [ID format](#id-format) below.        |
-| type         | string                                        | GeoJSON object type. Conventionally `FeatureCollection`, but not validated. |
-| features     | [[Item](#item)]                               | An array of STAC-like input items                                           |
-| process      | [[Process Definition](#process-definition)]   | **REQUIRED** An array of process definitions, at least one                  |
+`CirrusPayload` (`cirrus.lib.cirrus_payload`) subclasses stac-task's `Payload`, itself a `dict`. Its `validate` method runs stac-task's validation and then Cirrus's own:
 
-`CirrusPayload` is a `cirrus.lib.cirrus_payload.CirrusPayload`, a subclass of
-stac-task's `stactask.payload.Payload` (itself a `dict`). Its `validate()`
-method runs stac-task's own validation first, then Cirrus-specific checks:
+- **stac-task** reads `process`, `features`, and the process definition's `workflow_options`, `tasks`, `upload_options`, `collection_matchers`, and `collection_options`, raising `TypeError` when any has the wrong type, and raises `ValueError` when both `collection_matchers` and the legacy `upload_options.collections` are set.
+- **Cirrus** requires `process` to be a non-empty array, `process[0]` to have a `workflow`, and `id` to match the ID format.
 
-- **stac-task** (`Payload.validate`): resolves `process_definition`,
-  `workflow_options`, `task_options_dict`, `upload_options`,
-  `collection_mapping`, `items_as_dicts`, `collection_matchers`, and
-  `collection_options` — raising `TypeError` if any of these are malformed —
-  and rejects a payload that sets both `collection_matchers` and the legacy
-  `upload_options.collections` (they're mutually exclusive).
-- **Cirrus** (`CirrusPayload.validate`): `process` must be an array with at
-  least one entry, the first entry must contain a `workflow` field, and `id`
-  must match the [ID format](#id-format).
-
-!!! note
-    A `process` array with more than one entry, or with an entry that is
-    itself an array, describes a chain of workflow executions rather than
-    parameters for a single execution. See [Workflow
-    chaining](../building-pipelines/chaining-workflows.md).
-
-Validation beyond the payload's own structure — whether the input items
-themselves are usable — is left to individual workflow tasks. A task that
-receives input it can't process should raise an `InvalidInput` exception
-(`stactask.exceptions.InvalidInput`), which the
-[`update-state`](lambda-functions.md#update-state) function maps to the
-`INVALID` state in the state database.
+Validation stops at structure. Whether the items are usable is for tasks to decide: a task that cannot process its input raises `stactask.exceptions.InvalidInput`, which [`update-state`](lambda-functions.md#status-to-state) records as `INVALID`.
 
 ## ID format
 
-A payload's `id` field tracks the individual execution of a workflow and must
-match the pattern `<collections>/workflow-<workflow>/<itemids>`
-(`cirrus.lib.utils.PAYLOAD_ID_REGEX`, `(?P<collections>.+)/workflow-(?P<workflow>[^/]+)/(?P<itemids>.+)`),
-where `workflow` is the workflow name from the process definition. If a
-submitted payload has no `id`, the [Cirrus CLI](../cli/using-the-cli.md) and
-the [`process`](lambda-functions.md#process) function can generate one
-(`CirrusPayload.set_id`):
+`id` must match `<collections>/workflow-<workflow>/<itemids>`, the regular expression `PAYLOAD_ID_REGEX` in `cirrus.lib.utils`: `(?P<collections>.+)/workflow-(?P<workflow>[^/]+)/(?P<itemids>.+)`. `<workflow>` must equal the process definition's `workflow` for the state database key to resolve.
 
-- `collections` is taken from the process definition's `collections` field if
-  present, otherwise it is derived from the sorted, `/`-joined set of
-  `collection` values across the input `features` (or `none` if no item
-  declares a collection).
-- `itemids` is the sorted, `/`-joined set of item `id` values from `features`.
+When a payload has no `id`, `CirrusPayload.set_id` builds one. `process` does this on intake, and so does `cirrus payload get-id`:
+
+- `<collections>` is the process definition's `collections` field if set, otherwise the sorted, `/`-joined set of `collection` values across `features`, or `none` when no item has one.
+- `<itemids>` is the sorted, `/`-joined set of item `id` values.
+
+Because the same items through the same workflow always produce the same ID, the ID is what makes processing idempotent. Two submissions differing only in process definition parameters are the same payload to Cirrus.
 
 !!! warning "Workflow names must not contain underscores"
-    The state database's partition key joins `collections` and `workflow`
-    with an underscore (`StateDB.join_collections_workflow`), and reverses
-    the join by splitting on the *last* underscore
-    (`StateDB.split_collections_workflow`) — the `collections` segment may
-    itself contain underscores, but `workflow` may not, or the split
-    misparses the key. A workflow name containing an underscore produces a
-    payload `id` that state-database lookups and updates for that execution
-    will resolve incorrectly. See [State Database: Key
-    schema](state-database.md#key-schema).
+    The state database joins `<collections>` and `<workflow>` with an underscore for its partition key and splits on the last underscore to recover them. A collections segment may contain underscores; a workflow name may not, or lookups for that payload resolve the wrong key. See [State database: Key schema](state-database.md#key-schema).
 
 ## Item
 
-An input item to Cirrus is commonly one or more STAC Items, allowing workflow
-tasks to be interoperable across different data sources. For example, an NDVI
-task could create an NDVI asset and add it to the item regardless of whether
-the source was a Landsat or Sentinel STAC Item.
+An input item is a JSON object. Cirrus requires only that it have an `id`:
 
-Workflows are also sometimes responsible for creating proper STAC Items,
-mapping metadata in other formats into STAC. As far as Cirrus itself is
-concerned, the only field an item needs is `id`.
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | string | **Required** |
 
-| Field Name   | Type     | Description                         |
-| ------------ | -------- | ----------------------------------- |
-| id           | string   | **REQUIRED** An ID for this item    |
-
-Each workflow task has its own requirements for the items it processes, and
-may perform additional validation beyond what `CirrusPayload.validate`
-checks — see [Validation](#payload-schema) above.
-
-In the following example, the input item is a partial STAC Item using STAC
-fields but missing most required fields (e.g., `geometry`, `datetime`). It
-provides URLs to Sentinel-2 metadata that will be converted to a full STAC
-Item by one of the workflow tasks:
+Items are ordinarily STAC Items, which lets tasks work across data sources. A workflow whose job is to create STAC metadata can take partial items as input, for example a stub carrying only the URLs a task needs to build the real item:
 
 ```json
 {
@@ -130,141 +75,78 @@ Item by one of the workflow tasks:
 }
 ```
 
-While partial STAC Items make sense as input to workflows that create STAC
-metadata, the final output of a Cirrus workflow should always contain an
-array of complete STAC Items.
+The output of a workflow should be complete STAC Items, since that is what the publish topic's subscribers expect. Cirrus does not check.
 
-## Process Definition
+## Process definition
 
-The first element of the `process` array is the definition consulted for the
-current (or next, when chaining) workflow execution.
+The first element of `process` is the definition for the current execution.
 
-| Field Name        | Type                                 | Description                                                                                                                                       |
-| ----------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| workflow          | string                               | **REQUIRED** Name of the workflow to run. Must not contain underscores — see [ID format](#id-format).                                            |
-| collections       | string                               | Overrides the derived `collections` segment of a generated payload `id`                                                                           |
-| replace           | bool                                 | If true, allows a rerun of the workflow that would otherwise be skipped based on the payload's current state (see [below](#the-replace-field-and-reruns)) |
-| upload_options    | [Upload Options](#upload-options)    | Parameters controlling how task-uploaded assets are stored and published                                                                          |
-| workflow_options  | Map\<str, object\>                   | Parameters merged into every task's `parameters` for this workflow execution                                                                      |
-| tasks             | Map\<string, Map\<str, object\>\>    | A dictionary of task names (keys), each containing a dictionary of parameters for that task                                                       |
-| chain_filter      | string                               | JSONPath filter applied to the previous workflow's output features (chaining only). See [Workflow chaining](../building-pipelines/chaining-workflows.md). |
+| Field | Type | Description |
+| --- | --- | --- |
+| `workflow` | string | **Required.** The workflow to run. No underscores |
+| `collections` | string | Overrides the `<collections>` segment of a generated `id` |
+| `replace` | boolean | Run even if the payload's current state would otherwise skip it. See [below](#the-replace-field-and-reruns) |
+| `workflow_options` | object | Parameters passed to every task in the workflow |
+| `tasks` | object | Per-task parameters, keyed by task name. See [tasks](#tasks) |
+| `upload_options` | [Upload options](#upload-options) | How a task uploads and publishes item assets |
+| `collection_options` | object | Per-collection overrides, keyed by collection name. A `{"<collection>": {"upload_options": {...}}}` entry replaces `upload_options` for items in that collection |
+| `collection_matchers` | array | Rules assigning each output item's `collection`. See [Assigning output collections](#assigning-output-collections) |
+| `chain_filter` | string | JSONPath filter on the previous execution's output items. Chaining only; see [Chaining workflows](../building-pipelines/chaining-workflows.md#filtering-output-items) |
 
 ### The replace field and reruns
 
-This is the canonical description of when a (re)submitted payload actually
-starts a workflow execution versus getting skipped, and how `replace`
-changes that. It is enforced in two places:
+Whether a submitted payload starts an execution or is skipped depends on its current state database record and on `replace`. The decision is made in two places:
 
-1. **`PayloadManagers.process`** (`cirrus.lib.payload_manager`), called by
-   the [`process`](lambda-functions.md#process) function, looks up the
-   payload's current state in the state database and computes
-   `_replace = replace or process_definition.get("replace", False)`
-   (the `process()` method itself also takes a `replace` argument, used by
-   the [migration tooling](#replace-in-migrations) below). It then decides
-   per payload:
+1. **`PayloadManagers.process`** (`cirrus.lib.payload_manager`), called by the [`process`](lambda-functions.md#process) function, reads the record and computes `_replace = replace or process_definition.get("replace", False)`, where the first `replace` is a method argument the CLI's migration tooling can pass. A payload runs when its state is `FAILED`, `ABORTED`, `CLAIMED`, or absent, or when `_replace` is true. Otherwise it is skipped and an `ALREADY_*` [workflow event](workflow-events.md) is emitted.
+2. **`StateDB.claim_processing`** then writes `CLAIMED` under a DynamoDB condition that fails when the record is already `CLAIMED` or `PROCESSING`. This closes the race between two concurrent submissions of the same payload, and `replace` cannot bypass it.
 
-    ```python
-    elif (
-        state in (StateEnum.FAILED, StateEnum.ABORTED, StateEnum.CLAIMED, None)
-        or _replace
-    ):
-        # attempt to claim and start the workflow
-    else:
-        # skip: wfem.skipping(...)
-    ```
+| Current state | Without `replace` | With `replace: true` |
+| --- | --- | --- |
+| no record | Runs | Runs |
+| `CLAIMED` | Runs, against the execution already reserved in the record | Same |
+| `PROCESSING` | Skipped | Skipped. The condition blocks it regardless of `replace` |
+| `SUCCEEDED` | Skipped | Runs |
+| `FAILED` | Runs | Runs |
+| `INVALID` | Skipped | Runs |
+| `ABORTED` | Runs | Runs |
 
-2. **`StateDB.claim_processing`**, called during that attempt, enforces a
-   DynamoDB condition expression that fails if the record's current state
-   begins with `PROCESSING` or `CLAIMED`. This closes the race between two
-   concurrent attempts to process the same payload — it cannot be bypassed
-   by `replace`.
+Each run appends a new execution ARN to the record's `executions` list, so a rerun payload accumulates entries and the most recent one is the one commands resolve to. See [State database: Fields](state-database.md#fields).
 
-Combining the two, for each state a payload record can be in:
-
-| Current state  | Default (no `replace`) | With `replace: true`                                                                                     |
-| -------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------- |
-| *(no record)*  | Runs                    | Runs                                                                                                        |
-| `CLAIMED`      | Runs                    | Runs — resolves against the pending execution ARN already in the record rather than starting a new one     |
-| `PROCESSING`   | Skipped                 | Skipped — blocked by the DynamoDB condition regardless of `replace`                                         |
-| `SUCCEEDED`    | Skipped                 | Runs                                                                                                        |
-| `FAILED`       | Runs                    | Runs                                                                                                        |
-| `INVALID`      | Skipped                 | Runs                                                                                                        |
-| `ABORTED`      | Runs                    | Runs                                                                                                        |
-
-In short: without `replace`, a resubmission runs only if the payload has no
-state database record yet, or its current state is `FAILED`, `ABORTED`, or
-`CLAIMED`; `SUCCEEDED` and `INVALID` are skipped. Setting `"replace": true`
-in the process definition also allows reruns from `SUCCEEDED` and `INVALID`.
-A payload currently `PROCESSING` is always skipped — `replace` cannot
-override an execution already underway.
-
-A skipped payload is announced via a `WorkflowEventManager.skipping` event
-(`ALREADY_PROCESSING`, `ALREADY_CLAIMED`, `ALREADY_SUCCEEDED`, or
-`ALREADY_INVALID` — see [Monitoring](../operating/monitoring.md)). Each claim
-appends a new Step Functions execution ARN to the state database's
-`executions` list rather than replacing it, so a payload rerun with
-`replace: true` accumulates multiple entries — see [State Database:
-Fields](state-database.md#fields).
-
-#### replace in migrations
-
-`Deployment.yield_workflow_items` (`cirrus.management.deployment`) accepts a
-`rerun` argument; when true, it sets `payload["process"][0]["replace"] = True`
-on each yielded payload before returning it, giving migration and
-backfill tooling the same rerun semantics described above without callers
-setting the field by hand.
+`get-input-payloads --rerun` and `Deployment.yield_input_payloads(rerun=True)` set `replace: true` on `process[0]` of each payload they return, which is how bulk reruns get these semantics without editing payloads by hand.
 
 ### tasks
 
-The `tasks` field is a dictionary with an optional key for each task in the
-workflow. If present, the value is a dictionary of parameters for that task.
-A task reads its parameters as the combination of the workflow's
-`workflow_options` and its own entry under `tasks`, with `tasks` values
-taking precedence on key conflicts. The documentation for each task supplies
-its list of available parameters.
+`tasks` maps task names to parameter objects. A task built on stac-task reads `Task.parameters`, which merges `workflow_options` with the entry under its own `name`, the task's entry winning on conflicts. Each task documents the parameters it reads.
 
-## Upload Options
+## Upload options
 
-`upload_options` in the process definition controls how a task uploads and
-publishes an item's data assets. See stac-task's `upload_item_assets_to_s3`
-function (`stactask.asset_io`).
+`upload_options` controls how a stac-task task uploads item assets, through `Task.upload_item_assets_to_s3` and stac-task's `upload_item_assets_to_s3` in `stactask.asset_io`.
 
-| Field Name      | Type               | Description                                                                                      |
-| --------------- | ------------------ | ------------------------------------------------------------------------------------------------ |
-| path_template   | string             | A string template for the location of uploaded assets. Defaults to `${collection}/${id}`.        |
-| public_assets   | \[str\] or `"ALL"` | Asset keys that should be marked public when uploaded, or `"ALL"` for every asset in the item    |
-| headers         | Map\<str, str\>    | Key/value headers to send when uploading assets to S3                                            |
-| s3_urls         | bool               | If true, return `s3://<bucket>/<key>` URLs for uploaded assets instead of HTTPS URLs             |
+| Field | Type | Description |
+| --- | --- | --- |
+| `path_template` | string | Template for the S3 location of uploaded assets. Must resolve to an `s3://` URL; stac-task's default `${collection}/${id}` has no bucket and fails at upload |
+| `public_assets` | array of strings, or `"ALL"` | Asset keys to upload with a public-read ACL, or every asset |
+| `headers` | object | Extra arguments passed to the S3 upload, such as `CacheControl` |
+| `s3_urls` | boolean | Return `s3://` URLs for uploaded assets instead of HTTPS URLs. Default false |
+
+The uploader takes each asset whose `href` is an existing local file, uploads it to `<path_template>/<file name>` with `ContentType` set from the asset's `type`, and rewrites the `href`. Assets whose `href` is not a local path are left unchanged.
 
 ### path_template
 
-`path_template` controls the output location of an item's uploaded assets
-using metadata from the item itself, via pystac's `LayoutTemplate`. The
-template can contain fixed strings along with variables substituted from the
-item. Variables resolve, in order, against the item's own attributes, then
-its `properties`, then its `extra_fields`. A few variables carry special
-meaning for STAC Items:
+The template is resolved by pystac's `LayoutTemplate` against the item. A `${name}` variable resolves, in order, against the item's own attributes, its `properties`, and its `extra_fields`, with these special names:
 
-| Template variable    | Description                                                                               |
-| -------------------- | ----------------------------------------------------------------------------------------- |
-| date                 | The date (ISO format) of the item's `datetime`, or `start_datetime` if `datetime` is null |
-| year                 | The year of the same date                                                                 |
-| month                | The month of the same date                                                                |
-| day                  | The day of the same date                                                                  |
-| collection           | The item's collection ID                                                                  |
-| \<property\>         | Any other item attribute or STAC property (e.g., `id`, `mgrs:utm_zone`)                   |
+| Variable | Value |
+| --- | --- |
+| `date` | The date part of the item's `datetime`, or `start_datetime` when `datetime` is null |
+| `year`, `month`, `day` | Parts of the same date |
+| `collection` | The item's collection ID |
+| any property | For example `${mgrs:utm_zone}` |
 
-For example, a `path_template` of `${collection}/${id}` uploads all assets to
-a path based on the item's collection and ID, under the default Cirrus data
-bucket. If a complete S3 URL is provided instead (e.g.,
-`s3://my-bucket/data/${collection}/${id}`), assets upload to that bucket
-instead.
+A template of `s3://my-data-bucket/${collection}/${year}/${id}` places an item's assets under its collection and year.
 
 ### Assigning output collections
 
-A process definition may include a top-level `collection_matchers` field to
-assign each output item's `collection` before publishing. It is a list of
-matchers evaluated in order per item; the first match wins:
+`collection_matchers` assigns each output item's `collection` before the payload is returned. stac-task's `Task.handler` evaluates the matchers in order per item after `process` returns, and the first match wins:
 
 ```json
 {
@@ -283,13 +165,6 @@ matchers evaluated in order per item; the first match wins:
 }
 ```
 
-A `jsonpath` matcher assigns `collection_name` to items matching its
-`pattern` (a JSONPath expression evaluated against the item); a `catch_all`
-matcher matches every item and belongs last. Items matching no matcher keep
-their existing `collection`.
+A `jsonpath` matcher assigns `collection_name` to items matching its `pattern`, a JSONPath expression evaluated against the item. A `catch_all` matcher matches every item and belongs last. An item matching no matcher keeps its existing `collection`.
 
-!!! note
-    Older payloads may instead set `upload_options.collections` — a mapping
-    of output collection name to a JSONPath expression matched against
-    items. stac-task deprecates this in favor of `collection_matchers`;
-    `CirrusPayload.validate` rejects a payload that sets both.
+The older form, `upload_options.collections`, maps a collection name to a JSONPath expression. stac-task warns that it is deprecated and rejects a payload that sets both.

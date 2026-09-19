@@ -108,6 +108,7 @@ nav:
       - Common workflows: cli/common-workflows.md
       - Command reference: cli/reference.md
   - Python library:
+      - Overview: api/index.md
       - CirrusPayload: api/cirrus_payload.md
       - StateDB: api/statedb.md
       - PayloadBucket: api/payload_bucket.md

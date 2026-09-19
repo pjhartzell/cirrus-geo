@@ -7,42 +7,11 @@ Every step below has an AWS tab and a [LocalStack](https://www.localstack.cloud/
 tab — pick AWS to deploy to a real account, or LocalStack to run the same
 stacks against a local Docker container with no AWS account required.
 
-On AWS, expect roughly 10-15 minutes wall-clock for the full deploy (bootstrap,
-Lambda packaging, and three CloudFormation deploys, each of which waits on
-nested-stack creation) plus a few minutes to run the test workflow. All of
-the deployed resources — Lambda, SQS, DynamoDB (on-demand), S3, and a
-Standard Step Functions workflow — are pay-per-use with no idle-cost
-servers, so running through this guide and tearing the stacks back down
-costs a small fraction of a dollar. The only component billed regardless of
-traffic is the NAT gateway created when the VPC is enabled (see
-[VPC](../operating/deployment.md#vpc)); the
-LocalStack path and the `EnableVpc=false` AWS variant below avoid it
-entirely.
+Every resource the templates create is billed per use except the NAT gateway and Elastic IP the VPC stack adds, which are billed hourly. The LocalStack path and the `ENABLE_VPC="false"` variant below avoid them. See [VPC](../operating/deployment.md#vpc).
 
 ## Overview
 
-The CloudFormation templates deploy Cirrus as a set of nested stacks:
-
-- **Base infrastructure** (`core/base.yaml`): S3 data and payload buckets, the
-  DynamoDB state table, SQS process/dead-letter queues, SNS publish and
-  workflow-event topics.
-- **VPC** (`core/vpc.yaml`, optional): VPC with public/private subnets, NAT
-  gateway, and S3/DynamoDB gateway endpoints for Lambda networking.
-- **Workflow metrics** (`core/metrics.yaml`): a CloudWatch log group and
-  metric filters for workflow events.
-- **Lambda functions** (`core/functions.yaml`): the five core functions (API,
-  Process, Update State, Pre-Batch, Post-Batch) with their IAM roles.
-- **API Gateway** (`core/api.yaml`): a REST API (EDGE) proxying to the API
-  Lambda, with CloudWatch access logging.
-- **CLI configuration** (`cli/ssm_parameters.yaml`): Parameter Store entries
-  the Cirrus CLI reads to discover a deployment's resources.
-
-A separate **bootstrap** stack (`bootstrap/bootstrap.yaml`) creates the S3
-bucket used to stage packaged Lambda code and templates before the main
-stack deploys. Workflows (Step Functions state machines) deploy as their own
-stacks, independent of the main stack, so they can iterate without touching
-core infrastructure. See [Deployment](../operating/deployment.md) for the
-stack-by-stack parameter and output reference.
+The templates deploy Cirrus as a main stack with six nested stacks, plus a separate bootstrap stack that creates the bucket the packaged Lambda code and templates are uploaded to. Workflows deploy as their own stacks afterwards. [Deployment](../operating/deployment.md#stack-layout) lists what each stack creates and every parameter.
 
 ```mermaid
 flowchart TB
@@ -61,7 +30,7 @@ flowchart TB
 - AWS CLI installed and configured, with credentials that have permission to
   create the resources above (`CAPABILITY_NAMED_IAM` is required for the main
   stack deploy).
-- Python 3.12+ for Lambda function packaging.
+- Python 3.12 or later, to run the Lambda packaging script.
 - The Cirrus CLI installed — see [Installing](../cli/using-the-cli.md#installing).
 - For the LocalStack path: Docker, to run LocalStack via `compose.yml`, in
   place of AWS credentials.
@@ -148,6 +117,8 @@ Creates the S3 bucket used to stage packaged Lambda code and templates:
     ```bash
     ./bin/localstack-provision.bash bootstrap
     ```
+
+    The script's other commands are `deploy`, `delete`, `debootstrap`, and `test`, which submits one succeeding and one failing payload and checks the exit codes.
 
     !!! note
         LocalStack can get into a broken state after a bad CloudFormation
@@ -389,8 +360,6 @@ curl "http://localhost:4566/restapis/${API_ID}/dev/_user_request_/collection/wor
 
 ## Next steps
 
-- [How Cirrus works](how-cirrus-works.md) for how these pieces fit together.
-- [Payloads](../reference/payload-schema.md) for the payload format the CLI and workflows
-  consume.
-- [CLI reference](../cli/using-the-cli.md) for the rest of the `cirrus` command
-  tree.
+- [Follow a payload through Cirrus](follow-a-payload.md) to watch a submission move through the state database.
+- [Payload schema](../reference/payload-schema.md) for the format the CLI and workflows consume.
+- [Common workflows](../cli/common-workflows.md) for the rest of the command set.

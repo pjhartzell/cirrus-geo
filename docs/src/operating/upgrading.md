@@ -1,177 +1,63 @@
 # Upgrading to 2.0
 
-Cirrus v2.0.0 reorganizes the payload bucket, renames the `COMPLETED` state
-to `SUCCEEDED`, and changes several management CLI commands and library
-APIs. This guide is organized by audience: operators running a deployment,
-CLI users, and code that imports `cirrus.lib` or `cirrus.management`
-directly.
-
-!!! note
-    Full details are in the [v2.0.0 changelog entry](../about/changelog.md).
-    This guide covers the changes relevant to upgrading an existing
-    deployment; it does not repeat every addition.
+Cirrus 2.0.0 reorganizes the payload bucket, renames the `COMPLETED` state to `SUCCEEDED`, renames two CLI commands, and changes several library APIs. This page covers what an existing deployment has to do. The [changelog](../about/changelog.md) lists every change.
 
 ## Operators
 
-### Payload bucket reorganization
+### Payload bucket layout
 
-All payload S3 keys now live under a configurable root prefix (default
-`cirrus`, set via `CIRRUS_PAYLOAD_ROOT_PREFIX`). Input and output payloads
-are stored per execution at:
+Payload keys now live under a root prefix, `CIRRUS_PAYLOAD_ROOT_PREFIX`, default `cirrus`. Each execution's input and output are stored at `<root>/executions/<payload_id>/<execution_id>/input.json` and `output.json`, and transient objects, meaning oversized payloads, Batch job input and output, and rejected messages, are under `<root>/tmp/`. See [Payload bucket](../reference/payload-bucket.md).
 
-```
-{root_prefix}/executions/{payload_id}/{execution_id}/input.json
-{root_prefix}/executions/{payload_id}/{execution_id}/output.json
-```
+The templates gained a `PayloadRootPrefix` parameter, and the payload bucket a lifecycle rule expiring `<root>/tmp/` after 10 days. A deployment with its own bucket needs an equivalent rule.
 
-Temporary objects (oversized payloads, batch task input, invalid payloads)
-are stored under `{root_prefix}/tmp/`. See the
-[Payload Bucket](../reference/payload-bucket.md) reference for the full key layout.
+### `COMPLETED` is now `SUCCEEDED`
 
-CloudFormation templates now include a `PayloadRootPrefix` parameter
-(defaults to `cirrus`), and the payload bucket has a lifecycle rule that
-expires objects under `{root_prefix}/tmp/` after 10 days. With the new
-layout, a single lifecycle policy on `{root_prefix}/tmp/` is sufficient to
-clean up all temporary objects.
+The state database, the HTTP API, and workflow events use `SUCCEEDED`. The event type `ALREADY_COMPLETED` is now `ALREADY_SUCCEEDED`. Any query, alarm, or dashboard matching the string `COMPLETED` needs updating.
 
-### COMPLETED renamed to SUCCEEDED
+### Event field changes
 
-The state database, EventDB, and API responses now use the state name
-`SUCCEEDED` instead of `COMPLETED`. The workflow event type
-`ALREADY_COMPLETED` is renamed to `ALREADY_SUCCEEDED`. Any queries, alerts,
-or dashboards that match on the string `COMPLETED` need to be updated to
-match `SUCCEEDED`.
+- `payload_url` is now `input_payload_url`.
+- `SUCCEEDED` and `ALREADY_SUCCEEDED` events carry a new `output_payload_url`.
+- `CLAIMED_PROCESSING` events, and `FAILED` events emitted before an upload happened, carry no payload URL, since none exists yet.
 
-### Event field renames
-
-Workflow events changed shape:
-
-- `payload_url` is renamed to `input_payload_url`.
-- A new `output_payload_url` field is included on `SUCCEEDED` and
-  `ALREADY_SUCCEEDED` events.
-- `CLAIMED` events, and some `FAILED` events, no longer include a payload
-  URL field at all — these are emitted before the payload is uploaded to
-  S3, so no valid URL exists yet.
+See [Workflow events](../reference/workflow-events.md#event-fields).
 
 ### Running the migration
 
-The `migrate` management CLI command migrates state database records and
-copies payloads into the new bucket organization for an existing
-deployment:
+The `migrate` command brings an existing state database and payload bucket into the 2.0 layout:
 
 ```console
 cirrus manage <deployment> migrate --dry-run
 cirrus manage <deployment> migrate
 ```
 
-For each record, `migrate`:
+It scans the whole table on every run and processes each record that has no `claimed_at` field, treating one that does as already migrated. For each such record, in order:
 
-- Renames a legacy `COMPLETED` state to `SUCCEEDED` in `state_updated`.
-- Sets a `claimed_at` timestamp from the record's `created` field, if not
-  already present.
-- Removes `last_error` from records that aren't in a `FAILED` state, and
-  `outputs` from records that aren't `SUCCEEDED`.
-- Copies the input payload from its legacy S3 key to the new
-  `{root_prefix}/executions/{payload_id}/{execution_id}/input.json` key,
-  if an execution and input payload exist. Payloads that were stored as
-  URL references rather than uploaded to S3 are not copied.
-- For records that were legacy `COMPLETED` and updated within the
-  `--since-days` window, fetches the Step Functions execution output and
-  uploads it to the new output payload key. Older executions fall outside
-  the Step Functions history retention window and are skipped.
+1. Copies the input payload from the 1.x key `<payload_id>/input.json` to the new execution key, when the record has an execution. A payload that was never stored at the old key, for example one submitted as a URL reference, is skipped.
+2. For a record in the legacy `COMPLETED` state updated within `--since-days` days, default 90, fetches the output from the Step Functions execution and writes it to the new output key. Executions older than Step Functions' retention are skipped.
+3. Updates the record: `COMPLETED` becomes `SUCCEEDED`, `claimed_at` is set from `created`, `last_error` is removed unless the state is `FAILED`, and `outputs` is removed unless the state is `SUCCEEDED` or `COMPLETED`.
 
-A record that already has a `claimed_at` field is treated as already
-migrated and skipped.
+Step 3 runs last so that a failure partway through leaves the record unmarked and a rerun finishes it. `--dry-run` prints each planned copy and update to stderr without writing. S3 objects are copied, never moved, so the 1.x keys remain until the operator deletes them.
 
-`--dry-run` previews every DynamoDB update and S3 copy without writing
-anything. `--since-days` sets the cutoff, in days, for fetching Step
-Functions outputs for legacy `COMPLETED` records; it defaults to 90,
-matching the Step Functions execution history retention limit.
-
-The migration runs a full DynamoDB table scan every invocation. It is
-idempotent — safe to re-run — but each run rescans the entire table.
-S3 objects are only ever copied, never moved: cleaning up payloads outside
-the new key layout is left to the operator.
-
-!!! note
-    Run `migrate` once after deploying the v2.0.0 release to bring an
-    existing deployment's state database and payload bucket in line with
-    the new organization.
+Run `migrate` once after deploying 2.0.0. Until it has run, `get-input-payload` and `get-output-payload` cannot find payloads for pre-2.0 executions.
 
 ## CLI users
 
-Two management CLI commands were renamed:
+| 1.x command | 2.0 command |
+| --- | --- |
+| `get-payload` | `get-input-payload` |
+| `get-payloads` | `get-input-payloads` |
 
-| Old name       | New name             |
-| -------------- | --------------------- |
-| `get-payload`  | `get-input-payload`   |
-| `get-payloads` | `get-input-payloads`  |
-
-New commands added in this release:
-
-- `get-output-payload` — fetch the output payload for an execution, given
-  an input payload ID.
-- `migrate` — described above.
-- `query` — find state database records matching a filter, without
-  fetching payload content from S3.
-- `version` (top-level `cirrus version`, not under `manage`) — print the
-  installed CLI version.
-
-Management CLI commands that previously accepted user vars no longer
-advertise support for them (user var support itself was removed back in
-v1.0.0; the CLI's help text was inconsistent until this release).
+New commands: `get-output-payload`, `query`, `migrate`, and the top-level `cirrus version`. Management commands no longer accept user variables; that support was removed in 1.0.0 and only the help text had kept advertising it.
 
 ## Library consumers
 
-Code that imports `cirrus.lib` or `cirrus.management` directly should
-review the following API changes.
+Code importing `cirrus.lib` or `cirrus.management` should review these changes.
 
-### `cirrus.lib.statedb`
+**`cirrus.lib.statedb`.** `StateDB.get_dbitem` raises `PayloadNotFoundError` instead of returning `None`. `set_completed` is now `set_succeeded`. `dbitem_to_item` is an instance method, not a classmethod. `payload_id_to_url`, `payload_key_to_url`, and `payload_id_to_bucket_key` are removed in favor of `payload_id_to_input_payload_url` and `payload_id_to_output_payload_url`. The module-level `get_payload_bucket` and `get_state_db` are removed. The converted record's `catalog` field is now `input_payload_url`, and `output_payload_url` and `claimed_at` are new. See [State database: Fields](../reference/state-database.md#fields).
 
-- `StateDB.get_dbitem()` now raises `PayloadNotFoundError` instead of
-  returning `None` when no item matches the supplied ID.
-- `StateDB.set_completed()` is renamed to `set_succeeded()`.
-- `StateDB.dbitem_to_item()` changed from a classmethod to an instance
-  method.
-- `StateDB.payload_id_to_url()` and `StateDB.payload_key_to_url()` are
-  removed. Use `StateDB.payload_id_to_input_payload_url()` or
-  `StateDB.payload_id_to_output_payload_url()` instead.
-- `StateDB.payload_id_to_bucket_key()` is removed.
-- The standalone functions `get_payload_bucket()` and `get_state_db()` are
-  removed from `cirrus.lib.statedb`.
-- The state database item representation changed: the `catalog` field is
-  renamed to `input_payload_url`; new `output_payload_url` and
-  `claimed_at` fields are added. See the [State Database](../reference/state-database.md)
-  reference for the current field list.
+**Payload bucket access.** `PayloadBucket` in `cirrus.lib.payload_bucket` is the one entry point for S3 payload keys. `PayloadManager.upload_to_s3` is removed.
 
-### Payload bucket access
+**Exceptions.** `PayloadNotFoundError` moved from `cirrus.management.exceptions` to `cirrus.exceptions`. `NoExecutionsError` is removed, replaced by `ExecutionNotFoundError` in `cirrus.exceptions`. `NoPayloadUrlError` is new in `cirrus.management.exceptions` and `UndefinedPayloadBucketError` in `cirrus.lib.errors`. See [Errors and exceptions](../api/errors.md).
 
-- The new `PayloadBucket` class (`cirrus.lib.payload_bucket`) centralizes
-  all S3 payload interactions. See the [Payload Bucket](../reference/payload-bucket.md)
-  reference.
-- `PayloadManager.upload_to_s3()` is removed. Use `PayloadBucket` methods
-  instead.
-
-### Exceptions
-
-- `PayloadNotFoundError` moved from `cirrus.management.exceptions` to
-  `cirrus.exceptions`.
-- `NoExecutionsError` is removed from `cirrus.management.exceptions`,
-  replaced by `ExecutionNotFoundError` in `cirrus.exceptions`.
-- New exceptions: `ExecutionNotFoundError` and `PayloadNotFoundError` in
-  `cirrus.exceptions`; `NoPayloadUrlError` in
-  `cirrus.management.exceptions`; `UndefinedPayloadBucketError` in
-  `cirrus.lib.errors`.
-
-### `cirrus.management.deployment.Deployment`
-
-- `Deployment.yield_payloads()` is removed, replaced by
-  `Deployment.yield_workflow_items()` and
-  `Deployment.yield_input_payloads()`.
-- `Deployment.get_execution_arn()` no longer accepts an `arn` keyword
-  argument; it now takes only `payload_id` as a positional parameter.
-- `Deployment.fetch_payload()` signature changed: the `rerun` parameter is
-  replaced with a `direction` parameter (`"input"` or `"output"`).
-- `Deployment.enqueue_payload()` now explicitly accepts `dict`, `str`,
-  `bytes`, or `IO[bytes]` payloads, with consistent handling across all
-  types.
+**`cirrus.management.deployment.Deployment`.** `yield_payloads` is replaced by `yield_workflow_items`, which yields state records, and `yield_input_payloads`, which resolves them to payloads and takes the `rerun` flag. `get_execution_arn` takes only a positional `payload_id`. `fetch_payload` takes a `direction` of `"input"` or `"output"` instead of `rerun`. `enqueue_payload` accepts a `dict`, `str`, `bytes`, or binary file object.
