@@ -10,6 +10,19 @@ Ground rules from `CLAUDE.md` apply to every phase. Three additions for this pla
 
 Each phase ends with `uv sync --group docs --extra cli && uv run mkdocs build --strict` passing.
 
+## Outcome (2026-09-19)
+
+All phases are done. The commits group the work differently from the phase list below, since pages were rewritten in full at the point they were most affected rather than edited across several commits. Every page under `docs/src` except `index.md` and the mkdocstrings stubs was rewritten or edited against source; `index.md` was left as reviewed.
+
+Claims kept that could not be verified in-repo, each named in the relevant commit body:
+
+- AWS Batch and CloudFormation update behaviors on Batch infrastructure (job definition revision deactivation, compute environment replacement, queue deletion).
+- AWS service quota and limit values on Scaling and quotas, with the existing note to check the linked AWS pages.
+- The `ghcr.io/lambgeo/lambda-gdal` image tag in the container example on Writing a task.
+- The Earth Search sentences on Scaling and quotas and Writing a task, which predate this pass and are user-attested.
+
+`docs/src/images/workflow-example.png` is no longer referenced by any page.
+
 ## Target navigation
 
 ```
