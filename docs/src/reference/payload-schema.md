@@ -1,4 +1,4 @@
-# Cirrus Payload
+# Payload schema
 
 A Cirrus Payload is a JSON object containing input metadata along with
 parameters for processing that metadata and associated data. A Cirrus payload
@@ -102,7 +102,7 @@ concerned, the only field an item needs is `id`.
 
 Each workflow task has its own requirements for the items it processes, and
 may perform additional validation beyond what `CirrusPayload.validate`
-checks — see [Validation](#cirrus-payload) above.
+checks — see [Validation](#payload-schema) above.
 
 In the following example, the input item is a partial STAC Item using STAC
 fields but missing most required fields (e.g., `geometry`, `datetime`). It

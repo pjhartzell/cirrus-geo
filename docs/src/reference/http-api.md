@@ -1,4 +1,4 @@
-# Cirrus API Endpoints
+# HTTP API
 
 The [`api`](lambda-functions.md#api) Lambda function serves a
 read-only HTTP API over the [state database](state-database.md) and workflow

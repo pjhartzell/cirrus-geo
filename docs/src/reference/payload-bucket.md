@@ -1,4 +1,4 @@
-# Payload Bucket
+# Payload bucket
 
 The Cirrus payload bucket is an S3 bucket used to store workflow payloads
 that are either too large to pass inline through AWS service limits or

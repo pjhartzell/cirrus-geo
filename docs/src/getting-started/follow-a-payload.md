@@ -1,4 +1,4 @@
-# Follow a Payload Through Cirrus
+# Follow a payload through Cirrus
 
 This walks a single payload through a deployed Cirrus stack: submit it,
 watch it move through the state database, and retrieve its output. It

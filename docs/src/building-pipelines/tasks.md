@@ -1,4 +1,4 @@
-# Tasks
+# Writing a task
 
 Tasks implement a unit of processing, composed together into a
 [Workflow](workflows.md). A task takes a [Cirrus Payload](../reference/payload-schema.md)

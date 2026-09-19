@@ -1,4 +1,4 @@
-# State Database
+# State database
 
 The state database (StateDB) is a DynamoDB table that tracks the state of every
 payload a Cirrus deployment has processed. It is a core piece of the

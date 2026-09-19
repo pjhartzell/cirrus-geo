@@ -1,4 +1,4 @@
-# Workflow chaining
+# Chaining workflows
 
 Workflow chaining lets multiple workflow executions run in sequence, with
 the output of one becoming the input of the next. Chaining is implemented

@@ -1,4 +1,4 @@
-# CLI reference
+# Command reference
 
 Generated from the `cirrus` command tree. All commands accept `--help` for
 this same information at the terminal. Subcommands may be abbreviated to any

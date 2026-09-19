@@ -1,4 +1,4 @@
-# Workflows
+# Defining a workflow
 
 A workflow models the transformation of an input payload into one or more
 output items via processing through one or more tasks. Workflows are
