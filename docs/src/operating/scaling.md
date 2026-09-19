@@ -55,5 +55,5 @@ Quotas are adjustable through a service quota increase request. Limits are not. 
 
 ### Limits
 
-- **Lambda execution timeout** is 15 minutes and cannot be raised. Longer processing runs as a Batch task. See [Lambda vs Batch](../building-pipelines/tasks.md#lambda-vs-batch).
+- **Lambda execution timeout** is 15 minutes and cannot be raised. Longer processing runs as a Batch task. See [Lambda or Batch](../building-pipelines/tasks.md#lambda-or-batch).
 - **Batch `SubmitJob` and `DescribeJobs`** are limited to 50 requests per second per account per region. A burst of Batch submissions needs a `Retry` on `Batch.AWSBatchException`, as shown in [Batch tasks in a workflow](../building-pipelines/batch-workflow-structure.md#error-handling). See [AWS Batch service quotas](https://docs.aws.amazon.com/batch/latest/userguide/service_limits.html).

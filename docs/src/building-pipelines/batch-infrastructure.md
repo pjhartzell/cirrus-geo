@@ -1,15 +1,8 @@
 # Batch infrastructure
 
-A [Batch task](tasks.md#batch-tasks) is not a single CloudFormation resource.
-Cirrus itself declares no Batch resources — no service role, no instance
-role, no compute environment — so every Batch task supplies its own,
-minimally a job definition, and commonly also a compute environment, a job
-queue, and IAM roles.
+A [Batch task](tasks.md#lambda-or-batch) is not a single CloudFormation resource. Cirrus declares no Batch resources of its own, so every Batch task supplies them: at minimum a job definition, and in practice a compute environment, a job queue, and IAM roles as well.
 
-This page covers those CloudFormation resources. For how a Batch task
-participates in a workflow's ASL definition (`pre-batch`/`post-batch`, the
-`Parallel` wrapper, retries), see
-[Wiring a Batch task into a workflow](batch-workflow-structure.md).
+This page covers those resources. The state machine definition around a Batch task is in [Batch tasks in a workflow](batch-workflow-structure.md).
 
 ## Declaring a Batch task
 
@@ -25,11 +18,15 @@ ReprojectBatchJob:
     Type: Container
     Parameters:
       url: ""
+      url_out: ""
     ContainerProperties:
       Command:
-        - cirrus-batch.py
-        - process
+        - python
+        - task.py
+        - run
         - Ref::url
+        - --output
+        - Ref::url_out
       ResourceRequirements:
         - Type: VCPU
           Value: "4"
@@ -120,38 +117,22 @@ CloudFormation
 reference](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-batch-jobdefinition.html)
 for the full property list.
 
-**Job parameters.** The `Parameters` key declares named parameters, with
-optional defaults, that can be filled in per job submission. `SubmitJob` has
-a payload size limit well under what a Cirrus Payload can reach, so a Batch
-task cannot receive its payload inline the way a Lambda task does. Instead,
-the workflow runs the built-in
-[`pre-batch`](../reference/lambda-functions.md#pre-batch) Lambda function
-immediately before the Batch task step to upload the payload to S3;
-`pre-batch` returns a `url` (the uploaded input payload) and a `url_out`
-(where the task must write its output). The job definition's `Command`
-references the `url` parameter with the `Ref::` syntax:
+**Job parameters.** The `Parameters` key declares named parameters, with optional defaults, that each submission fills in. A Cirrus Batch task receives its input payload's S3 URL as `url` and the URL it must write its output to as `url_out`, both produced by [`pre-batch`](../reference/lambda-functions.md#pre-batch). The `Command` references them with the `Ref::` syntax:
 
 ```yaml
 Command:
-  - cirrus-batch.py
-  - process
+  - python
+  - task.py
+  - run
   - Ref::url
+  - --output
+  - Ref::url_out
 ```
 
-which Batch expands to `cirrus-batch.py process <value of url>` at
-submission time. The task's entry point must read its input from that URL
-and write its (possibly modified) output payload to `url_out`, so that the
-built-in [`post-batch`](../reference/lambda-functions.md#post-batch) Lambda
-function, which the workflow runs immediately after, can find it. See
-[Wiring a Batch task into a workflow](batch-workflow-structure.md) for how `url` and
-`url_out` are threaded through the workflow's `Parameters`, and
-[Lambda functions](../reference/lambda-functions.md#pre-batch) for the full
-`pre-batch`/`post-batch` contract.
+which Batch expands at submission time to `python task.py run <url> --output <url_out>`, the stac-task command line. A task with its own entry point must read from and write to those two URLs the same way. See [Batch tasks in a workflow](batch-workflow-structure.md) for how the workflow passes both.
 
 **Resource requirements.** `ResourceRequirements` sets the VCPU, MEMORY, and
-optionally GPU requirements for the job. These values are defaults for
-submitted jobs and can be overridden per submission (see [Wiring a Batch task into a
-workflow](batch-workflow-structure.md)). The compute environment uses these
+optionally GPU requirements for the job. These values are defaults that a submission can override through `ContainerOverrides`. The compute environment uses these
 requirements, together with its `AllocationStrategy`, to pick an
 instance type for the job.
 
@@ -245,8 +226,7 @@ ComputeResources:
   MaxvCpus: 5000
 ```
 
-`SpotIamFleetRole` is required for `Type: SPOT` and is not needed for
-On-Demand. `BEST_FIT_PROGRESSIVE` requests progressively across the listed
+`SpotIamFleetRole` is required only when `AllocationStrategy` is `BEST_FIT` or unset; the progressive and capacity-optimized strategies do not use it. `BEST_FIT_PROGRESSIVE` requests progressively across the listed
 instance types that best match the job's resource requirements, accepting
 any of them, which tends to fill Spot capacity faster than `BEST_FIT`
 (which waits for its single best-fit type). Restricting `InstanceTypes` to a
@@ -327,15 +307,13 @@ until you need to change a Batch resource that is already deployed and
 processing jobs.*
 
 Several CloudFormation update behaviors around Batch resources can disrupt
-in-flight or newly-started workflow executions. None of them are Cirrus
--specific; they follow from how CloudFormation and AWS Batch handle updates
+in-flight or newly-started workflow executions. None of them are Cirrus-specific; they follow from how CloudFormation and AWS Batch handle updates
 to these resource types.
 
 ### Failure modes
 
 **Executions started mid-deployment can reference a stale job definition.**
-A Step Functions state machine calling `SubmitJob` (via the standard
-`#{JobDefinitionName}` reference syntax) resolves to a specific job
+A Step Functions state machine calling `SubmitJob` (through a `!Sub` reference to the job definition resource) resolves to a specific job
 definition revision ARN. When CloudFormation deploys a new job definition
 revision, it deactivates the old revision *before* updating the state
 machine. An execution that starts a Batch task in the window between the

@@ -1,32 +1,12 @@
 # Batch tasks in a workflow
 
-A Batch task participates in a workflow differently than a Lambda task.
-Step Functions invokes Lambda directly and passes the state input as the
-Lambda payload; AWS Batch has no equivalent input channel, so a Batch job
-submission cannot carry a Cirrus Payload directly. Cirrus works around this
-with two built-in Lambda functions, `pre-batch` and `post-batch`, that a
-workflow runs immediately before and after each Batch task.
+Step Functions passes a Lambda task its input directly. AWS Batch has no equivalent channel: a `SubmitJob` request carries only small string parameters, not a Cirrus Payload. Cirrus bridges the gap with two core Lambda functions, [`pre-batch`](../reference/lambda-functions.md#pre-batch) and [`post-batch`](../reference/lambda-functions.md#post-batch), that the workflow runs immediately before and after each Batch task.
 
-This page covers how a workflow's ASL (Amazon States Language) definition
-should be structured around a Batch task. For the CloudFormation resources
-behind a Batch task itself — job definitions, compute environments, job
-queues, IAM — see [Batch infrastructure](batch-infrastructure.md).
+This page covers the state machine definition around a Batch task. The CloudFormation for the task itself, meaning the job definition, compute environment, job queue, and IAM, is in [Batch infrastructure](batch-infrastructure.md).
 
-## The `pre-batch`/`post-batch` contract
+## The contract
 
-`pre-batch` uploads the input payload to the payload bucket and returns
-`url` and `url_out`; the Batch job reads its input from `url` and must write
-its output to `url_out`; `post-batch` reads the output from `url_out` and
-returns it to the state machine, or, on job failure, raises the underlying
-error from the job's logs. See
-[Lambda functions: pre-batch](../reference/lambda-functions.md#pre-batch) and
-[post-batch](../reference/lambda-functions.md#post-batch) for the full
-contract, including how `post-batch` reconstructs errors from CloudWatch
-logs.
-
-A workflow must run `pre-batch` immediately before a Batch task step and
-`post-batch` immediately after, passing `url` and `url_out` through the
-Batch task's parameters so `post-batch` can find the output.
+`pre-batch` uploads the state input to S3 and returns `{"url": ..., "url_out": ...}`. The Batch job reads its input payload from `url` and writes its output payload to `url_out`. `post-batch` reads `url_out` and returns the payload to the state machine, so the next state receives a Cirrus Payload as it would from a Lambda task. The workflow's job is to pass `url` and `url_out` from `pre-batch`'s output into the Batch task's `Parameters`, and to route a failed job's error into `post-batch` so it can surface the job's own exception. See [Lambda functions](../reference/lambda-functions.md#pre-batch) for what each function does with failures.
 
 ## Group the three steps in a `Parallel` block
 
@@ -62,6 +42,8 @@ semantics, see [Workflows: Retry with backoff and
 jitter](workflows.md#retry-with-backoff-and-jitter).
 
 ### Example
+
+The definition below is written as the body of a CloudFormation `!Sub`, so `${ExampleJobQueue}` and `${ExampleBatchJob}` resolve to the job queue and job definition resources in the same template.
 
 ```json
 {
@@ -102,8 +84,8 @@ jitter](workflows.md#retry-with-backoff-and-jitter).
                             "Resource": "arn:aws:states:::batch:submitJob.sync",
                             "Parameters": {
                                 "JobName": "some-batch-job",
-                                "JobQueue": "#{ExampleJobQueue}",
-                                "JobDefinition": "#{ExampleBatchJob}",
+                                "JobQueue": "${ExampleJobQueue}",
+                                "JobDefinition": "${ExampleBatchJob}",
                                 "Parameters": {
                                     "url.$": "$.url",
                                     "url_out.$": "$.url_out"
@@ -239,36 +221,6 @@ history, making a retried attempt and its original failure visible to anyone
 investigating the run; Batch's own retries are internal to the job and are
 not reflected in the state machine execution.
 
-## When Batch overhead dominates
-
-Submitting and scheduling a Batch job carries overhead — job placement onto
-a compute resource can take minutes — that is fixed regardless of how long
-the job itself runs. When a task's actual work is short, that overhead can
-dominate the total runtime and cost, which is a signal to use a Lambda task
-instead (see [Tasks: Lambda vs Batch](tasks.md#lambda-vs-batch)). Two
-examples from Earth Search:
-
-- Ingesting Landsat's `public-c2-notify-v2` SNS topic includes many
-  "Real-Time" scenes that are filtered out after a few seconds of work.
-  Running that filtering step as a Batch job would spend minutes of job
-  placement overhead (and the corresponding EC2 cost) on a few seconds of
-  actual use. More generally, Landsat ingest uses Lambda rather than Batch
-  throughout, since it performs only a metadata-to-metadata conversion
-  taking tens of seconds per scene — well under the Lambda timeout, and
-  consistent enough that Batch's overhead is never worth it.
-- The Sentinel-2 Collection 1 Level-2A collection only includes items with a
-  processing baseline of 05.00 or higher. When back-processing the full
-  catalog, roughly half the scenes had an older baseline and were discarded
-  immediately, while the other half ran a full 5-10 minute Batch job. The
-  discarded half still paid Batch's placement overhead, increasing cost and
-  reducing throughput. A Lambda step to check the processing baseline first,
-  ahead of the Batch job, would have avoided that cost for the discarded
-  half.
-
 ## Batch errors and `InvalidInput`
 
-A task that determines its input can never be processed — as opposed to a
-transient or code failure — should raise the same `InvalidInput` exception
-used by Lambda tasks so the execution is recorded as `INVALID` rather than
-`FAILED`; see [Lambda functions: update-state](../reference/lambda-functions.md#update-state)
-for the exception classes recognized and how the distinction is used.
+A Batch task that finds its input unprocessable should raise `stactask.exceptions.InvalidInput` like a Lambda task would. `post-batch` reads the job's last log line, which for an uncaught Python exception is `stactask.exceptions.InvalidInput: <message>`, and re-raises it under that name, so `update-state` records the execution as `INVALID` rather than `FAILED`. See [Raising InvalidInput](tasks.md#raising-invalidinput).

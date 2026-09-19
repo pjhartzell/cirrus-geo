@@ -1,157 +1,67 @@
 # Writing a task
 
-Tasks implement a unit of processing, composed together into a
-[Workflow](workflows.md). A task takes a [Cirrus Payload](../reference/payload-schema.md)
-as input, does its work, and returns a Cirrus Payload as output — making any
-required modifications to the payload's items and/or deriving new assets,
-which it pushes to their canonical storage location in S3.
+A task is one processing step in a workflow. It takes a [Cirrus Payload](../reference/payload-schema.md) in and returns one, modifying the items and writing any assets it produces to S3 on the way. Tasks are the code a pipeline is mostly made of. Cirrus does not define a task interface beyond the payload contract, so a task is any Lambda function or Batch job the workflow's state machine can invoke.
 
-To implement custom processing for a pipeline, write a task. The best tasks
-are modular, focused, and composable. Most projects end up with more custom
-tasks than any other component type.
+## What a task does
 
-Tasks run on AWS Lambda and/or AWS Batch. Lambda tasks are simpler to manage
-and quicker to start, but Lambda's runtime constraints (timeout, memory,
-package size) can rule it out for some workloads. Batch allows longer
-runtimes, larger resource limits, and specialized instance types.
+1. Receive a Cirrus Payload. For a Lambda task this is the state input. For a Batch task it is the S3 URL in the `url` job parameter.
+2. Read the parameters meant for it from the process definition.
+3. Download whatever assets it needs from the items in `features`.
+4. Do the processing: derive new assets, compute new metadata, or transform metadata into STAC.
+5. Upload output assets to S3 and update the items' asset `href`s to point at them.
+6. Return the payload with `features` replaced by the output items. A Lambda task returns it as its response. A Batch task writes it to the URL in the `url_out` job parameter.
 
-## Anatomy of a task
+[stac-task](https://github.com/stac-utils/stac-task), a dependency of Cirrus, provides a `Task` base class that handles everything but step 4. Subclass it, set a `name` class attribute, and implement `process`, which receives the task's parameters as keyword arguments and returns the output items as dicts:
 
-Generally speaking, every task should do a few key things:
+```python
+from typing import Any
 
-- Take an input Cirrus Payload.
-  - For Batch tasks and/or large payloads, a task should support receiving
-    a `url` input parameter pointing to a payload object in S3.
-- Download any required assets from the items in the input payload.
-- Perform any asset metadata manipulation and/or derived product processing.
-- Update or replace payload items based on the task's outputs.
-- Upload any output assets/items to S3 for persistence.
-- Return the output Cirrus Payload.
-  - For Batch tasks and/or large payloads, a task should support uploading
-    the output payload to S3 and returning an output `url` parameter
-    pointing to that object.
+from stactask import Task
 
-Certain tasks may deviate from this pattern, but most tasks follow this flow,
-in part or in full. The Python [`stac-task`](https://github.com/stac-utils/stac-task)
-library (the `stactask` package, a dependency of Cirrus) provides a base
-`Task` class with convenience methods for these common actions.
 
-### Lambda tasks
+class MyTask(Task):
+    name = "my-task"
+    description = "One sentence for --help"
 
-Lambda tasks use the [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
-runtime. Lambda has the advantage of quick startup and easy management, but
-carries restrictions like short timeouts and fixed resource limits.
+    def process(self, **kwargs: Any) -> list[dict[str, Any]]:
+        items = self.items_as_dicts
+        ...
+        return items
 
-### Batch tasks
 
-Batch tasks use [AWS Batch](https://docs.aws.amazon.com/batch/latest/userguide/what-is-batch.html)
-semantics to define [jobs](https://docs.aws.amazon.com/batch/latest/userguide/jobs.html)
-that execute within a [compute environment](https://docs.aws.amazon.com/batch/latest/userguide/compute_environments.html)
-as determined by the [job queue](https://docs.aws.amazon.com/batch/latest/userguide/job_queues.html)
-to which the job is submitted. Batch compute environments can use
-[Fargate](https://docs.aws.amazon.com/eks/latest/userguide/fargate.html) or
-[EC2](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/concepts.html) to
-run jobs, allowing significantly more control over the execution environment
-than Lambda, as well as much greater resource limits.
-
-A Batch task is not a single CloudFormation resource: at minimum it needs a
-Batch [job definition](https://docs.aws.amazon.com/batch/latest/userguide/job_definitions.html),
-but commonly also a job queue, compute environment, and supporting IAM roles.
-A workflow's Batch step also relies on the `pre-batch` and `post-batch`
-Lambda functions to move the payload into and out of the job, since a Batch
-job submission cannot carry a large JSON payload directly — see
-[Lambda functions: pre-batch](../reference/lambda-functions.md#pre-batch) and
-[post-batch](../reference/lambda-functions.md#post-batch).
-
-For declaring the CloudFormation resources behind a Batch task, see
-[Batch infrastructure](batch-infrastructure.md).
-
-A task running in Batch that determines its input can never be processed
-should raise the same `InvalidInput` exception a Lambda task would (see
-[Logging and error contract](#logging-and-error-contract) below) so the
-execution is recorded as `INVALID` rather than `FAILED` — see
-[Batch errors and `InvalidInput`](batch-workflow-structure.md#batch-errors-and-invalidinput).
-
-## Lambda vs Batch
-
-Either can be run from the same underlying Docker image build (see
-[Docker image](#docker-image) below), so the choice comes down to runtime
-constraints.
-
-Choose Lambda when the task:
-
-- has a short runtime, no more than 15 minutes
-- runs fine on a single vCPU
-- fits under 10 GB of memory
-- has a small code size and few dependencies
-- needs its code to live in the Cirrus project repository
-
-Choose Batch when the task:
-
-- always runs longer than 5 minutes
-- has a larger package size or many dependencies
-- needs multiple vCPUs, more than 10 GB memory, or a specific vCPU-to-memory
-  ratio
-- is easier to manage as a separate container image
-- needs more than 10 GB of storage
-- needs special hardware (for example, a GPU)
-
-## Docker image
-
-Using a Docker image for a task is recommended unless the task is intended
-to run only in Lambda and has few dependencies — rarely the case with
-geospatial processing.
-
-The easiest way to do this is to create a Python class that extends
-`stactask.task.Task` and implements the abstract method
-`def process(self, **kwargs: Any) -> List[Dict[str, Any]]`. Put this class in
-`src/task/task.py`, and invoke it from Docker with:
-
-```
-FROM public.ecr.aws/lambda/python:3.11
-
-# ENTRYPOINT ["/lambda-entrypoint.sh"] # set by base lambda image
-COPY src/task/task.py ${LAMBDA_TASK_ROOT}/task.py
-CMD [ "task.handler" ]
+handler = MyTask.handler
 ```
 
-If you use a container that is not based on a standard Lambda image, you
-must add the `lambda-entrypoint.sh` file to your image and set `ENTRYPOINT`
-explicitly.
+`Task.handler` is the Lambda entry point. It reads a `{"url": ...}` input by fetching that object, which is how an [oversized payload](../reference/payload-bucket.md#oversized-payloads) arrives, and after `process` returns it applies the process definition's `collection_matchers` to the output items and returns the payload. `Task.cli` is the Batch entry point: `python task.py run <input-url> --output <output-url>` reads the input from the first URL and writes the output payload to the second. The handler does not write an oversized output back to S3; a Lambda task whose output could exceed the size limit should be a Batch task instead.
 
-The same Docker image cannot be used by both Batch and Lambda, since they
-require different `CMD`/`ENTRYPOINT` settings. The solution is a base image
-with every directive except `CMD` and `ENTRYPOINT`, and two derived images
-that set those directives for each target. For a base image built on a
-standard AWS Lambda image (`public.ecr.aws/lambda/python:3.11`):
+## Task parameters
 
-Batch:
+A task reads its parameters from `Task.parameters`, which merges the process definition's `workflow_options` with the task's own entry under `tasks`, keyed by the task's `name`, with the task's entry winning on conflicts. Both are described under [Process definition](../reference/payload-schema.md#process-definition).
 
-```
-COPY src/task/task.py ${LAMBDA_TASK_ROOT}/task.py
-ENTRYPOINT []
-```
+## Lambda or Batch
 
-(any prior `CMD` is reset by the `ENTRYPOINT` change; the command to run is
-set by the Batch job definition instead)
+A task runs as a Lambda function or an AWS Batch job. Both can be built from one container image; the choice is about runtime limits.
 
-Lambda:
+Lambda suits a task that finishes within its 15-minute maximum timeout, fits in 10 GB of memory and 10 GB of ephemeral storage, and does not need to choose its CPU count, which Lambda sets in proportion to memory. Batch suits a task that runs longer, needs more memory or storage, a specific vCPU-to-memory ratio, or a GPU, or is more manageable as a separately built image. A Batch task also needs [its own CloudFormation resources](batch-infrastructure.md) and the [`pre-batch` and `post-batch` states](batch-workflow-structure.md) around it in the workflow, so Lambda is the lower-overhead default.
 
-```
-COPY src/task/task.py ${LAMBDA_TASK_ROOT}/task.py
-CMD [ "task.handler" ]
-```
+### When Batch overhead dominates
 
-(the base image sets `ENTRYPOINT ["/lambda-entrypoint.sh"]`)
+Submitting a Batch job carries a fixed cost, since placing the job on an instance can take minutes, regardless of how long the job itself runs. When a task's real work is short, that overhead dominates its runtime and cost, and it should be a Lambda task. Two cases from Earth Search:
 
-An example base image that needs geospatial tools could look like this:
+- Landsat ingest reads the `public-c2-notify-v2` SNS topic, which includes many Real-Time scenes that are filtered out after seconds of work. Running that filter as a Batch job would spend minutes of placement, and the corresponding EC2 cost, on each. Landsat ingest as a whole is a metadata-to-metadata conversion taking tens of seconds per scene, so it runs entirely on Lambda.
+- The Sentinel-2 Collection 1 Level-2A collection includes only items with processing baseline 05.00 or higher. During a full back-processing run, roughly half the scenes had an older baseline and were discarded immediately, while the rest ran a five-to-ten-minute Batch job. The discarded half still paid the placement overhead. A Lambda step checking the baseline ahead of the Batch job would have avoided it.
 
-```
-FROM ghcr.io/lambgeo/lambda-gdal:3.8-python3.11 as gdal
+## Container image
+
+Package a task as a container image unless it will only ever run on Lambda and has few dependencies, which is rare for geospatial processing. Lambda and Batch need different `ENTRYPOINT` and `CMD` settings, so build one base image with everything else and derive two thin images from it.
+
+A base image built on the AWS Lambda Python image already has `ENTRYPOINT ["/lambda-entrypoint.sh"]`, the runtime interface client that Lambda requires. The example below adds GDAL from a prebuilt layer image and the task's dependencies:
+
+```dockerfile
+FROM ghcr.io/lambgeo/lambda-gdal:3.8-python3.11 AS gdal
 
 FROM public.ecr.aws/lambda/python:3.11
 
-# Bring C libs from lambgeo/lambda-gdal image
 COPY --from=gdal /opt/lib/ ${LAMBDA_TASK_ROOT}/lib/
 COPY --from=gdal /opt/include/ ${LAMBDA_TASK_ROOT}/include/
 COPY --from=gdal /opt/share/ ${LAMBDA_TASK_ROOT}/share/
@@ -164,71 +74,35 @@ ENV \
   GEOS_CONFIG=${LAMBDA_TASK_ROOT}/bin/geos-config \
   PATH=${LAMBDA_TASK_ROOT}/bin:$PATH
 
-RUN yum update -y && \
-    yum install -y libxml2-devel libxslt-devel python-devel gcc && \
-    yum clean all && \
-    rm -rf /var/cache/yum /var/lib/yum/history
-
 COPY requirements.txt ${LAMBDA_TASK_ROOT}
-
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 COPY src/task/task.py ${LAMBDA_TASK_ROOT}/task.py
 ```
 
-Build and tag that as the base image, then build the Lambda and/or Batch
-images from it:
+The Lambda image keeps the inherited entrypoint and names the handler:
 
-Batch:
-
-```
-FROM my_base_task
-
-ENTRYPOINT []
-```
-
-Lambda:
-
-```
-FROM my_base_task
+```dockerfile
+FROM my-base-task
 
 CMD [ "task.handler" ]
 ```
 
-If only one of Batch or Lambda is needed, these directives can be folded
-into a single image definition.
+The Batch image clears the entrypoint so the job definition's `Command` runs directly:
 
-## Task parameters
+```dockerfile
+FROM my-base-task
 
-Tasks can take arguments at runtime via process definition parameters. See
-the [Cirrus Payload](../reference/payload-schema.md) docs for more
-information.
+ENTRYPOINT []
+```
 
-## Logging and error contract
+Clearing `ENTRYPOINT` also resets any inherited `CMD`. The job definition supplies the command, for example `python task.py run Ref::url --output Ref::url_out`; see [Batch infrastructure: Job definition](batch-infrastructure.md#job-definition). A base image that is not derived from an AWS Lambda image must add the Lambda runtime interface client itself for the Lambda variant to work.
 
-### Structured logging
+## Structured logging
 
-Cirrus configures Python's `logging` module so that any logger named under
-one of these parent names gets structured JSON output (via `pythonjsonlogger`)
-sent to a stream handler, at a level controlled by the `CIRRUS_LOG_LEVEL`
-environment variable (default `DEBUG`):
+`cirrus.lib.logging` configures Python's `logging` module at import time. Loggers named `task`, `feeder`, `function`, `lambda_function`, `cirrus.lib`, and their children, get JSON output through `pythonjsonlogger` at the level in `CIRRUS_LOG_LEVEL`, default `DEBUG`. A task gets structured logging by naming its logger under one of those prefixes.
 
-- `task`
-- `feeder`
-- `function`
-- `lambda_function`
-- `cirrus.lib`
-
-This configuration lives in `cirrus.lib.logging` and is applied at import
-time. To get structured logging in a task, name the logger (or a child
-logger, e.g. `task.my-task`) under one of these prefixes.
-
-`cirrus.lib.logging.CirrusLoggerAdapter` wraps a logger and adds Cirrus
-context to every message: when constructed with a `payload` dict, it attaches
-the payload's `id` and `stac_version` as extra log fields, and an
-`aws_request_id` if one is passed in. It also disables propagation from the
-logger's parent when that parent is one of the configured names above, which
-prevents duplicate log lines in CloudWatch:
+`CirrusLoggerAdapter` wraps such a logger and attaches the payload's `id` and `stac_version` to every record when constructed with the payload, plus `aws_request_id` when given one:
 
 ```python
 from cirrus.lib.logging import CirrusLoggerAdapter
@@ -238,16 +112,12 @@ logger = CirrusLoggerAdapter("task.my-task", payload=payload)
 logger.info("processing %d items", len(payload["features"]))
 ```
 
-Every log record from this adapter carries the payload `id` as structured
-context, which makes it possible to filter logs for a specific execution
-alongside the Lambda request ID (see [Isolating one Lambda invocation](../operating/monitoring.md#isolating-one-lambda-invocation)).
+The adapter also stops the parent logger from propagating to the root logger, which prevents each line appearing twice in CloudWatch under Lambda's own root handler. Filtering a log group by payload ID is then a search for that ID string; see [Isolating one Lambda invocation](../operating/monitoring.md#isolating-one-lambda-invocation).
 
-### Raising `InvalidInput`
+A task built on stac-task gets a logger named after its `name` attribute through the base class. That logger is not under a Cirrus prefix, so to get Cirrus's JSON format a stac-task task should name itself `task.<something>` or wrap `logging.getLogger("task." + self.name)` itself.
 
-If a task determines its input can never be processed — as opposed to a
-transient failure — it should raise `stactask.exceptions.InvalidInput`. The
-`update-state` Lambda function recognizes this exception type and records
-the execution as `INVALID` instead of `FAILED`. See
-[Lambda functions: update-state](../reference/lambda-functions.md#update-state)
-for the full FAILED/INVALID mechanism and the state database's use of the
-distinction.
+## Raising `InvalidInput`
+
+When a task determines that its input can never be processed, as opposed to failing for a transient reason, it should raise `stactask.exceptions.InvalidInput`. `update-state` recognizes that error name and records the execution as `INVALID` instead of `FAILED`, and `process` will not rerun an `INVALID` payload unless the process definition sets `replace`. Any other exception records `FAILED`, which reruns on resubmission. See [Lambda functions: Status to state](../reference/lambda-functions.md#status-to-state).
+
+For a Batch task the same rule holds. `post-batch` reads the job's last log line and re-raises the exception under the name it finds there, so an uncaught `InvalidInput` in the container still reaches `update-state` by name.

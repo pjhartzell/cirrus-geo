@@ -1,10 +1,6 @@
 # Chaining workflows
 
-Workflow chaining lets multiple workflow executions run in sequence, with
-the output of one becoming the input of the next. Chaining is implemented
-as an extension to the Cirrus Payload format: the `process` key holds an
-array of process definitions, where each element represents a link in the
-chain. A payload chaining two workflows looks like:
+Chaining runs workflow executions in sequence, with the output payload of one becoming the input payload of the next. It is expressed in the payload itself: the `process` array holds one process definition per link, and each execution consumes the first entry. A payload chaining two workflows:
 
 ```json
 {
@@ -15,8 +11,6 @@ chain. A payload chaining two workflows looks like:
 }
 ```
 
-This models a simple chain:
-
 ```mermaid
 flowchart LR
   1(Workflow 1)
@@ -24,8 +18,7 @@ flowchart LR
   1 --> 2
 ```
 
-Each element of `process` after the first can also be a nested array, to
-model branching within the chain. For example:
+An entry after the first can itself be an array, which fans out: one execution per element, each continuing independently with the rest of the chain.
 
 ```json
 {
@@ -40,8 +33,6 @@ model branching within the chain. For example:
 }
 ```
 
-produces an execution chain that looks like this:
-
 ```mermaid
 flowchart LR
   1(Workflow 1)
@@ -55,17 +46,11 @@ flowchart LR
   2b --> 3b
 ```
 
-Chaining alone can model one-to-one and one-to-many dependency
-relationships; it has no facility for merging branches back together.
+Chaining expresses one-to-one and one-to-many dependencies. It has no way to merge branches back together, and a branch element cannot itself contain a nested array.
 
 ## How chaining runs
 
-When a workflow's Step Functions execution succeeds, the `update-state`
-Lambda function (triggered by the execution's terminal EventBridge event)
-builds the next payload(s) for the chain and, if `CIRRUS_PROCESS_QUEUE_URL`
-is configured, enqueues each one onto the process SQS queue. Each queued
-payload is then picked up by the `process` Lambda function like any other
-incoming payload, which starts the next workflow's execution:
+When an execution reaches `SUCCEEDED`, the [`update-state`](../reference/lambda-functions.md#update-state) function calls `PayloadManager.next_payloads` on the execution's output payload and, when `CIRRUS_PROCESS_QUEUE_URL` is set, sends each result to the process queue. From there it is an ordinary incoming payload: `process` picks it up and starts the next execution.
 
 ```mermaid
 flowchart LR
@@ -80,33 +65,19 @@ flowchart LR
   proc -- starts execution --> sfn2
 ```
 
-Building the next payload(s) (`next_payloads` on the succeeded execution's
-output) works as follows:
+`next_payloads` (`cirrus.lib.payload_manager`) builds each next payload from a deep copy of the output payload:
 
-- The first element of `process` (the definition for the workflow that just
-  finished) is dropped from the array.
-- If there is no further element in `process`, the chain ends and nothing is
-  enqueued.
-- If the next element is a single process definition (a dict), one payload
-  is produced with that definition as the new `process[0]`. If it's a list
-  (a branch), one payload is produced per element in the list.
-- Each produced payload has its `id` removed, since a new one will be
-  derived (or assigned) for the next workflow's execution — the same
-  payload `id` cannot be reused for a different workflow.
+- The first `process` entry, the definition just run, is removed.
+- If nothing remains, the chain ends and nothing is enqueued.
+- If the next entry is a single definition, one payload is produced with it as `process[0]`. If it is an array, one payload is produced per element.
+- The `id` is deleted. `process` generates a new one from the output items and the next workflow name, so a chained execution never reuses the previous execution's ID.
+- If the next definition has a `chain_filter`, `features` is reduced to the items that match it.
 
-Chaining only fires for successful executions; a `FAILED`, `ABORTED`, or
-`TIMED_OUT` execution does not enqueue any next payload.
+Only `SUCCEEDED` executions chain. A `FAILED`, `INVALID`, `ABORTED`, or timed-out execution enqueues nothing, and a succeeded execution with no output payload enqueues nothing either.
 
 ## Filtering output items
 
-When a successive workflow in a chain doesn't need every item produced by
-the preceding workflow, chaining supports filtering the output items via a
-[JSONPath](https://goessner.net/articles/JsonPath/index.html) filter
-expression. Set the filter in the successive workflow's process definition
-using the `chain_filter` key (see the
-[process definition reference](../reference/payload-schema.md#process-definition)).
-For example, to keep only items with an `id` starting with `SWE` and a
-`confidence` property greater than 80:
+When the next workflow needs only some of the preceding workflow's output items, set `chain_filter` on its process definition to a [JSONPath](https://goessner.net/articles/JsonPath/index.html) filter expression. To keep only items whose `id` starts with `SWE` and whose `confidence` property exceeds 80:
 
 ```json
 {
@@ -120,18 +91,10 @@ For example, to keep only items with an `id` starting with `SWE` and a
 }
 ```
 
-The `chain_filter` value is a JSONPath filter expression applied to the
-preceding workflow's output `features`. It's substituted into the
-expression:
+The expression is substituted into `$.features[?(<chain_filter>)]` and evaluated with `jsonpath-ng` against the output payload, so the example evaluates:
 
-```
-$.features[?(<chain_filter>)]
-```
-
-So the example above evaluates:
-
-```
+```text
 $.features[?(@.id =~ 'SWE.*' & @.properties.confidence > 80)]
 ```
 
-and only the matching items are carried into the next payload's `features`.
+Only the matching items are carried into the next payload's `features`. A filter that matches nothing produces a payload with an empty `features` array, which `process` rejects because it cannot generate an `id` without items.

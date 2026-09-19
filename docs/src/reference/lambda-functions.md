@@ -1,169 +1,110 @@
 # Lambda functions
 
-The `function` component type refers to the AWS Lambda functions built into
-Cirrus. These functions wrap the workflows and tasks: they move payloads into
-and out of workflows, track state, and expose deployment data over HTTP. All
-five are created by the CloudFormation core stack.
+Five Lambda functions ship with the core stack. They move payloads into and out of workflows, record state, and serve state over HTTP. `cloudformation/core/functions.yaml` creates each one as `${ResourcePrefix}-<name>` with a 15-second timeout and 256 MB of memory, from the handlers in `src/cirrus/lambda_functions/`.
 
-- [`process`](#process): consumes payloads from the process SQS queue,
-  records them in the state database, and starts workflow Step Functions
-  executions.
-- [`update-state`](#update-state): handles Step Functions execution
-  completion events, updating the state database, publishing notifications,
-  and enqueuing chained payloads.
-- [`pre-batch`](#pre-batch): runs before a Batch task in a workflow,
-  uploading the input payload to S3 and returning its URL for the Batch job.
-- [`post-batch`](#post-batch): runs after a Batch task in a workflow,
-  retrieving the task output payload from S3; on job failure it retrieves the
-  error from the Batch job logs and re-raises it in the Step Functions
-  context.
-- [`api`](#api): a read-only HTTP API for querying workflow state and event
-  metrics, e.g., for monitoring dashboards.
+| Function | Trigger | Role in the pipeline |
+| --- | --- | --- |
+| [`process`](#process) | The process SQS queue | Turns a queued payload into a Step Functions execution and records it as `PROCESSING` |
+| [`update-state`](#update-state) | An EventBridge rule on execution status changes | Records the terminal state, publishes output items, enqueues chained payloads |
+| [`pre-batch`](#pre-batch) | A workflow `Task` state before a Batch task | Uploads the payload to S3 so a Batch job can read it |
+| [`post-batch`](#post-batch) | A workflow `Task` state after a Batch task | Returns the job's output payload to the state machine, or surfaces its error |
+| [`api`](#api) | API Gateway | Read-only HTTP access to the state database and event metrics |
 
 ## process
 
-The `process` Lambda function is the entry point into Cirrus workflows. It
-consumes messages from the process SQS queue, extracts a Cirrus Payload from
-each message, records the payload in the state database, and starts a Step
-Functions execution of the workflow named in the payload's process
-definition.
+### Queue trigger
 
-### Trigger
+An `AWS::Lambda::EventSourceMapping` delivers messages from the process queue in batches of up to ten. Anything that can send to that queue starts processing: a [feeder](../building-pipelines/feeders.md), the Cirrus CLI's `process` and `run-workflow` commands, and `update-state` when it enqueues the next payload in a [chain](../building-pipelines/chaining-workflows.md). One message carries one payload.
 
-The process SQS queue is the function's event source. Anything that can put a
-message on that queue can trigger processing:
+### Intake
 
-- a [feeder](../building-pipelines/feeders.md) publishing payloads to the queue (directly
-  or via the process SNS topic)
-- the Cirrus CLI `process` command, which enqueues a payload read from stdin:
+For each record in the event, `lambda_handler` does the following, with the helpers named in `cirrus.lib.utils`.
 
-        cirrus manage DEPLOYMENT_NAME process < payload.json
+1. **Normalize.** An event with a `Records` key is iterated record by record. Any other event is treated as a single record, which is how `invoke-lambda` submissions arrive.
+2. **Extract** (`extract_record`). An SQS record's `body` is JSON-decoded. An SNS record's `Sns` object is taken. If the result has a `Message` key, that is JSON-decoded too, which unwraps an SNS envelope delivered through SQS. If the result has no `url` but has `Parameters.url_out`, it is a Batch job description and is replaced by `{"url": <url_out>}`. A record that raises here is announced as `RECORD_EXTRACT_FAILED`, uploaded to the payload bucket's invalid prefix, and counted as a failure.
+3. **Fetch.** A `{"url": "s3://..."}` reference is replaced by the object it points at.
+4. **Validate.** A `PayloadManager` is constructed with `set_id_if_missing=True`, which builds a `CirrusPayload`, generates an `id` from the items and workflow name if the payload has none, and calls `validate`. A payload that fails is announced as `NOT_A_PROCESS_PAYLOAD`, uploaded to the invalid prefix, and counted as a failure. See [Payload schema](payload-schema.md) for what validation checks.
+5. **Decide and start** (`PayloadManagers.process`). The current state records for every payload in the batch are fetched with one `BatchGetItem`. Then, per payload: a payload ID already handled in this batch is dropped (`DUPLICATE_ID_ENCOUNTERED`); a payload whose state is `FAILED`, `ABORTED`, `CLAIMED`, or absent, or whose process definition sets `replace`, is started; any other state is skipped (`ALREADY_PROCESSING`, `ALREADY_SUCCEEDED`, `ALREADY_INVALID`). The full table is in [The replace field and reruns](payload-schema.md#the-replace-field-and-reruns).
 
-A single message carries a single payload; bulk processing is a matter of
-sending many messages, which the function consumes in SQS batches.
+Starting a payload is three steps. `StateDB.claim_processing` writes `CLAIMED` under a condition that fails if the record is already `CLAIMED` or `PROCESSING`, which is what stops two concurrent invocations from starting the same execution. The input payload is uploaded to `<root>/executions/<payload_id>/<execution_id>/input.json`. Then `StartExecution` is called with a payload that is inline, or a `{"url": ...}` reference to the oversized prefix if the escaped JSON exceeds 120,000 bytes, and `StateDB.set_processing` moves the record to `PROCESSING`.
 
-### Payload extraction
+The execution name is deterministic: a UUID5 of the payload ID and the record's existing `executions` list. Reprocessing a payload therefore produces a new name only because the list has grown. If the state machine named in the process definition does not exist, the payload is recorded `FAILED` with that error and the message is not retried.
 
-Each message may contain a Cirrus Payload directly, an SNS notification
-wrapping a payload, or an object with a `url` field pointing to a payload in
-S3, in which case the payload is fetched from S3. Messages from which no
-payload can be extracted, or whose payload is not a valid process payload,
-are recorded as workflow events (`RECORD_EXTRACT_FAILED` or
-`NOT_A_PROCESS_PAYLOAD`), their content is uploaded to the payload bucket for
-inspection, and the batch fails so unprocessable messages fall through to the
-dead-letter queue.
+### Batch outcome
 
-### State management and workflow start
-
-For each payload, the function:
-
-1. Claims the payload in the state database (state `CLAIMED`), which locks
-   out concurrent duplicate executions. Payloads already in `PROCESSING` are
-   skipped, as are payloads in `SUCCEEDED` or `INVALID` unless the process
-   definition sets `replace: true`. Payloads in `FAILED`, `ABORTED`, or
-   `CLAIMED` states are (re)run.
-2. Uploads the input payload to the payload bucket.
-3. Starts the Step Functions execution and transitions the state database
-   record from `CLAIMED` to `PROCESSING`.
-
-If some payloads in an SQS batch fail, the successfully processed messages
-are deleted from the queue and the invocation raises an error so only the
-failed messages are retried.
+If every record was handled, the invocation returns and SQS deletes the batch. If any record was rejected in steps 2 or 4, the invocation deletes the messages it did handle and then raises, so SQS redelivers only the rejected messages. After five receives they land on `${ResourcePrefix}-process-dlq`.
 
 ## update-state
 
-The `update-state` Lambda function records the results of Step Functions
-workflow executions in the DynamoDB state database, and drives the
-post-workflow actions: publishing output items to SNS and enqueuing chained
-payloads.
+### EventBridge trigger
 
-### Trigger
+The EventBridge rule `${ResourcePrefix}-update-state-sfn-events` matches `Step Functions Execution Status Change` events from `aws.states` whose `stateMachineArn` begins with `arn:aws:states:<region>:<account>:stateMachine:${ResourcePrefix}-` and whose status is `SUCCEEDED`, `FAILED`, `ABORTED`, or `TIMED_OUT`. The rule retries a failed invocation for up to 30 minutes and then sends the event to `${ResourcePrefix}-update-state-dlq`.
 
-An EventBridge rule invokes `update-state` whenever a workflow Step Functions
-execution reaches a terminal status. The terminal execution statuses are a
-Step Functions concept, distinct from (but mapped to) the state database
-states:
+### Parsing the event
 
-| Execution status | Resulting state database state |
-| ---------------- | ------------------------------ |
-| `SUCCEEDED`      | `SUCCEEDED`                    |
-| `FAILED`         | `FAILED` or `INVALID`          |
-| `ABORTED`        | `ABORTED`                      |
-| `TIMED_OUT`      | `FAILED`                       |
+`Execution.from_event` reads the execution ARN, name, and status, and the input and output payloads embedded in the event. EventBridge omits the input when the escaped input and output together exceed 248 KiB, and omits the output as well when it alone exceeds that. The function raises if the input is missing, or if the status is `SUCCEEDED` and the output is missing, so an oversized output payload prevents the outcome from being recorded and the event ends on the dead-letter queue. Keeping payloads small avoids this; see [Payload bucket: Oversized payloads](payload-bucket.md#oversized-payloads).
 
-A `FAILED` execution is recorded as `INVALID` when its error type is
-`stactask.exceptions.InvalidInput` — or `cirrus.lib.errors.InvalidInput`,
-the equivalent exception from pre-2.0 cirrus-lib, still recognized so tasks
-built against the old library classify correctly; a
-`TIMED_OUT` execution is recorded as `FAILED` with a `TimedOutError` error.
-For failed executions, the error name and cause are extracted from the event
-and stored on the state database record. The workflow definition's `Fail`
-state must include `ErrorPath` and `CausePath` fields for the cause to be
-captured (see [workflow definitions](../building-pipelines/workflows.md)).
+### Status to state
 
-The execution's input and output payloads are read from the EventBridge
-event itself. If the combined size exceeds the EventBridge limit the payloads
-are excluded from the event and the function raises an error.
+| Execution status | Error type | Recorded state | Event |
+| --- | --- | --- | --- |
+| `SUCCEEDED` | | `SUCCEEDED` | `SUCCEEDED` |
+| `FAILED` | `stactask.exceptions.InvalidInput` or `cirrus.lib.errors.InvalidInput` | `INVALID` | `INVALID` |
+| `FAILED` | `TimedOutError` | `FAILED` | `TIMED_OUT` |
+| `FAILED` | anything else | `FAILED` | `FAILED` |
+| `TIMED_OUT` | set to `TimedOutError` | `FAILED` | `TIMED_OUT` |
+| `ABORTED` | | `ABORTED` | `ABORTED` |
 
-### Actions on completion
+The error type comes from the event's `detail.error`. The message comes from `detail.cause`: if the cause is JSON with an `errorMessage` key, that value is used, otherwise the raw cause. The two are stored on the record as `<type>: <message>` in `last_error`. When the workflow's `Fail` state does not use `ErrorPath` and `CausePath`, the event carries no cause and a fixed message saying so is stored instead. See [Capturing errors](../building-pipelines/workflows.md#capturing-errors). The `cirrus.lib.errors.InvalidInput` name is matched as a string for tasks built against an older library; no such class exists in this package.
 
-Every invocation updates the state database record and emits a workflow
-event to the event recording system. For successful executions,
-`update-state` additionally:
+### On success
 
-- uploads the output payload to the payload bucket
-- publishes each output item to the publish SNS topic (when
-  `CIRRUS_PUBLISH_TOPIC_ARN` is configured), for consumption by downstream
-  services such as a STAC API ingest
-- enqueues any chained payloads onto the process queue (when
-  `CIRRUS_PROCESS_QUEUE_URL` is configured), continuing a
-  [workflow chain](../building-pipelines/chaining-workflows.md)
+For a `SUCCEEDED` execution the function, in order:
+
+1. Uploads the output payload to `<root>/executions/<payload_id>/<execution_id>/output.json`.
+2. Records `SUCCEEDED` and emits the event.
+3. Publishes each item in the output payload's `features` as one message to the publish topic, when `CIRRUS_PUBLISH_TOPIC_ARN` is set. Message attributes carry the item's `collection`, its `bbox` corners, `datetime`, `start_datetime`, and `end_datetime`, `eo:cloud_cover` as `cloud_cover`, and a `status` of `created` or `updated` derived from whether `created` and `updated` differ.
+4. Enqueues the next payload or payloads of a chain onto the process queue, when `CIRRUS_PROCESS_QUEUE_URL` is set. See [Chaining workflows](../building-pipelines/chaining-workflows.md).
+
+Step 2 runs before steps 3 and 4, so a failure to publish leaves the record `SUCCEEDED`.
 
 ## pre-batch
 
-The `pre-batch` Lambda function runs immediately before a Batch task in a
-workflow, working around an AWS Batch limitation: a Batch job submission
-cannot carry a large JSON payload directly, and Cirrus Payloads can be large.
+The function receives the state input, uploads it to `<root>/tmp/batch/<payload_id>/<uuid>.json`, and returns:
 
-`pre-batch` uploads the input payload to the payload bucket and returns:
+```json
+{"url": "s3://<bucket>/<root>/tmp/batch/<payload_id>/<uuid>.json",
+ "url_out": "s3://<bucket>/<root>/tmp/batch/<payload_id>/<uuid>_out.json"}
+```
 
-- `url`: the S3 URL of the uploaded input payload, passed to the Batch job
-  as its input parameter
-- `url_out`: the S3 URL (the input URL with an `_out.json` suffix) where the
-  Batch task must write its output payload, picked up afterwards by
-  [`post-batch`](#post-batch)
+The Batch job reads its input from `url` and must write its output payload to `url_out`. The workflow passes both through the Batch task's `Parameters`. See [Batch tasks in a workflow](../building-pipelines/batch-workflow-structure.md).
 
 ## post-batch
 
-The `post-batch` Lambda function runs immediately after a Batch task in a
-workflow, performing the inverse of [`pre-batch`](#pre-batch): it reads the
-task's output payload from S3 (at the `url_out` location established by
-`pre-batch`) and returns it to the Step Functions state machine, so the next
-task receives it the same way it would from a Lambda task.
+The function receives the Batch task's output. When the job succeeded, that output carries the job's `Parameters`, which `extract_record` maps to `{"url": <url_out>}`. The function fetches the payload from that URL, validates it, and returns it to the state machine inline, or as a `{"url": ...}` reference to the oversized prefix if it exceeds the size limit, so the next task receives it the same way it would from a Lambda task.
 
-### Error handling
+When the job failed and the workflow's `Catch` routed the error into the input under `error`, the function reconstructs the job's own exception rather than passing on the generic Batch failure:
 
-When the Batch job fails, `post-batch` reconstructs the underlying error so
-it surfaces in the Step Functions execution rather than a generic Batch
-failure:
+1. It reads `Attempts[-1].Container.LogStreamName` from the error's `Cause` and fetches that stream's last event from the `/aws/batch/job` log group.
+2. It parses the line as `<ErrorType>: <message>` and raises an exception class created with that name, or `UnknownError` when the line has no type prefix.
+3. If the stream cannot be read, typically because the container never started, it raises an exception carrying the container `Reason` and attempt `StatusReason` instead.
 
-1. It reads the last log event from the job's final attempt in the
-   `/aws/batch/job` CloudWatch log group.
-2. It parses the error type and message from that log line and re-raises the
-   error under the original type name (falling back to `UnknownError`).
-3. If the log stream cannot be read — typically because the container never
-   started — it raises an error carrying the Batch container reason and
-   attempt status reason instead (e.g. `DockerTimeoutError`, "Task failed to
-   start").
+A `Cause` without attempts, a container, or a log stream name raises with a message naming the missing field.
 
 ## api
 
-The `api` Lambda function serves a read-only HTTP API over the state
-database and workflow event metrics. It supports uses like monitoring
-dashboards that need aggregate event statistics, and sits outside the payload
-flow shown in the [architecture diagram](../getting-started/how-cirrus-works.md#architecture) — unlike
-the other functions, it never modifies state.
+Serves the read-only HTTP API. It reads the state database, the data bucket's `catalog.json`, and the workflow metrics namespace, and never writes. See [HTTP API](http-api.md).
 
-See the [Cirrus API endpoints reference](http-api.md)
-for the endpoint surface, full request/response shapes, error behavior, and
-how the API is exposed via CloudFormation.
+## IAM roles
+
+Each function has its own role in `cloudformation/core/functions.yaml`. The grants below are what a deployment built with other tooling must reproduce.
+
+| Function | Grants |
+| --- | --- |
+| `process` | `s3:GetObject`, `ListBucket`, `GetBucketLocation` on any bucket; `s3:PutObject` on the payload bucket; read and write on the state table and its indexes; `sqs:ReceiveMessage`, `DeleteMessage`, `GetQueueUrl`, `GetQueueAttributes` on the process queue; `sns:Publish` on the workflow event topic; `states:StartExecution` on `stateMachine:${ResourcePrefix}-*`; log stream creation and writes on the metrics log group when enabled |
+| `update-state` | Read and write on the state table; `sqs:SendMessage` on the process queue; `s3:GetObject` and `PutObject` on the payload bucket; `sns:Publish` on the publish and workflow event topics; the same log grants as `process` |
+| `pre-batch` | `s3:GetObject`, `ListBucket`, `GetBucketLocation` on any bucket; `s3:PutObject` on the payload bucket |
+| `post-batch` | The same S3 grants as `pre-batch`; `logs:GetLogEvents` on `/aws/batch/*` |
+| `api` | `s3:ListBucket`, `GetObject`, `GetBucketLocation` on the data bucket; `dynamodb:Query`, `Scan`, `GetItem`, `DescribeTable` on the state table and its indexes; `cloudwatch:GetMetricData`, `GetMetricStatistics`, `ListMetrics` when the metrics namespace is set |
+
+The `process` role reads from any bucket because a feeder may enqueue a `{"url": ...}` reference to a payload it stored elsewhere.

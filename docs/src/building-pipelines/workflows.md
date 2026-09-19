@@ -1,18 +1,8 @@
 # Defining a workflow
 
-A workflow models the transformation of an input payload into one or more
-output items via processing through one or more tasks. Workflows are
-implemented as [AWS Step Functions](https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html)
-state machines, written in the [AWS States Language](https://docs.aws.amazon.com/step-functions/latest/dg/concepts-amazon-states-language.html).
+A workflow is an [AWS Step Functions](https://docs.aws.amazon.com/step-functions/latest/dg/welcome.html) state machine, written in [Amazon States Language](https://docs.aws.amazon.com/step-functions/latest/dg/concepts-amazon-states-language.html), that runs a payload through a sequence of tasks. Cirrus starts an execution of it per payload and records the outcome. Everything between start and finish is the state machine's own definition.
 
-A workflow definition is a CloudFormation template that deploys an
-`AWS::StepFunctions::StateMachine` resource, along with the IAM role the
-state machine assumes to invoke its tasks. Each workflow is its own
-CloudFormation stack, separate from the Cirrus core stack and from other
-workflows. The in-repo `minimal` workflow
-(`cloudformation/workflows/minimal/state_machine.yaml`) is the simplest
-complete example: a `Choice` state that succeeds or fails depending on a
-field in the input payload, with no tasks at all.
+A workflow deploys as its own CloudFormation stack containing an `AWS::StepFunctions::StateMachine` and the IAM role it assumes to invoke its tasks. The in-repo `minimal` workflow (`cloudformation/workflows/minimal/state_machine.yaml`) is the smallest complete example: one `Choice` state that succeeds or fails on a field in the payload, with no tasks at all.
 
 ```yaml
 AWSTemplateFormatVersion: '2010-09-09'
@@ -71,61 +61,26 @@ Resources:
         - 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess'
 ```
 
-Because `minimal` has no tasks, its `Fail` state can use static
-`Error`/`Cause` strings. A workflow with real tasks should capture the
-actual error from a failed task instead — see [Capturing errors](#capturing-errors).
+Because `minimal` has no tasks, its `Fail` state can use static `Error` and `Cause` strings. A workflow with tasks should capture the failing task's error instead. See [Capturing errors](#capturing-errors).
 
 ## Naming and dispatch
 
-A workflow's state machine must be named `${ResourcePrefix}-<workflow_name>`,
-where `ResourcePrefix` is the CloudFormation stack's resource prefix
-parameter and `<workflow_name>` is the workflow's own name (`minimal` in the
-example above). This naming convention is how the rest of Cirrus finds and
-invokes a workflow:
+The state machine must be named `${ResourcePrefix}-<workflow>`, where `<workflow>` is the name a payload's process definition uses in its `workflow` field. This convention is the only link between the core stack and a workflow stack:
 
-- The `process` Lambda function reads the workflow name from the payload's
-  process definition (the `workflow` field) and builds the full state
-  machine ARN by appending that name to the `CIRRUS_BASE_WORKFLOW_ARN`
-  environment variable, which is set to
-  `arn:aws:states:<region>:<account-id>:stateMachine:${ResourcePrefix}-`
-  (`cloudformation/core/functions.yaml`). A payload therefore only needs to
-  specify a workflow name (e.g. `"workflow": "minimal"`); `process` derives
-  the full ARN and starts that state machine's execution. `process`'s IAM
-  role is likewise scoped to `states:StartExecution` on
-  `arn:aws:states:<region>:<account-id>:stateMachine:${ResourcePrefix}-*`,
-  so it cannot start a state machine outside this naming pattern.
-- The `update-state` Lambda function is triggered by an EventBridge rule
-  matching `detail.stateMachineArn` against the same
-  `arn:aws:states:<region>:<account-id>:stateMachine:${ResourcePrefix}-`
-  prefix, for executions reaching `SUCCEEDED`, `FAILED`, `ABORTED`, or
-  `TIMED_OUT` status.
+- The `process` function builds the state machine ARN by appending the workflow name to `CIRRUS_BASE_WORKFLOW_ARN`, which `cloudformation/core/functions.yaml` sets to `arn:aws:states:<region>:<account>:stateMachine:${ResourcePrefix}-`. Its IAM role allows `states:StartExecution` only on ARNs with that prefix.
+- The EventBridge rule that invokes `update-state` matches `stateMachineArn` against the same prefix, so a state machine outside the convention finishes without its outcome being recorded.
 
-For a workflow to be reachable by `process` and tracked by `update-state`,
-its state machine name must follow this convention.
+Workflow names must not contain underscores. The state database joins the collections and workflow name with an underscore and splits on the last one to recover them. See [ID format](../reference/payload-schema.md#id-format).
 
-!!! note "Workflow names cannot contain underscores"
-    The state database key format imposes an additional constraint on
-    workflow names — see [Payload schema: ID format](../reference/payload-schema.md#id-format).
+## State machine structure
 
-## Basic state machine structure
+Every workflow definition has:
 
-Workflows share some common structure within the state machine definition:
+- `StartAt` naming the first state.
+- At least one state that ends the execution successfully: `End: true` on a `Task` state, or a `Succeed` state.
+- A `Fail` state that each task's `Catch` routes to, so that a task error ends the execution as `FAILED` with the error preserved.
 
-- A `Comment` describing the workflow.
-- `StartAt` set to the first state.
-- At least one state that ends the workflow successfully (`End: true` on a
-  `Task` state, or a `Succeed` state).
-- A `Fail` state that terminates the workflow on unrecoverable error, with
-  each task's `Catch` block routing to it.
-
-### A workflow with a Lambda task
-
-A workflow that invokes a Lambda function uses the
-`arn:aws:states:::lambda:invoke` resource, with the function ARN passed in
-`Parameters.FunctionName` rather than as the state's `Resource` directly.
-This produces additional metadata in the execution history, including the
-Lambda request ID, which can be used to filter the function's CloudWatch
-logs (see [Isolating one Lambda invocation](../operating/monitoring.md#isolating-one-lambda-invocation)).
+A task that invokes a Lambda function uses the `arn:aws:states:::lambda:invoke` resource with the function ARN in `Parameters.FunctionName`, rather than naming the function ARN as the state's `Resource`. This integration records the Lambda request ID in the execution history, which is what [`get-execution-events --with-log-metadata`](../operating/monitoring.md#isolating-one-lambda-invocation) uses to find the invocation's logs. It also wraps the function's return value in a `Payload` field, so the state needs `"OutputPath": "$.Payload"` to pass the Cirrus Payload itself, and not the invoke response, to the next state or to the execution output.
 
 ```json
 {
@@ -139,6 +94,7 @@ logs (see [Isolating one Lambda invocation](../operating/monitoring.md#isolating
                 "FunctionName": "arn:aws:lambda:us-east-1:123456789012:function:my-prefix-my-task",
                 "Payload.$": "$"
             },
+            "OutputPath": "$.Payload",
             "End": true,
             "Retry": [
                 {
@@ -170,25 +126,17 @@ logs (see [Isolating one Lambda invocation](../operating/monitoring.md#isolating
 }
 ```
 
-The `Payload.$: "$"` parameter passes the full state input (the Cirrus
-Payload) to the Lambda function unmodified.
+`"Payload.$": "$"` passes the whole state input, the Cirrus Payload, to the function. `update-state` parses the execution's final output as a Cirrus Payload, so the last state's output must be the payload, not a wrapper around it.
 
-See [Wiring a Batch task into a workflow](batch-workflow-structure.md) for the
-additional `pre-batch`/`post-batch` structure that AWS Batch tasks require.
+A Batch task needs `pre-batch` and `post-batch` states around it and a different retry structure. See [Batch tasks in a workflow](batch-workflow-structure.md).
 
 ## Retry with backoff and jitter
 
-Some errors occur before a task even executes — for example, a
-`Lambda.TooManyRequestsException` when the Lambda concurrency quota is
-exceeded, or an AWS Batch `AWSBatchException` when the Batch `SubmitJob`
-rate quota is breached. These should be retried, but an immediate retry is
-likely to fail again if the underlying load hasn't subsided, so each task
-needs a retry definition with backoff.
-
-A retry definition with backoff and jitter looks like:
+Some errors occur before a task runs: `Lambda.TooManyRequestsException` when the account's Lambda concurrency is exhausted, or `Batch.AWSBatchException` when the `SubmitJob` rate limit is hit. Retrying immediately tends to fail again for the same reason, so each task's `Retry` should back off:
 
 ```json
 {
+    "ErrorEquals": ["Lambda.TooManyRequestsException", "Lambda.Unknown"],
     "IntervalSeconds": 600,
     "MaxDelaySeconds": 86400,
     "BackoffRate": 2.0,
@@ -197,37 +145,18 @@ A retry definition with backoff and jitter looks like:
 }
 ```
 
-`JitterStrategy: FULL` randomizes each retry delay between 0 and the current
-backoff interval, rather than always waiting the full interval
-(`JitterStrategy: NONE`, the default). This avoids many failed executions
-retrying in lockstep and re-creating the same load spike. `IntervalSeconds`
-sets the first delay; each subsequent retry multiplies the prior interval by
-`BackoffRate`, up to `MaxAttempts` attempts and capped at `MaxDelaySeconds`.
-
-See AWS's own [best practices for Step Functions](https://docs.aws.amazon.com/step-functions/latest/dg/sfn-best-practices.html)
-for further guidance on retry and backoff configuration.
+`IntervalSeconds` is the first delay. Each later delay is the previous one multiplied by `BackoffRate`, capped at `MaxDelaySeconds`, for up to `MaxAttempts` attempts. `JitterStrategy: FULL` draws each delay at random between zero and the computed value, so many executions that failed together do not retry together. The default, `NONE`, waits the full computed delay every time.
 
 ## Capturing errors
 
-When a Step Functions task fails, the error information needs to reach the
-`update-state` Lambda function so it can be recorded in the state database.
-`update-state` reads `detail.error` and `detail.cause` from the EventBridge
-"Step Functions Execution Status Change" event (`get_execution_error` in
-`src/cirrus/lambda_functions/update_state.py`).
-
-For that information to be populated, the workflow's `Catch` block must
-route the error into a `Fail` state using `ErrorPath` and `CausePath` (not
-the static `Error`/`Cause` fields), so the error name and cause are
-extracted from the state input at runtime:
+`update-state` records a failed execution's error from the `error` and `cause` fields of the EventBridge status-change event. Step Functions fills those from the `Fail` state that ended the execution. For the task's own error to reach the state database, the task's `Catch` must store it in the state and the `Fail` state must read it back with `ErrorPath` and `CausePath`:
 
 ```json
 "Catch": [
   {
-    "ErrorEquals": [
-      "States.ALL"
-    ],
-    "Next": "failure",
-    "ResultPath": "$.error"
+    "ErrorEquals": ["States.ALL"],
+    "ResultPath": "$.error",
+    "Next": "failure"
   }
 ]
 ```
@@ -240,106 +169,29 @@ extracted from the state input at runtime:
 }
 ```
 
-If a failed execution's `Fail` state does not use `ErrorPath`/`CausePath`,
-EventBridge's `cause` field is empty and `update-state` substitutes a fixed
-placeholder message directing the reader to add `ErrorPath`/`CausePath` to
-the workflow's `Fail` state; the real error is lost.
-
-`update-state` also decides between the `FAILED` and `INVALID` terminal
-states based on the captured error name: if it exactly matches
-`cirrus.lib.errors.InvalidInput` or `stactask.exceptions.InvalidInput`, the
-execution is recorded as `INVALID` instead of `FAILED`. A `TIMED_OUT` Step
-Functions status is always recorded as `FAILED`, with a fixed
-`TimedOutError` error name (`update_state.py`). See
-[State database: States](../reference/state-database.md#states) for the
-full set of terminal states.
-
-See the AWS documentation for the [Fail workflow state](https://docs.aws.amazon.com/step-functions/latest/dg/state-fail.html).
-
-## Keep payloads small
-
-Cirrus passes payloads between Lambda functions and Step Functions as JSON.
-`PayloadManager` enforces a conservative 120,000-byte limit
-(`MAX_PAYLOAD_LENGTH` in `src/cirrus/lib/payload_manager.py`) on the
-JSON-escaped length of a payload before starting a workflow execution — this
-accounts for the extra bytes JSON string-escaping adds when the payload is
-embedded as a string inside an EventBridge event, and stays below AWS's 248
-KiB combined input/output limit for Step Functions EventBridge events. When
-a payload exceeds the limit, its content is uploaded to the payload bucket
-and replaced in the Step Functions input by a small `{"url": "..."}`
-reference; see [Payload bucket: Oversized payloads](../reference/payload-bucket.md#oversized-payloads).
-
-Keep workflow inputs and outputs small in practice, not just under the
-limit: an oversized payload adds an S3 round trip to every task that needs
-its content, and (per the note above) an oversized *output* payload can also
-cause EventBridge to drop it from the terminal event entirely.
+A `Fail` state with static `Error` and `Cause` strings records those strings instead of the task's error. A `Fail` state with none of these fields leaves `cause` empty, and `update-state` stores a fixed message telling the reader to add `ErrorPath` and `CausePath`. The error name also decides whether the execution is recorded `FAILED` or `INVALID`. See [Lambda functions: Status to state](../reference/lambda-functions.md#status-to-state).
 
 ## Triggering workflows off one another
 
-It is common to model a processing pipeline as a series of connected
-workflows. Cirrus supports this via:
+Two ways to model a pipeline as connected workflows:
 
-- **Workflow chaining**: a chain of process definitions is specified in the
-  payload's `process` array, so that the output of one workflow execution
-  becomes the input to the next. See [Workflow chaining](chaining-workflows.md).
-- **Publish topic subscriptions**: custom Lambda functions or other
-  listeners can subscribe to the publish SNS topic to process workflow
-  output items and trigger further processing outside of a pre-defined
-  chain.
+- **Chaining.** A payload's `process` array lists several process definitions, and the output of each execution becomes the input of the next. See [Chaining workflows](chaining-workflows.md).
+- **Publish topic subscriptions.** Any subscriber to the publish SNS topic receives each output item as `update-state` publishes it, and can build and enqueue a new payload from it. This decouples the downstream workflow from the payload that produced the item.
 
 ## Design guidance
 
-Cirrus imposes few constraints on workflow structure, favoring flexibility
-over guardrails. The following guidelines are not enforced, but help keep a
-Cirrus deployment easy to manage.
+Cirrus enforces none of the following. They keep a deployment easier to reason about.
 
-### AWS Step Functions best practices
+**One input item per workflow.** State is tracked per payload ID, and the ID is derived from the input item IDs, so a workflow that takes one item has one record per item and a plain rerun story. Where several inputs are unavoidable, a synthetic item that resolves to the real inputs deterministically keeps the single-item interface.
 
-Review AWS's own [best practices for Step Functions](https://docs.aws.amazon.com/step-functions/latest/dg/sfn-best-practices.html)
-for general considerations, including handling Lambda concurrency quotas
-with a `Retry` block as shown above.
+**Short workflows.** A workflow should model one level of processing. Needing to persist intermediate outputs partway through is a sign it should be two workflows chained together.
 
-### Prefer one input item per workflow
+**Same inputs, same outputs.** Cirrus decides whether to run a payload from its ID, which encodes only the workflow name, collections, and item IDs. Process definition parameters are not part of that decision, so two submissions that differ only in parameters are the same payload to Cirrus and the second is skipped. Do not rely on parameters to change what a workflow produces.
 
-State tracking and execution management are easier to follow when a
-workflow processes a single input item. Where multiple inputs are
-unavoidable, using a synthetic item (an AOI item, a list item) that resolves
-the full set of inputs is one way to keep a single-item workflow interface
-while still processing many items. The synthetic item should resolve the
-same set of inputs deterministically.
+**Specific over flexible.** Parameters that select between behaviors make executions of the same workflow incomparable and conflict with the rule above. Restrict runtime parameters to values that do not change the type or content of the output items.
 
-### Keep workflows short and focused
+**No side-effect workflows.** A workflow transforms an input payload into output items. A workflow whose purpose is a side effect for every payload it sees belongs outside Cirrus, as a subscriber to the publish or workflow event topic.
 
-A workflow should model a single level of processing. If a workflow needs to
-persist intermediate outputs partway through, that's a sign it should be
-split into multiple workflows chained together, with a final workflow
-producing the actual outputs.
+**Small payloads.** Payloads travel inline through SQS, Step Functions, and EventBridge. Above 120,000 escaped bytes they are swapped for an S3 reference, which adds a round trip to every step, and an output above EventBridge's limit is dropped from the terminal event and never recorded. See [Payload bucket: Oversized payloads](../reference/payload-bucket.md#oversized-payloads).
 
-### Workflows should not produce different outputs from the same set of inputs
-
-See the [Cirrus Payload docs](../reference/payload-schema.md) for how Cirrus's
-idempotency check works: Cirrus uses the set of input items as a proxy for a
-workflow's outputs. Don't rely on workflow or task parameters to change the
-set of outputs, since those settings are not part of the idempotency check.
-
-### Make workflows specific, not flexible
-
-Using process-definition parameters to control dynamic behavior within a
-workflow is tempting, but generally best avoided:
-
-- Dynamism within a workflow means different executions of the same
-  workflow can't be assumed to have done the same thing, raising the
-  cognitive load of troubleshooting and pipeline management.
-- Dynamic workflows can require running the same workflow multiple times to
-  produce different sets of outputs, conflicting with the idempotency
-  guideline above.
-
-Restrict dynamic parameters to those that don't affect the type or contents
-of the output items.
-
-### Don't use workflows for side effects
-
-Workflows are functional processing units that transform inputs into a
-fixed set of outputs. Using a workflow purely to trigger a side effect for
-every payload — already processed, in processing, or new — is a Cirrus
-anti-pattern; use an event-based solution outside the workflow instead.
+AWS's [best practices for Step Functions](https://docs.aws.amazon.com/step-functions/latest/dg/sfn-best-practices.html) cover the rest.
