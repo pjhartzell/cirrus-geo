@@ -1,6 +1,6 @@
 # Follow a payload through Cirrus
 
-This page walks one payload through a deployed stack: submit it, watch its state database record change, and fetch its output. It assumes the [Quickstart](quickstart.md) is done, so the main stack and the minimal workflow are deployed and the environment file is sourced. Command options are in the [Command reference](../cli/reference.md); this page is about what happens between the commands.
+This page walks one payload through a deployed stack: submit it, watch its state database record change, and fetch its output. It assumes the [Quickstart](quickstart.md) or [Deploying to AWS](../operating/deploying.md) is done, so the main stack and the `minimal` workflow are deployed and the environment file is sourced. Command options are in the [Command reference](../cli/reference.md); this page is about what happens between the commands.
 
 ## Submitting
 

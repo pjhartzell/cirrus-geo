@@ -20,7 +20,7 @@ The intent is STAC in, STAC out. Cirrus validates the payload's structure, not i
 
 ![Cirrus architecture](../images/arch.png)
 
-The CloudFormation templates in `cloudformation/` create the right-hand column. They are the reference deployment, not the only one: the functions read everything they need from environment variables, so any tooling that creates the same resources and sets the same variables works. See [Deployment](../operating/deployment.md).
+The CloudFormation templates in `cloudformation/` create the right-hand column. They are the reference deployment, not the only one: the functions read everything they need from environment variables, so any tooling that creates the same resources and sets the same variables works. The [Deployment contract](../reference/deployment-contract.md) lists them, and [Deploying to AWS](../operating/deploying.md) is the procedure for the templates.
 
 ## Life of a payload
 
@@ -45,6 +45,6 @@ Tasks run on Lambda or on [AWS Batch](../building-pipelines/batch-infrastructure
 
 ## Where to go next
 
-- [Quickstart](quickstart.md) deploys the reference stack and runs a workflow.
+- [Quickstart](quickstart.md) runs the reference stack on LocalStack, and [Deploying to AWS](../operating/deploying.md) deploys it to an account.
 - [Building pipelines](../building-pipelines/tasks.md) covers tasks, workflows, and feeders.
 - [Using the CLI](../cli/using-the-cli.md) and the [Python library](../api/index.md) are the two ways to work with a deployment from outside AWS.

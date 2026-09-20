@@ -2,7 +2,7 @@
 
 The Cirrus CLI, the `cirrus` command, operates an existing deployment. It submits and reruns payloads, inspects executions, queries the state database, fetches stored payloads and logs, and invokes the framework's Lambda functions directly. It is part of the `cirrus-geo` package, built with [click](https://click.palletsprojects.com/), and its code lives under `cirrus.management`.
 
-This page covers installation, credentials, and how the CLI finds a deployment. Worked examples are in [Common workflows](common-workflows.md), and every command's options are in the [Command reference](reference.md). Deploying Cirrus itself is the [Quickstart](../getting-started/quickstart.md).
+This page covers installation, credentials, and how the CLI finds a deployment. Worked examples are in [Common workflows](common-workflows.md), and every command's options are in the [Command reference](reference.md). Deploying Cirrus itself is [Deploying to AWS](../operating/deploying.md).
 
 ## Installing
 
@@ -46,7 +46,7 @@ A deployment can name a role for the CLI to assume, either as a `CIRRUS_CLI_IAM_
 
 ## Deployment discovery
 
-Commands under `manage` take a deployment name and look up that deployment's resources in Parameter Store at run time. The pointer parameter `/cirrus/deployments/<name>` holds a JSON value naming where the configuration lives, by default the path `/deployment/<name>/`. Under that path is one parameter per configuration value. The CLI requires `CIRRUS_PAYLOAD_BUCKET`, `CIRRUS_STATE_DB`, `CIRRUS_PROCESS_QUEUE_URL`, `CIRRUS_BASE_WORKFLOW_ARN`, and `CIRRUS_PREFIX`, and fails with a message naming any that are missing. The others the templates publish are listed under [Environment variables](../operating/deployment.md#environment-variables).
+Commands under `manage` take a deployment name and look up that deployment's resources in Parameter Store at run time. The pointer parameter `/cirrus/deployments/<name>` holds a JSON value naming where the configuration lives, by default the path `/deployment/<name>/`. Under that path is one parameter per configuration value. The CLI requires `CIRRUS_PAYLOAD_BUCKET`, `CIRRUS_STATE_DB`, `CIRRUS_PROCESS_QUEUE_URL`, `CIRRUS_BASE_WORKFLOW_ARN`, and `CIRRUS_PREFIX`, and fails with a message naming any that are missing. The full set the templates publish is under [Deployment contract: Parameter Store entries](../reference/deployment-contract.md#parameter-store-entries).
 
 ```mermaid
 flowchart LR

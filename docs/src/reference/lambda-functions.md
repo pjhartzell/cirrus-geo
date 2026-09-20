@@ -103,14 +103,4 @@ Serves the read-only HTTP API. It reads the state database, the data bucket's `c
 
 ## IAM roles
 
-Each function has its own role in `cloudformation/core/functions.yaml`. The grants below are what a deployment built with other tooling must reproduce.
-
-| Function | Grants |
-| --- | --- |
-| `process` | `s3:GetObject`, `ListBucket`, `GetBucketLocation` on any bucket; `s3:PutObject` on the payload bucket; read and write on the state table and its indexes; `sqs:ReceiveMessage`, `DeleteMessage`, `GetQueueUrl`, `GetQueueAttributes` on the process queue; `sns:Publish` on the workflow event topic; `states:StartExecution` on `stateMachine:${ResourcePrefix}-*`; log stream creation and writes on the metrics log group when enabled |
-| `update-state` | Read and write on the state table; `sqs:SendMessage` on the process queue; `s3:GetObject` and `PutObject` on the payload bucket; `sns:Publish` on the publish and workflow event topics; the same log grants as `process` |
-| `pre-batch` | `s3:GetObject`, `ListBucket`, `GetBucketLocation` on any bucket; `s3:PutObject` on the payload bucket |
-| `post-batch` | The same S3 grants as `pre-batch`; `logs:GetLogEvents` on `/aws/batch/*` |
-| `api` | `s3:ListBucket`, `GetObject`, `GetBucketLocation` on the data bucket; `dynamodb:Query`, `Scan`, `GetItem`, `DescribeTable` on the state table and its indexes; `cloudwatch:GetMetricData`, `GetMetricStatistics`, `ListMetrics` when the metrics namespace is set |
-
-The `process` role reads from any bucket because a feeder may enqueue a `{"url": ...}` reference to a payload it stored elsewhere.
+Each function has its own role in `cloudformation/core/functions.yaml`. The grants are listed under [Deployment contract: IAM grants](deployment-contract.md#iam-grants).

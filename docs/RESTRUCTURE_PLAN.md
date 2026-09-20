@@ -23,6 +23,8 @@ Claims kept that could not be verified in-repo, each named in the relevant commi
 
 `docs/src/images/workflow-example.png` is no longer referenced by any page.
 
+Follow-up (2026-09-20): the deployment area was re-split by reader job. `getting-started/quickstart.md` is the LocalStack tutorial only; `operating/deploying.md` (new) is the AWS procedure including update and delete; `reference/deployment-contract.md` (new) states what a deployment must consist of, absorbing the stack, parameter, VPC, and environment variable content from the deleted `operating/deployment.md`, the IAM table from Lambda functions, and the Parameter Store requirements from Using the CLI.
+
 ## Target navigation
 
 ```

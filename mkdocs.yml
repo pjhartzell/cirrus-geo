@@ -99,7 +99,7 @@ nav:
           - Chaining workflows: building-pipelines/chaining-workflows.md
       - Feeders: building-pipelines/feeders.md
   - Operating:
-      - Deployment: operating/deployment.md
+      - Deploying to AWS: operating/deploying.md
       - Scaling and quotas: operating/scaling.md
       - Monitoring: operating/monitoring.md
       - Upgrading to 2.0: operating/upgrading.md
@@ -118,6 +118,7 @@ nav:
   - Reference:
       - Payload schema: reference/payload-schema.md
       - Lambda functions: reference/lambda-functions.md
+      - Deployment contract: reference/deployment-contract.md
       - Workflow events: reference/workflow-events.md
       - State database: reference/state-database.md
       - Payload bucket: reference/payload-bucket.md

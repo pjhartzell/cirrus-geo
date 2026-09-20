@@ -19,7 +19,7 @@ both daily ingest and full-catalog reprocessing.
 
     ---
 
-    Deploy Cirrus to AWS or LocalStack and run a test workflow.
+    Run Cirrus on LocalStack and submit a test workflow.
 
     [:octicons-arrow-right-24: Quickstart](getting-started/quickstart.md)
 
