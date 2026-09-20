@@ -199,3 +199,5 @@ Commit: `docs(getting-started): rewrite How Cirrus works around the pipeline/fra
 - Splitting Design guidance out of Defining a workflow.
 - Moving "Updating Batch resources safely" from Batch infrastructure to Operating. It is an update-time concern but is specific to pipeline-owned resources; left where it is.
 - Adding a troubleshooting section to Monitoring. The nav title is changed to match the page instead.
+
+Follow-up (2026-09-20, second): after a page-by-page necessity review, `getting-started/follow-a-payload.md` was replaced by `getting-started/first-pipeline.md`, a tutorial that adds a one-task workflow to a running deployment (run end to end on LocalStack 4 before publishing); `reference/publish-topic.md` was added as the consumer-facing reference for the output topic; "Updating Batch resources safely" moved from Batch infrastructure to `operating/updating-batch-resources.md`; Monitoring gained a symptom-to-cause table. The branch was rebased on main at 56c7009, which returns `nextkey` from the HTTP API items route; the HTTP API page and CODE_BEHAVIOR_NOTES were updated for it.

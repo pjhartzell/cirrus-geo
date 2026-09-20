@@ -69,7 +69,7 @@ For a `SUCCEEDED` execution the function, in order:
 
 1. Uploads the output payload to `<root>/executions/<payload_id>/<execution_id>/output.json`.
 2. Records `SUCCEEDED` and emits the event.
-3. Publishes each item in the output payload's `features` as one message to the publish topic, when `CIRRUS_PUBLISH_TOPIC_ARN` is set. Message attributes carry the item's `collection`, its `bbox` corners, `datetime`, `start_datetime`, and `end_datetime`, `eo:cloud_cover` as `cloud_cover`, and a `status` of `created` or `updated` derived from whether `created` and `updated` differ.
+3. Publishes each item in the output payload's `features` as one message to the [publish topic](publish-topic.md), when `CIRRUS_PUBLISH_TOPIC_ARN` is set.
 4. Enqueues the next payload or payloads of a chain onto the process queue, when `CIRRUS_PROCESS_QUEUE_URL` is set. See [Chaining workflows](../building-pipelines/chaining-workflows.md).
 
 Step 2 runs before steps 3 and 4, so a failure to publish leaves the record `SUCCEEDED`.

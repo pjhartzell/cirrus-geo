@@ -15,12 +15,8 @@ that requires a docs follow-up where a page is cited.
   segment is matched against the literal string `"items"` to select the
   paginated items route, so a payload whose item-ID segment is literally
   `items` is shadowed and cannot be fetched individually.
-- **Dropped `nextkey` pagination token** (`api.py:354-356`). The items route
-  discards the `nextkey` continuation token that `StateDB.get_items_page`
-  computes; the response body contains only `items`. Clients can still
-  paginate by passing the last returned item's `payload_id` as `nextkey`.
-  The HTTP API reference (`docs/src/reference/http-api.md`) documents that
-  workaround; returning the token may have been the intent.
+- ~~Dropped `nextkey` pagination token~~ Fixed on main in #374; the items
+  route now returns `nextkey` when more results exist.
 
 ## Workflow events (`src/cirrus/lib/events.py`)
 
@@ -81,6 +77,28 @@ that requires a docs follow-up where a page is cited.
   it, so an ID-less payload fails those commands with a `KeyError` traceback
   rather than a message. Documented as a requirement for an `id` in
   `docs/src/cli/common-workflows.md`.
+
+## run-workflow on a rerun (`src/cirrus/management/deployment.py`)
+
+- **`run_workflow` returns the previous outcome when the record is
+  already terminal.** After enqueuing, it polls `get_payload_state` while
+  the state is `PROCESSING`. A payload resubmitted with `replace: true`
+  whose record is `SUCCEEDED`, `FAILED`, `INVALID`, or `ABORTED` from an
+  earlier run exits the loop on the first poll, before `process` has
+  claimed the rerun, and the command prints the earlier run's output
+  payload with exit code 0. Observed 2026-09-20 on LocalStack: the record
+  showed one execution when the command returned and two a few seconds
+  later. Documented on the first-pipeline tutorial and the CLI cookbook.
+
+## CLI on LocalStack (`src/cirrus/management/task_logs.py`)
+
+- **`get-execution-events --with-log-metadata` raises `KeyError`
+  on LocalStack.** `_extract_lambda_metadata` reads
+  `output["SdkResponseMetadata"]["RequestId"]` from a `TaskSucceeded`
+  event; LocalStack's Step Functions emulation omits `SdkResponseMetadata`
+  from the `lambda:invoke` output, so the command fails with a traceback
+  rather than skipping the event. Observed 2026-09-20 on
+  localstack/localstack:4. Documented on the first-pipeline tutorial.
 
 ## Templates and scripts
 

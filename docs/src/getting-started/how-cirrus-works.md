@@ -29,7 +29,7 @@ The CloudFormation templates in `cloudformation/` create the right-hand column. 
 3. The state machine runs its [tasks](../building-pipelines/tasks.md). Each receives the payload the previous one returned. A Lambda task gets it as its event; a Batch task gets it through S3, with `pre-batch` and `post-batch` on either side. Tasks upload the assets they produce to a data bucket and point the items at them.
 4. When the execution ends, EventBridge invokes [`update-state`](../reference/lambda-functions.md#update-state) with the status, input, and output. It records `SUCCEEDED`, `FAILED`, `INVALID`, or `ABORTED`. On success it also stores the output payload and publishes each output item to the publish topic. If the payload's `process` array has more entries, it builds the next payload and sends it back to the queue.
 
-`process` and `update-state` announce each of these steps as a [workflow event](../reference/workflow-events.md), which is what dashboards and alerts consume. To watch a payload take this path with the CLI, see [Follow a payload through Cirrus](follow-a-payload.md).
+`process` and `update-state` announce each of these steps as a [workflow event](../reference/workflow-events.md), which is what dashboards and alerts consume. To build a task and workflow and watch a payload take this path, see [Your first pipeline](first-pipeline.md).
 
 ## Workflows are Step Functions state machines
 

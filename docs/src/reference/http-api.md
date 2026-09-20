@@ -117,9 +117,9 @@ Each count comes from `StateDB.get_counts` over the `state_updated` index, honor
 
 ## Items page
 
-`/<collections>/workflow-<workflow>/items` returns `{"items": [...]}`. The page comes from `StateDB.get_items_page`, filtered by `state` and `since` and paged by `limit`, `nextkey`, `sort_ascending`, and `sort_index`. Each record is converted by `StateDB.dbitem_to_item` and then `to_current`, so it has the fields listed under [State database: Fields](state-database.md#fields) plus the legacy `catid` and `catalog` aliases.
+`/<collections>/workflow-<workflow>/items` returns `{"items": [...], "nextkey": "<payload_id>"}`. The page comes from `StateDB.get_items_page`, filtered by `state` and `since` and paged by `limit`, `nextkey`, `sort_ascending`, and `sort_index`. Each record is converted by `StateDB.dbitem_to_item` and then `to_current`, so it has the fields listed under [State database: Fields](state-database.md#fields) plus the legacy `catid` and `catalog` aliases.
 
-The response contains only `items`. `get_items_page` computes a continuation token, but `lambda_handler` rebuilds the body without it. To page, pass the `payload_id` of the last returned record as `nextkey`.
+When more records remain, the response also carries `nextkey`, the `payload_id` to pass as the `nextkey` query parameter of the next request. Its absence means the last page.
 
 ## Single record
 

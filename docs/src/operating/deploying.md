@@ -132,7 +132,7 @@ A workflow of your own deploys the same way with its own template. See [Defining
 - **A workflow**: repeat step 5 for that workflow's stack. Executions already running continue on the old definition.
 - **Parameters**: change the value in `.env.aws`, source it, and repeat step 3. `ResourcePrefix` cannot be changed in place, since every resource name derives from it; a new prefix is a new deployment.
 
-Updating a Batch task's resources has failure modes of its own. See [Updating Batch resources safely](../building-pipelines/batch-infrastructure.md#updating-batch-resources-safely).
+Updating a Batch task's resources has failure modes of its own. See [Updating Batch resources](updating-batch-resources.md).
 
 ## Deleting
 

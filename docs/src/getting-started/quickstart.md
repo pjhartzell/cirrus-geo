@@ -87,7 +87,7 @@ API_ID=$(aws cloudformation describe-stacks \
 curl "http://localhost:4566/restapis/${API_ID}/dev/_user_request_/collection/workflow-minimal/items"
 ```
 
-[Follow a payload through Cirrus](follow-a-payload.md) continues from here with what each command shows.
+[Your first pipeline](first-pipeline.md) continues from here by adding a workflow and task of your own.
 
 ## 5. Tear down
 
@@ -101,6 +101,6 @@ docker compose down
 
 ## Next steps
 
-- [Follow a payload through Cirrus](follow-a-payload.md) to watch a submission move through the state database.
+- [Your first pipeline](first-pipeline.md) to add a workflow with a task of your own to this deployment.
 - [Deploying to AWS](../operating/deploying.md) for the same templates in a real account.
 - [Common workflows](../cli/common-workflows.md) for the rest of the command set.

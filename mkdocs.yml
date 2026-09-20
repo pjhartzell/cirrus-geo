@@ -88,7 +88,7 @@ nav:
   - Getting started:
       - How Cirrus works: getting-started/how-cirrus-works.md
       - Quickstart: getting-started/quickstart.md
-      - Follow a payload through Cirrus: getting-started/follow-a-payload.md
+      - Your first pipeline: getting-started/first-pipeline.md
   - Building pipelines:
       - Tasks:
           - Writing a task: building-pipelines/tasks.md
@@ -100,6 +100,7 @@ nav:
       - Feeders: building-pipelines/feeders.md
   - Operating:
       - Deploying to AWS: operating/deploying.md
+      - Updating Batch resources: operating/updating-batch-resources.md
       - Scaling and quotas: operating/scaling.md
       - Monitoring: operating/monitoring.md
       - Upgrading to 2.0: operating/upgrading.md
@@ -120,6 +121,7 @@ nav:
       - Lambda functions: reference/lambda-functions.md
       - Deployment contract: reference/deployment-contract.md
       - Workflow events: reference/workflow-events.md
+      - Publish topic: reference/publish-topic.md
       - State database: reference/state-database.md
       - Payload bucket: reference/payload-bucket.md
       - HTTP API: reference/http-api.md

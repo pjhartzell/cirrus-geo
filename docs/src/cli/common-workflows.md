@@ -18,7 +18,7 @@ Commands that take a payload read it from standard input, so a payload comes in 
 | `10` | Any other terminal state; the record's `last_error` is printed |
 | `11` | Still `PROCESSING` after `--timeout` seconds, default 3600 |
 
-`--poll-interval` changes the polling period.
+`--poll-interval` changes the polling period. The polling starts from the record's current state, so a payload whose record is already terminal from an earlier run, resubmitted with `replace`, returns that earlier outcome at once rather than waiting for the rerun. Use `process` and then `get-state` for reruns.
 
 To enqueue without waiting:
 

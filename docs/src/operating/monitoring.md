@@ -68,6 +68,18 @@ For a Batch job, `get-batch-logs <log-stream>` reads the job's stream from `/aws
 - **`${ResourcePrefix}-process-dlq`** receives a process queue message after five failed receives. `process` raises when any message in its batch cannot be turned into a valid payload, after deleting the messages it did handle, so only the rejected messages are retried and eventually dead-lettered.
 - **`${ResourcePrefix}-update-state-dlq`** is the dead-letter target of the EventBridge rule that invokes `update-state`. EventBridge retries a failed invocation for up to 30 minutes (`MaximumEventAgeInSeconds: 1800` in `cloudformation/core/functions.yaml`) before sending the event here. An event on this queue means an execution finished but its outcome was never recorded in the state database.
 
+## Symptoms
+
+| Symptom | Cause | Where to look |
+| --- | --- | --- |
+| A payload submitted with `process` never gets a state database record | `process` rejected it: the message failed to parse or the payload failed `CirrusPayload.validate` | The `tmp/invalid/` prefix of the payload bucket, the `RECORD_EXTRACT_FAILED` or `NOT_A_PROCESS_PAYLOAD` event, and after five receives the process dead-letter queue. See [Payload bucket: Invalid payloads](../reference/payload-bucket.md#invalid-payloads) |
+| The same payload passes `run-workflow` but not `process`, or the reverse | `run-workflow` validates in the shell and requires an `id`; `process` validates in the Lambda function and generates a missing `id` | [Run a workflow and wait for the result](../cli/common-workflows.md#run-a-workflow-and-wait-for-the-result) |
+| A `FAILED` record whose `last_error` says to add `ErrorPath` and `CausePath` | The workflow's `Fail` state does not carry the task's error forward, so `update-state` received no cause | [Capturing errors](../building-pipelines/workflows.md#capturing-errors) |
+| Step Functions shows `SUCCEEDED` but the record stays `PROCESSING`, and the update-state dead-letter queue has a message | The output was too large for the EventBridge event, so `update-state` raised instead of recording it | [Lambda functions: Parsing the event](../reference/lambda-functions.md#parsing-the-event) |
+| A resubmitted payload does nothing | Its record is `SUCCEEDED` or `INVALID`, which `process` skips unless the process definition sets `replace` | [The replace field and reruns](../reference/payload-schema.md#the-replace-field-and-reruns) |
+| A record is `FAILED` with `StateMachineDoesNotExist` | No state machine is named `${ResourcePrefix}-<workflow>` for the workflow in the payload | [Naming and dispatch](../building-pipelines/workflows.md#naming-and-dispatch) |
+| A Batch task fails with `UnknownError` or a message about a missing log stream | `post-batch` could not parse an error type from the job's last log line, or the container never started | [Lambda functions: post-batch](../reference/lambda-functions.md#post-batch) |
+
 ## Rerunning payloads
 
 `get-input-payloads --rerun` returns each matching input payload with `replace: true` set on its first process definition, so `process` accepts it for a fresh execution from states it would otherwise skip. Which states run by default and which need `replace` is defined in [The replace field and reruns](../reference/payload-schema.md#the-replace-field-and-reruns). The resubmission loop is in [Rerun failed workflows in bulk](../cli/common-workflows.md#rerun-failed-workflows-in-bulk).
