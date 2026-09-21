@@ -1,10 +1,10 @@
 # How Cirrus works
 
-Cirrus runs a payload through a workflow and publishes what comes out. A feeder puts a payload on a queue. Cirrus starts a Step Functions execution of the workflow the payload names, and the workflow's tasks transform the payload's items. When the execution finishes, Cirrus records the outcome, stores the output, and publishes each output item to an SNS topic for whatever comes next: a STAC API ingest, another workflow, or a subscriber of your own.
+Work moves through Cirrus as payloads. A payload is a JSON document that holds STAC Items, names the workflow to run them through, and carries configuration for the workflow as a whole and for each task in it. You write the workflows, the tasks each workflow calls, and the code that builds payloads and sends them to a queue. Cirrus takes each payload from the queue, starts the workflow it names as a Step Functions execution, and tracks the payload's state in a DynamoDB table from claim to outcome. When an execution succeeds, Cirrus also stores the output payload in S3 and publishes each output item to an SNS topic. A STAC API ingest, a feeder for another pipeline, or any subscriber of your own picks the items up there.
 
 ## The payload
 
-A [Cirrus Payload](../reference/payload-schema.md) is a GeoJSON-like FeatureCollection with a `process` array. `features` holds the input items, ordinarily STAC Items. `process[0]` names the workflow and carries the parameters its tasks read. The payload's `id`, of the form `<collections>/workflow-<workflow>/<itemids>`, is the unit of work: the same items through the same workflow are the same payload, and Cirrus runs it once unless told to replace an earlier run.
+A [Cirrus Payload](../reference/payload-schema.md) is a GeoJSON-like FeatureCollection with a `process` array. `features` holds the input items, ordinarily STAC Items. `process[0]` names the workflow, holds `workflow_options` that every task reads and `tasks` with parameters for individual tasks, and sets `upload_options` for where tasks write the assets they produce. The payload's `id`, of the form `<collections>/workflow-<workflow>/<itemids>`, is the unit of work: the same items through the same workflow are the same payload, and Cirrus runs it once unless told to replace an earlier run.
 
 The intent is STAC in, STAC out. Cirrus validates the payload's structure, not its items. Any object with an `id` is an acceptable input item, and whatever the last task returns is stored and published as is. Whether a pipeline produces STAC is up to its tasks.
 
