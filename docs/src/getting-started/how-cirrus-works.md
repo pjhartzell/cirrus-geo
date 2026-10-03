@@ -4,44 +4,45 @@ Work moves through Cirrus as payloads. A payload is a JSON document that holds S
 
 ## The payload
 
-A [Cirrus Payload](../reference/payload-schema.md) is a GeoJSON-like FeatureCollection with a `process` array. `features` holds the input items, ordinarily STAC Items. `process[0]` names the workflow, holds `workflow_options` that every task reads and `tasks` with parameters for individual tasks, and sets `upload_options` for where tasks write the assets they produce. The payload's `id`, of the form `<collections>/workflow-<workflow>/<itemids>`, is the unit of work: the same items through the same workflow are the same payload, and Cirrus runs it once unless told to replace an earlier run.
+A [Cirrus Payload](../reference/payload-schema.md) is a GeoJSON FeatureCollection with a `process` list added. Its `features` are the STAC Items to process. The first `process` entry names the workflow to run and carries that workflow's configuration: parameters shared by every task, parameters for individual tasks, and settings for how tasks upload the assets they produce. Further entries chain other workflows after this one. The [schema page](../reference/payload-schema.md) lists every field.
 
-The intent is STAC in, STAC out. Cirrus validates the payload's structure, not its items. Any object with an `id` is an acceptable input item, and whatever the last task returns is stored and published as is. Whether a pipeline produces STAC is up to its tasks.
+The payload's `id` combines the item collections, the workflow name, and the item IDs, as `<collections>/workflow-<workflow>/<itemids>`. The state database is keyed on it, so the same items sent to the same workflow again are a resubmission of a payload that already ran. Cirrus skips a resubmission unless the payload says to replace the earlier run.
 
-## What you build and what Cirrus provides
-
-| You write | Cirrus provides |
-| --- | --- |
-| **Feeders.** Code that builds payloads and sends them to the process queue. Anything with `sqs:SendMessage` on the queue qualifies. | **The process queue** and its dead-letter queue. |
-| **Workflows.** Step Functions state machines, one CloudFormation stack each, named `${ResourcePrefix}-<workflow>`. | **`process`**, which consumes the queue, records the payload, and starts the execution. |
-| **Tasks.** The Lambda functions and Batch jobs a workflow invokes. Each takes a payload and returns one. | **`update-state`**, which records the outcome, stores the output payload, publishes the items, and continues chains. |
-| | **`pre-batch` and `post-batch`**, which move a payload into and out of a Batch job through S3. |
-| | **The state database**, **the payload bucket**, **the publish and workflow-event topics**, and the read-only **`api`**. |
-
-![Cirrus architecture](../images/arch.png)
-
-The CloudFormation templates in `cloudformation/` create the right-hand column. They are the reference deployment, not the only one: the functions read everything they need from environment variables, so any tooling that creates the same resources and sets the same variables works. The [Deployment contract](../reference/deployment-contract.md) lists them, and [Deploying to AWS](../operating/deploying.md) is the procedure for the templates.
+The intent is STAC in, STAC out. Cirrus checks that the payload has the right structure, but it does not check the items themselves, and an input item needs only an `id` to be accepted. The output is stored and published as the last task returned it. Whether a pipeline produces STAC is up to its tasks.
 
 ## Life of a payload
 
-1. A [feeder](../building-pipelines/feeders.md) sends the payload to the process queue.
-2. [`process`](../reference/lambda-functions.md#process) takes it off the queue, validates it, claims it in the [state database](../reference/state-database.md), uploads it to the [payload bucket](../reference/payload-bucket.md), and starts an execution of the state machine named `${ResourcePrefix}-<workflow>` with the payload as input.
-3. The state machine runs its [tasks](../building-pipelines/tasks.md). Each receives the payload the previous one returned. A Lambda task gets it as its event; a Batch task gets it through S3, with `pre-batch` and `post-batch` on either side. Tasks upload the assets they produce to a data bucket and point the items at them.
-4. When the execution ends, EventBridge invokes [`update-state`](../reference/lambda-functions.md#update-state) with the status, input, and output. It records `SUCCEEDED`, `FAILED`, `INVALID`, or `ABORTED`. On success it also stores the output payload and publishes each output item to the publish topic. If the payload's `process` array has more entries, it builds the next payload and sends it back to the queue.
+Below is the AWS architecture of a Cirrus deployment, drawn with two workflows. The numbered steps that follow trace one payload through it, naming each component as the payload reaches it.
 
-`process` and `update-state` announce each of these steps as a [workflow event](../reference/workflow-events.md), which is what dashboards and alerts consume. To build a task and workflow and watch a payload take this path, see [Your first pipeline](first-pipeline.md).
+![Cirrus architecture](../images/arch.png)
 
-## Workflows are Step Functions state machines
+1. A [feeder](../building-pipelines/feeders.md) sends the payload to the process queue. Feeders are the grey box at the top left. The diagram shows two Lambda feeders, one of them subscribed to an external data topic, and a person submitting a payload by hand. Anything that can send a message to the queue is a feeder.
+2. [`process`](../reference/lambda-functions.md#process) takes the payload off the queue, validates it, claims it in the [state database](../reference/state-database.md), uploads it to the [payload bucket](../reference/payload-bucket.md), and starts an execution of the state machine the payload's workflow name selects, with the payload as input.
+3. The state machine runs its [tasks](../building-pipelines/tasks.md). Tasks are not drawn: they are the Lambda functions and Batch jobs inside each Step Functions box. Each task receives the payload the previous one returned. A Lambda task gets it as its event. A Batch job cannot, so `pre-batch` writes the payload to the payload bucket for the job to read and `post-batch` reads the job's result back, which is the arrow labeled Batch task payloads. A task that produces assets can upload them to the data bucket and point its items at them, the dashed arrow at the top; nothing in Cirrus requires it.
+4. When the execution ends, the EventBridge rule invokes [`update-state`](../reference/lambda-functions.md#update-state) with the status, input, and output. It records `SUCCEEDED`, `FAILED`, `INVALID`, or `ABORTED` in the state database. On success it also stores the output payload in the payload bucket and publishes each output item to the publish topic. If the payload's `process` list has more entries, it builds the next payload and sends it back to the queue, the arrow labeled Chained workflow payloads.
 
-A [workflow](../building-pipelines/workflows.md) is an Amazon States Language definition. Cirrus asks three things of it:
+The rest of the diagram is for watching the deployment. `process` and `update-state` announce each decision they make about a payload as a [workflow event](../reference/workflow-events.md) on the workflow event topic, and optionally to a CloudWatch log group whose metric filters turn the events into metrics. Two dead-letter queues catch what the functions could not handle: the process queue's for messages `process` failed on repeatedly, and `update-state`'s for EventBridge events it could not process. The read-only [`api`](../reference/http-api.md), behind API Gateway, serves the state database and the metrics over HTTP, and its root endpoint lists workflows from a `catalog.json` you place in the data bucket. [Monitoring](../operating/monitoring.md) covers using these.
 
-- The state machine's name follows the convention above, so `process` can find it and `update-state` is told when it finishes.
-- Its `Fail` state carries the failing task's error forward, so the state database records why.
-- Its final output is the payload, since that is what `update-state` stores and publishes.
+To build a task and workflow and watch a payload take this path, see [Your first pipeline](first-pipeline.md).
 
-Which tasks run, in what order, and with what retries is the workflow author's decision.
+## What you build and what Cirrus provides
 
-Tasks run on Lambda or on [AWS Batch](../building-pipelines/batch-infrastructure.md). A Batch job cannot receive a payload directly, so a workflow wraps each Batch task in `pre-batch` and `post-batch` states; see [Batch tasks in a workflow](../building-pipelines/batch-workflow-structure.md).
+The parts of the diagram specific to your pipeline are yours to write. The rest is the framework.
+
+| You write | Cirrus provides |
+| --- | --- |
+| **Feeders.** Any code with permission to send to the process queue. | **Queues.** The process queue, its dead-letter queue, and a dead-letter queue for `update-state`. |
+| **Workflows.** Step Functions state machines, one CloudFormation stack each. | **`process` Lambda function.** Takes payloads off the queue and starts executions. |
+| **Tasks.** The Lambda functions and Batch jobs a workflow invokes. Each takes a payload and returns one. | **`update-state` Lambda function.** Invoked by the EventBridge rule when an execution ends. Records outcomes, stores output payloads, publishes items, and continues chains. |
+| | **`pre-batch` and `post-batch` Lambda functions.** Pass a payload into and out of a Batch job through S3. |
+| | **Storage.** The state database, the payload bucket, and the data bucket. |
+| | **Topics.** The publish topic and the workflow event topic. |
+| | **`api` Lambda function.** Read-only HTTP access to the state database and metrics, behind API Gateway. |
+| | **Metrics.** An optional CloudWatch log group and metric filters over workflow events. |
+
+Cirrus asks three things of a [workflow](../building-pipelines/workflows.md). Its state machine is named `${ResourcePrefix}-<workflow>`, so that `process` can find it and `update-state` is invoked when it finishes. Its `Fail` state carries the failing task's error forward, so the state database records why. Its final output is the payload, since that is what `update-state` stores and publishes. Which [tasks](../building-pipelines/tasks.md) run, in what order, and with what retries is yours to decide.
+
+Cirrus ships CloudFormation templates, in `cloudformation/`, that create everything in the right-hand column. They are not required. Each function reads the resources it needs from environment variables, so a deployment built with Terraform, AWS CDK, or hand-written templates works as long as it creates the same resources and sets the same variables. The [Deployment contract](../reference/deployment-contract.md) specifies those resources and variables. [Deploying to AWS](../operating/deploying.md) is the procedure for the shipped templates.
 
 ## Where to go next
 
