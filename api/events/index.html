@@ -1,0 +1,5236 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Cirrus is a STAC-based geospatial processing pipeline platform deployed on AWS.">
+      
+      
+      
+        <link rel="canonical" href="https://cirrus-geo.github.io/cirrus-geo/api/events/">
+      
+      
+        <link rel="prev" href="../payload_bucket/">
+      
+      
+        <link rel="next" href="../errors/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Events - Cirrus</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#events" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Cirrus" class="md-header__button md-logo" aria-label="Cirrus" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Cirrus
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Events
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/cirrus-geo/cirrus-geo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    cirrus-geo/cirrus-geo
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Cirrus" class="md-nav__button md-logo" aria-label="Cirrus" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Cirrus
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/cirrus-geo/cirrus-geo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    cirrus-geo/cirrus-geo
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/how-cirrus-works/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How Cirrus works
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/first-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your first pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building pipelines
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building pipelines
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tasks
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tasks
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../building-pipelines/tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writing a task
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../building-pipelines/batch-infrastructure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch infrastructure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Workflows
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../building-pipelines/workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Defining a workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../building-pipelines/batch-workflow-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch tasks in a workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../building-pipelines/chaining-workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chaining workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../building-pipelines/feeders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feeders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operating
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operating
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operating/deploying/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deploying to AWS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operating/updating-batch-resources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Updating Batch resources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operating/scaling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scaling and quotas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operating/monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operating/upgrading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Upgrading to 2.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CLI
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/using-the-cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using the CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/common-workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Common workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python library
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Python library
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cirrus_payload/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CirrusPayload
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../statedb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    StateDB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../payload_bucket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PayloadBucket
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Events
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cirrus.lib.events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        events
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="events">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkflowEvent
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkflowEvent">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.event_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        event_type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.payload_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        payload_id
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.isotimestamp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        isotimestamp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.input_payload_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        input_payload_url
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.output_payload_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        output_payload_url
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.execution_arn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        execution_arn
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        error
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.serialize" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        serialize
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.from_message_str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        from_message_str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.to_message" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_message
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.log_metric_format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        log_metric_format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.sns_attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sns_attributes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkflowMetricLogger
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkflowMetricLogger">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger.logger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logger
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger.log_group_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        log_group_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger.logs_client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logs_client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger.log_stream_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        log_stream_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger.enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        enabled
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger.add" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger.prepare_batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        prepare_batch
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetric" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkflowMetric
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkflowMetric">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetric.period" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        period
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetric.interval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        interval
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetric.events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        events
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricSeries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkflowMetricSeries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkflowMetricSeries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricSeries.workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricSeries.metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkflowMetricReader
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkflowMetricReader">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.metric_some_workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metric_some_workflows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.metric_all_workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metric_all_workflows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.cw_client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cw_client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.logger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logger
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.metric_namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metric_namespace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        enabled
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.aggregated_for_specified_workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aggregated_for_specified_workflows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.aggregated_by_event_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aggregated_by_event_type
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkflowEventManager
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkflowEventManager">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.logger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logger
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.event_publisher" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        event_publisher
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.statedb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        statedb
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.eventdb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        eventdb
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.metric_logger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metric_logger
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.isotimestamp_now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        isotimestamp_now
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.flush" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        flush
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.with_wfem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        with_wfem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.announce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        announce
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.claim_processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        claim_processing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.started_processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        started_processing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.skipping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        skipping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.duplicated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        duplicated
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        failed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.timed_out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        timed_out
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.succeeded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        succeeded
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.invalid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        invalid
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.aborted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aborted
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.date_formatter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        date_formatter
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors and exceptions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment class
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/payload-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Payload schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/lambda-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lambda functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/deployment-contract/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/workflow-events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflow events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/publish-topic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Publish topic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/state-database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State database
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/payload-bucket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Payload bucket
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/http-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    About
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about/license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cirrus.lib.events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        events
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="events">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkflowEvent
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkflowEvent">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.event_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        event_type
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.payload_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        payload_id
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.isotimestamp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        isotimestamp
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.input_payload_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        input_payload_url
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.output_payload_url" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        output_payload_url
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.execution_arn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        execution_arn
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        error
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.serialize" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        serialize
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.from_message_str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        from_message_str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.to_message" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_message
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.log_metric_format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        log_metric_format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEvent.sns_attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        sns_attributes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkflowMetricLogger
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkflowMetricLogger">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger.logger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logger
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger.log_group_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        log_group_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger.logs_client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logs_client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger.log_stream_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        log_stream_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger.enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        enabled
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger.add" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        add
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricLogger.prepare_batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        prepare_batch
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetric" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkflowMetric
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkflowMetric">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetric.period" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        period
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetric.interval" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        interval
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetric.events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        events
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricSeries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkflowMetricSeries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkflowMetricSeries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricSeries.workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        workflow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricSeries.metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkflowMetricReader
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkflowMetricReader">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.metric_some_workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metric_some_workflows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.metric_all_workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metric_all_workflows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.cw_client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cw_client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.logger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logger
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.metric_namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metric_namespace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        enabled
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.aggregated_for_specified_workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aggregated_for_specified_workflows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowMetricReader.aggregated_by_event_type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aggregated_by_event_type
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        WorkflowEventManager
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkflowEventManager">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.logger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        logger
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.event_publisher" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        event_publisher
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.statedb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        statedb
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.eventdb" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        eventdb
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.metric_logger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        metric_logger
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.isotimestamp_now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        isotimestamp_now
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.flush" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        flush
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.with_wfem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        with_wfem
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.announce" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        announce
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.claim_processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        claim_processing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.started_processing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        started_processing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.skipping" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        skipping
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.duplicated" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        duplicated
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        failed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.timed_out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        timed_out
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.succeeded" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        succeeded
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.invalid" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        invalid
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.WorkflowEventManager.aborted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        aborted
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cirrus.lib.events.date_formatter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        date_formatter
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h1>
+<p>Workflow event recording: SNS publication, CloudWatch metrics, and state
+database updates wrapped in <code>WorkflowEventManager</code>. See the
+<a href="../../operating/monitoring/">monitoring guide</a> for how events surface
+operationally.</p>
+
+
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="cirrus.lib.events" class="doc doc-heading">
+            <span class="doc doc-object-name doc-module-name">cirrus.lib.events</span>
+
+
+<a href="#cirrus.lib.events" class="headerlink" title="Permanent link">&para;</a></h2>
+
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="cirrus.lib.events.WorkflowEvent" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">WorkflowEvent</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEvent" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">WorkflowEvent</span><span class="p">(</span>
+    <span class="n">event_type</span><span class="p">:</span> <span class="n"><span title="cirrus.lib.enums.WFEventType">WFEventType</span></span><span class="p">,</span>
+    <span class="n">payload_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">isotimestamp</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">input_payload_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">output_payload_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">execution_arn</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowEvent.event_type" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">event_type</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEvent.event_type" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">event_type</span><span class="p">:</span> <span class="n"><span title="cirrus.lib.enums.WFEventType">WFEventType</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowEvent.payload_id" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">payload_id</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEvent.payload_id" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">payload_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowEvent.isotimestamp" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">isotimestamp</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEvent.isotimestamp" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">isotimestamp</span><span class="p">:</span> <span class="n"><span title="str">str</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowEvent.input_payload_url" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">input_payload_url</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEvent.input_payload_url" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">input_payload_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowEvent.output_payload_url" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">output_payload_url</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEvent.output_payload_url" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">output_payload_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowEvent.execution_arn" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">execution_arn</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEvent.execution_arn" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">execution_arn</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowEvent.error" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">error</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEvent.error" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">error</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEvent.serialize" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">serialize</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEvent.serialize" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">serialize</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEvent.from_message_str" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">from_message_str</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEvent.from_message_str" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">from_message_str</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="typing.Self">Self</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEvent.to_message" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">to_message</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEvent.to_message" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">to_message</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="cirrus.lib.utils.SNSMessage">SNSMessage</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEvent.log_metric_format" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">log_metric_format</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEvent.log_metric_format" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">log_metric_format</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEvent.sns_attributes" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">sns_attributes</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEvent.sns_attributes" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">sns_attributes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="cirrus.lib.events.WorkflowMetricLogger" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">WorkflowMetricLogger</span>
+
+
+<a href="#cirrus.lib.events.WorkflowMetricLogger" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">WorkflowMetricLogger</span><span class="p">(</span>
+    <span class="n">logger</span><span class="p">:</span> <span class="n"><span title="logging.Logger">Logger</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">log_group_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="cirrus.lib.utils.BatchHandler">BatchHandler</span>[<a class="autorefs autorefs-internal" title="WorkflowEvent
+
+
+  
+      dataclass
+   (cirrus.lib.events.WorkflowEvent)" href="#cirrus.lib.events.WorkflowEvent">WorkflowEvent</a>]</code></p>
+
+
+
+        <p>A class for surfacing workflow state changes to Cloudwatch
+Logs, and retrieving metrics from Cloudwatch Metrics.</p>
+<p>This defaults to a batch_size of 1, to make all logs immediate.  This is because we
+can't guard against a lambda timing out an execution, and preventing us from
+sending the last batch of messages on exit.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricLogger.logger" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">logger</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowMetricLogger.logger" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">logger</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n"><span title="cirrus.lib.events.WorkflowMetricLogger(logger)">logger</span></span> <span class="k">if</span> <span class="n"><span title="cirrus.lib.events.WorkflowMetricLogger(logger)">logger</span></span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricLogger.log_group_name" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">log_group_name</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowMetricLogger.log_group_name" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">log_group_name</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n"><span title="cirrus.lib.events.WorkflowMetricLogger(log_group_name)">log_group_name</span></span>
+    <span class="k">if</span> <span class="n"><span title="len">len</span></span><span class="p">(</span><span class="n"><span title="cirrus.lib.events.WorkflowMetricLogger(log_group_name)">log_group_name</span></span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+    <span class="k">else</span> <span class="n"><span title="os">os</span></span><span class="o">.</span><span class="n"><span title="os.getenv">getenv</span></span><span class="p">(</span><span class="s2">&quot;CIRRUS_WORKFLOW_LOG_GROUP&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricLogger.logs_client" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">logs_client</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowMetricLogger.logs_client" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">logs_client</span> <span class="o">=</span> <span class="n"><span title="cirrus.lib.utils.get_client">get_client</span></span><span class="p">(</span><span class="s1">&#39;logs&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricLogger.log_stream_name" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">log_stream_name</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowMetricLogger.log_stream_name" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">log_stream_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;workflow-metrics-</span><span class="si">{</span><span class="n"><span title="uuid">uuid</span></span><span class="o">.</span><span class="n"><span title="uuid.uuid4">uuid4</span></span><span class="p">()</span><span class="si">}</span><span class="s1">&#39;</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricLogger.enabled" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">enabled</span>
+
+
+<a href="#cirrus.lib.events.WorkflowMetricLogger.enabled" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">enabled</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricLogger.add" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">add</span>
+
+
+<a href="#cirrus.lib.events.WorkflowMetricLogger.add" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">add</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="WorkflowEvent
+
+
+  
+      dataclass
+   (cirrus.lib.events.WorkflowEvent)" href="#cirrus.lib.events.WorkflowEvent">WorkflowEvent</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricLogger.prepare_batch" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">prepare_batch</span>
+
+
+<a href="#cirrus.lib.events.WorkflowMetricLogger.prepare_batch" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">prepare_batch</span><span class="p">(</span>
+    <span class="n">batch</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="WorkflowEvent
+
+
+  
+      dataclass
+   (cirrus.lib.events.WorkflowEvent)" href="#cirrus.lib.events.WorkflowEvent">WorkflowEvent</a></span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="cirrus.lib.events.WorkflowMetric" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">WorkflowMetric</span>
+
+
+<a href="#cirrus.lib.events.WorkflowMetric" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="typing.TypedDict">TypedDict</span></code></p>
+
+
+
+        <p>Summary of workflow events for period starting at <code>period</code> and running for the
+given <code>interval</code> (in seconds)</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowMetric.period" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">period</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowMetric.period" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">period</span><span class="p">:</span> <span class="n"><span title="str">str</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowMetric.interval" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">interval</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowMetric.interval" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">interval</span><span class="p">:</span> <span class="n"><span title="int">int</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowMetric.events" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">events</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowMetric.events" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">events</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="int">int</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="cirrus.lib.events.WorkflowMetricSeries" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">WorkflowMetricSeries</span>
+
+
+<a href="#cirrus.lib.events.WorkflowMetricSeries" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="typing.TypedDict">TypedDict</span></code></p>
+
+
+
+        <p><code>metrics</code> is a list of WorkflowMetric summaries for the named <code>workflow</code></p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricSeries.workflow" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">workflow</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowMetricSeries.workflow" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">workflow</span><span class="p">:</span> <span class="n"><span title="str">str</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricSeries.metrics" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">metrics</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowMetricSeries.metrics" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">metrics</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="cirrus.lib.events.WorkflowMetricSeries[WorkflowMetric]">WorkflowMetric</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="cirrus.lib.events.WorkflowMetricReader" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">WorkflowMetricReader</span>
+
+
+<a href="#cirrus.lib.events.WorkflowMetricReader" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">WorkflowMetricReader</span><span class="p">(</span>
+    <span class="n">logger</span><span class="p">:</span> <span class="n"><span title="logging.Logger">Logger</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">metric_namespace</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>A class for retrieving workflow metrics from CloudWatch.</p>
+
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>logger</code>
+            </td>
+            <td>
+                  <code><span title="logging.Logger">Logger</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Logger instance to use. If None is provided, the
+  default logger is used.
+metric_namespace (str): Namespace of the CloudWatch metric.
+  If "", then use the CIRRUS_WORKFLOW_METRIC_NAMESPACE from environment.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricReader.metric_some_workflows" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">metric_some_workflows</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowMetricReader.metric_some_workflows" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">metric_some_workflows</span> <span class="o">=</span> <span class="s1">&#39;a_workflow_by_event&#39;</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricReader.metric_all_workflows" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">metric_all_workflows</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowMetricReader.metric_all_workflows" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">metric_all_workflows</span> <span class="o">=</span> <span class="s1">&#39;all_workflows_by_event&#39;</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricReader.cw_client" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">cw_client</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowMetricReader.cw_client" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">cw_client</span> <span class="o">=</span> <span class="n"><span title="cirrus.lib.utils.get_client">get_client</span></span><span class="p">(</span><span class="s1">&#39;cloudwatch&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricReader.logger" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">logger</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowMetricReader.logger" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">logger</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n"><span title="cirrus.lib.events.WorkflowMetricReader(logger)">logger</span></span> <span class="k">if</span> <span class="n"><span title="cirrus.lib.events.WorkflowMetricReader(logger)">logger</span></span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricReader.metric_namespace" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">metric_namespace</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowMetricReader.metric_namespace" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">metric_namespace</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n"><span title="cirrus.lib.events.WorkflowMetricReader(metric_namespace)">metric_namespace</span></span>
+    <span class="k">if</span> <span class="n"><span title="cirrus.lib.events.WorkflowMetricReader(metric_namespace)">metric_namespace</span></span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span>
+    <span class="k">else</span> <span class="n"><span title="os">os</span></span><span class="o">.</span><span class="n"><span title="os.getenv">getenv</span></span><span class="p">(</span><span class="s2">&quot;CIRRUS_WORKFLOW_METRIC_NAMESPACE&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricReader.enabled" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">enabled</span>
+
+
+<a href="#cirrus.lib.events.WorkflowMetricReader.enabled" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">enabled</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricReader.aggregated_for_specified_workflows" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">aggregated_for_specified_workflows</span>
+
+
+<a href="#cirrus.lib.events.WorkflowMetricReader.aggregated_for_specified_workflows" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">aggregated_for_specified_workflows</span><span class="p">(</span>
+    <span class="n">workflows</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">],</span>
+    <span class="n">start_time</span><span class="p">:</span> <span class="n"><span title="datetime.datetime">datetime</span></span><span class="p">,</span>
+    <span class="n">end_time</span><span class="p">:</span> <span class="n"><span title="datetime.datetime">datetime</span></span><span class="p">,</span>
+    <span class="n">period</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">3600</span><span class="p">,</span>
+    <span class="n">event_types</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="cirrus.lib.enums.WFEventType">WFEventType</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">formatter</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><span title="datetime.datetime">datetime</span></span><span class="p">],</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="WorkflowMetricSeries (cirrus.lib.events.WorkflowMetricSeries)" href="#cirrus.lib.events.WorkflowMetricSeries">WorkflowMetricSeries</a></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Retrieve metrics from CloudWatch for specific workflows.  Aggregated by event,
+for each workflow in <code>workflows</code>.</p>
+
+
+<details class="note" open>
+  <summary>This makes an API call for each workflow, so this method is much more</summary>
+  <p>costly than <code>aggregated_by event_type</code>, if you are interested in all
+workflows running in the deployment.</p>
+</details>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>event_types</code>
+            </td>
+            <td>
+                  <code><span title="list">list</span>[<span title="cirrus.lib.enums.WFEventType">WFEventType</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List of workflow event types to filter.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>workflows</code>
+            </td>
+            <td>
+                  <code><span title="list">list</span>[<span title="str">str</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List of workflow names to filter.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>start_time</code>
+            </td>
+            <td>
+                  <code><span title="datetime.datetime">datetime</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Start of the time window.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>end_time</code>
+            </td>
+            <td>
+                  <code><span title="datetime.datetime">datetime</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>End of the time window.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>period</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Granularity in seconds.</p>
+              </div>
+            </td>
+            <td>
+                  <code>3600</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="WorkflowMetricSeries (cirrus.lib.events.WorkflowMetricSeries)" href="#cirrus.lib.events.WorkflowMetricSeries">WorkflowMetricSeries</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>list[dict[str, int]]: List of metric data dictionaries retrieved.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowMetricReader.aggregated_by_event_type" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">aggregated_by_event_type</span>
+
+
+<a href="#cirrus.lib.events.WorkflowMetricReader.aggregated_by_event_type" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">aggregated_by_event_type</span><span class="p">(</span>
+    <span class="n">start_time</span><span class="p">:</span> <span class="n"><span title="datetime.datetime">datetime</span></span><span class="p">,</span>
+    <span class="n">end_time</span><span class="p">:</span> <span class="n"><span title="datetime.datetime">datetime</span></span><span class="p">,</span>
+    <span class="n">period</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">3600</span><span class="p">,</span>
+    <span class="n">event_types</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="cirrus.lib.enums.WFEventType">WFEventType</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">formatter</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><span title="datetime.datetime">datetime</span></span><span class="p">],</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="WorkflowMetric (cirrus.lib.events.WorkflowMetric)" href="#cirrus.lib.events.WorkflowMetric">WorkflowMetric</a></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Retrieve metrics from CloudWatch for all workflows.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>start_time</code>
+            </td>
+            <td>
+                  <code><span title="datetime.datetime">datetime</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Start of the time window.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>end_time</code>
+            </td>
+            <td>
+                  <code><span title="datetime.datetime">datetime</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>End of the time window.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>period</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Granularity in seconds.</p>
+              </div>
+            </td>
+            <td>
+                  <code>3600</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>event_types</code>
+            </td>
+            <td>
+                  <code><span title="list">list</span>[<span title="cirrus.lib.enums.WFEventType">WFEventType</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List of workflow event types to filter.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>formatter (Callable[[datetime], str]</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>different requests to this function
+require different formatting, and</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="WorkflowMetric (cirrus.lib.events.WorkflowMetric)" href="#cirrus.lib.events.WorkflowMetric">WorkflowMetric</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>list[WorkflowMetric]: List of metric statistics dictionaries retrieved.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="cirrus.lib.events.WorkflowEventManager" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">WorkflowEventManager</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEventManager" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">WorkflowEventManager</span><span class="p">(</span>
+    <span class="n">logger</span><span class="p">:</span> <span class="n"><span title="logging.Logger">Logger</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">statedb</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="StateDB (cirrus.lib.statedb.StateDB)" href="../statedb/#cirrus.lib.statedb.StateDB">StateDB</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">eventdb</span><span class="p">:</span> <span class="n"><span title="cirrus.lib.eventdb.EventDB">EventDB</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">metric_logger</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="WorkflowMetricLogger (cirrus.lib.events.WorkflowMetricLogger)" href="#cirrus.lib.events.WorkflowMetricLogger">WorkflowMetricLogger</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+
+        <p>A class for managing payload state change events, including:
+1. storage of state (DynamoDB)
+2. storage of data for workflow metrics (Timestream)
+3. notifications of Cirrus decisions and/or workflow status changes (SNS).</p>
+<p>Other than <code>announce</code>, which is used for announcement of malformed
+payloads/messages, the public functions here are aimed for use in the <code>process</code> and
+<code>update-state</code> lambdas.</p>
+
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.logger" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">logger</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEventManager.logger" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">logger</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n"><span title="cirrus.lib.events.WorkflowEventManager(logger)">logger</span></span> <span class="k">if</span> <span class="n"><span title="cirrus.lib.events.WorkflowEventManager(logger)">logger</span></span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.event_publisher" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">event_publisher</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEventManager.event_publisher" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">event_publisher</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n"><span title="cirrus.lib.utils.SNSPublisher">SNSPublisher</span></span><span class="p">(</span>
+        <span class="n"><span title="wf_event_topic_arn">wf_event_topic_arn</span></span><span class="p">,</span>
+        <span class="n"><span title="cirrus.lib.utils.SNSPublisher(logger)">logger</span></span><span class="o">=</span><span class="n"><span title="cirrus.lib.events.WorkflowEventManager(self)">self</span></span><span class="o">.</span><span class="n"><span title="cirrus.lib.events.WorkflowEventManager(self).logger">logger</span></span><span class="p">,</span>
+        <span class="n"><span title="cirrus.lib.utils.SNSPublisher(batch_size)">batch_size</span></span><span class="o">=</span><span class="n"><span title="cirrus.lib.events.WorkflowEventManager(batch_size)">batch_size</span></span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n"><span title="wf_event_topic_arn">wf_event_topic_arn</span></span>
+    <span class="k">else</span> <span class="kc">None</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.statedb" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">statedb</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEventManager.statedb" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">statedb</span> <span class="o">=</span> <span class="n"><span title="cirrus.lib.events.WorkflowEventManager(statedb)">statedb</span></span> <span class="k">if</span> <span class="n"><span title="cirrus.lib.events.WorkflowEventManager(statedb)">statedb</span></span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n"><a class="autorefs autorefs-internal" title="StateDB (cirrus.lib.statedb.StateDB)" href="../statedb/#cirrus.lib.statedb.StateDB">StateDB</a></span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.eventdb" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">eventdb</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEventManager.eventdb" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">eventdb</span> <span class="o">=</span> <span class="n"><span title="cirrus.lib.events.WorkflowEventManager(eventdb)">eventdb</span></span> <span class="k">if</span> <span class="n"><span title="cirrus.lib.events.WorkflowEventManager(eventdb)">eventdb</span></span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n"><span title="cirrus.lib.eventdb.EventDB">EventDB</span></span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.metric_logger" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">metric_logger</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEventManager.metric_logger" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">metric_logger</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n"><a class="autorefs autorefs-internal" title="WorkflowMetricLogger (cirrus.lib.events.WorkflowMetricLogger)" href="#cirrus.lib.events.WorkflowMetricLogger">WorkflowMetricLogger</a></span><span class="p">(</span><span class="n"><span title="cirrus.lib.events.WorkflowMetricLogger(logger)">logger</span></span><span class="o">=</span><span class="n"><span title="cirrus.lib.events.WorkflowEventManager(self)">self</span></span><span class="o">.</span><span class="n"><span title="cirrus.lib.events.WorkflowEventManager(self).logger">logger</span></span><span class="p">)</span>
+    <span class="k">if</span> <span class="n"><span title="cirrus.lib.events.WorkflowEventManager(metric_logger)">metric_logger</span></span> <span class="ow">is</span> <span class="kc">None</span>
+    <span class="k">else</span> <span class="n"><span title="cirrus.lib.events.WorkflowEventManager(metric_logger)">metric_logger</span></span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+    </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.isotimestamp_now" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">isotimestamp_now</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEventManager.isotimestamp_now" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">isotimestamp_now</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.flush" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">flush</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEventManager.flush" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">flush</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Ensure any messages remaining in the batch buffer are sent.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.with_wfem" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">with_wfem</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#cirrus.lib.events.WorkflowEventManager.with_wfem" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">with_wfem</span><span class="p">(</span><span class="o">*</span><span class="n">wfem_args</span><span class="p">,</span> <span class="o">**</span><span class="n">wfem_kwargs</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Decorator to inject WorkflowEventManager (as <code>wfem</code>) into a function call, and
+flush upon exit.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A function which runs the wrapped function in a WorkflowEventManager context,</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>and passes in the WorkflowEventManager instance to be used within the the</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>function</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.announce" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">announce</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEventManager.announce" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">announce</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="WorkflowEvent
+
+
+  
+      dataclass
+   (cirrus.lib.events.WorkflowEvent)" href="#cirrus.lib.events.WorkflowEvent">WorkflowEvent</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Construct message payload and publish (if enabled) to:
+     1. WorkflowEventTopic (SNS)
+     2. WorkflowMetricsLogger (CloudWatch)</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>event</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="WorkflowEvent
+
+
+  
+      dataclass
+   (cirrus.lib.events.WorkflowEvent)" href="#cirrus.lib.events.WorkflowEvent">WorkflowEvent</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.claim_processing" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">claim_processing</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEventManager.claim_processing" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">claim_processing</span><span class="p">(</span>
+    <span class="n">payload_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">execution_arn</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">isotimestamp</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.started_processing" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">started_processing</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEventManager.started_processing" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">started_processing</span><span class="p">(</span>
+    <span class="n">payload_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">execution_arn</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">isotimestamp</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">input_payload_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.skipping" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">skipping</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEventManager.skipping" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">skipping</span><span class="p">(</span>
+    <span class="n">payload_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">state</span><span class="p">:</span> <span class="n"><span title="cirrus.lib.enums.StateEnum">StateEnum</span></span><span class="p">,</span>
+    <span class="n">input_payload_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">output_payload_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">message</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.duplicated" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">duplicated</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEventManager.duplicated" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">duplicated</span><span class="p">(</span>
+    <span class="n">payload_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n">input_payload_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.failed" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">failed</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEventManager.failed" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">failed</span><span class="p">(</span>
+    <span class="n">payload_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">message</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">input_payload_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">execution_arn</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">isotimestamp</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.timed_out" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">timed_out</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEventManager.timed_out" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">timed_out</span><span class="p">(</span>
+    <span class="n">payload_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">message</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">input_payload_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">execution_arn</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">isotimestamp</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.succeeded" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">succeeded</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEventManager.succeeded" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">succeeded</span><span class="p">(</span>
+    <span class="n">payload_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">execution_arn</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">input_payload_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">output_payload_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">isotimestamp</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.invalid" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">invalid</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEventManager.invalid" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">invalid</span><span class="p">(</span>
+    <span class="n">payload_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">execution_arn</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">input_payload_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">isotimestamp</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="cirrus.lib.events.WorkflowEventManager.aborted" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">aborted</span>
+
+
+<a href="#cirrus.lib.events.WorkflowEventManager.aborted" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">aborted</span><span class="p">(</span>
+    <span class="n">payload_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">execution_arn</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n">input_payload_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">isotimestamp</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="cirrus.lib.events.date_formatter" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">date_formatter</span>
+
+
+<a href="#cirrus.lib.events.date_formatter" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">date_formatter</span><span class="p">(</span>
+    <span class="n">granularity</span><span class="o">=</span><span class="s2">&quot;s&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><span title="datetime.datetime">datetime</span></span><span class="p">],</span> <span class="n"><span title="str">str</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return string representation of the given datetime, truncated to the specified
+granularity.  Timezone handling is deferred to the datetime library behavior.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>granularity</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>'d'|'h'|'m', defaulting to 'm'
+                'd' - date only (YYYY-MM-DD)
+                'h' - hour (YYYY-MM-DDTHH:00:00)
+                'm' - minute (YYYY-MM-DDTHH:MM:00)
+                's' - minute (YYYY-MM-DDTHH:MM:SS.uuuuu)</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;s&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "search.suggest", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

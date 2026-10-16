@@ -1,0 +1,2530 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Cirrus is a STAC-based geospatial processing pipeline platform deployed on AWS.">
+      
+      
+      
+        <link rel="canonical" href="https://cirrus-geo.github.io/cirrus-geo/reference/deployment-contract/">
+      
+      
+        <link rel="prev" href="../lambda-functions/">
+      
+      
+        <link rel="next" href="../workflow-events/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Deployment contract - Cirrus</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#deployment-contract" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Cirrus" class="md-header__button md-logo" aria-label="Cirrus" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Cirrus
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Deployment contract
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="teal" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/cirrus-geo/cirrus-geo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    cirrus-geo/cirrus-geo
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Cirrus" class="md-nav__button md-logo" aria-label="Cirrus" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Cirrus
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/cirrus-geo/cirrus-geo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    cirrus-geo/cirrus-geo
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/how-cirrus-works/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How Cirrus works
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/first-pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Your first pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building pipelines
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Building pipelines
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tasks
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tasks
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../building-pipelines/tasks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Writing a task
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../building-pipelines/batch-infrastructure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch infrastructure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflows
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Workflows
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../building-pipelines/workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Defining a workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../building-pipelines/batch-workflow-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch tasks in a workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../building-pipelines/chaining-workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chaining workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../building-pipelines/feeders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Feeders
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operating
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operating
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operating/deploying/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deploying to AWS
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operating/updating-batch-resources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Updating Batch resources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operating/scaling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scaling and quotas
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operating/monitoring/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Monitoring
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../operating/upgrading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Upgrading to 2.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    CLI
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/using-the-cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Using the CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/common-workflows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Common workflows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Command reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python library
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Python library
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/cirrus_payload/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CirrusPayload
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/statedb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    StateDB
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/payload_bucket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    PayloadBucket
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors and exceptions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment class
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../payload-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Payload schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../lambda-functions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Lambda functions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment contract
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment contract
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resources
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Names
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resource-properties-the-code-depends-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resource properties the code depends on
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#main-stack-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Main stack parameters
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Main stack parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vpc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VPC
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#iam-grants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IAM grants
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameter-store-entries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameter Store entries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#other-tooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other tooling
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../workflow-events/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Workflow events
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../publish-topic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Publish topic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../state-database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    State database
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../payload-bucket/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Payload bucket
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../http-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    HTTP API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    About
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about/contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about/changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about/license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resources
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Names
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resource-properties-the-code-depends-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resource properties the code depends on
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#main-stack-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Main stack parameters
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Main stack parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#vpc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        VPC
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#iam-grants" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        IAM grants
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameter-store-entries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parameter Store entries
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#other-tooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Other tooling
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="deployment-contract">Deployment contract<a class="headerlink" href="#deployment-contract" title="Permanent link">&para;</a></h1>
+<p>A Cirrus deployment is a set of AWS resources plus the configuration that connects them. This page states that set as requirements: what must exist, what it must be named, and what each function must be told. The CloudFormation templates in <a href="https://github.com/cirrus-geo/cirrus-geo/tree/main/cloudformation"><code>cloudformation/</code></a> satisfy every requirement here and are the source for each statement. A deployment built with other tooling, such as the <a href="#other-tooling">Terraform modules</a> listed at the end, has to satisfy them the same way.</p>
+<p>Procedures for the reference templates are on <a href="../../operating/deploying/">Deploying to AWS</a>.</p>
+<h2 id="resources">Resources<a class="headerlink" href="#resources" title="Permanent link">&para;</a></h2>
+<p>The main stack, <code>cloudformation/main.yaml</code>, creates six nested stacks. A separate bootstrap stack, <code>bootstrap/bootstrap.yaml</code>, creates the artifacts bucket that <code>aws cloudformation package</code> uploads code and templates to before the main stack exists.</p>
+<table>
+<thead>
+<tr>
+<th>Nested stack</th>
+<th>Template</th>
+<th>Creates</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Base</td>
+<td><code>core/base.yaml</code></td>
+<td>Data and payload S3 buckets, the DynamoDB state table, the process SQS queue with its dead-letter queue, a second dead-letter queue for <code>update-state</code>, and the publish and workflow-event SNS topics</td>
+</tr>
+<tr>
+<td>VPC, optional</td>
+<td><code>core/vpc.yaml</code></td>
+<td>A VPC with one public and one private subnet, an internet gateway, a NAT gateway, and S3 and DynamoDB gateway endpoints</td>
+</tr>
+<tr>
+<td>Metrics, optional</td>
+<td><code>core/metrics.yaml</code></td>
+<td>The workflow-event log group and its two metric filters. See <a href="../workflow-events/#cloudwatch-log-group-and-metrics">Workflow events</a></td>
+</tr>
+<tr>
+<td>Functions</td>
+<td><code>core/functions.yaml</code></td>
+<td>The five <a href="../lambda-functions/">Lambda functions</a> with their IAM roles, the SQS event source mapping for <code>process</code>, the EventBridge rule that invokes <code>update-state</code>, and a security group when the VPC is enabled</td>
+</tr>
+<tr>
+<td>API</td>
+<td><code>core/api.yaml</code></td>
+<td>An edge-optimized REST API Gateway proxying <code>GET</code> requests to the <code>api</code> function, deployed to a stage named <code>dev</code>, with access logging</td>
+</tr>
+<tr>
+<td>CLI</td>
+<td><code>cli/ssm_parameters.yaml</code></td>
+<td>The Parameter Store entries the Cirrus CLI reads. See <a href="#parameter-store-entries">Parameter Store entries</a></td>
+</tr>
+</tbody>
+</table>
+<p>Only the base and functions stacks are required for payloads to flow. The API stack serves the read-only <a href="../http-api/">HTTP API</a>, the CLI stack makes the deployment visible to the Cirrus CLI, and the VPC and metrics stacks are optional in the templates themselves.</p>
+<h3 id="names">Names<a class="headerlink" href="#names" title="Permanent link">&para;</a></h3>
+<p>Every name derives from one prefix, <code>ResourcePrefix</code> in the templates. Two of them are load-bearing: the state machine name prefix is how <code>process</code> finds a workflow and how the EventBridge rule recognizes one, and the Lambda function prefix is how the CLI lists a deployment's functions.</p>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Data bucket</td>
+<td><code>${ResourcePrefix}-data-&lt;account-id&gt;</code></td>
+</tr>
+<tr>
+<td>Payload bucket</td>
+<td><code>${ResourcePrefix}-payload-&lt;account-id&gt;</code></td>
+</tr>
+<tr>
+<td>Artifacts bucket</td>
+<td><code>${ResourcePrefix}-deployment-artifacts-&lt;account-id&gt;</code></td>
+</tr>
+<tr>
+<td>State table</td>
+<td><code>${ResourcePrefix}-state</code></td>
+</tr>
+<tr>
+<td>Process queue and its dead-letter queue</td>
+<td><code>${ResourcePrefix}-process</code>, <code>${ResourcePrefix}-process-dlq</code></td>
+</tr>
+<tr>
+<td><code>update-state</code> dead-letter queue</td>
+<td><code>${ResourcePrefix}-update-state-dlq</code></td>
+</tr>
+<tr>
+<td>Publish and workflow-event topics</td>
+<td><code>${ResourcePrefix}-publish</code>, <code>${ResourcePrefix}-workflow-event</code></td>
+</tr>
+<tr>
+<td>Lambda functions</td>
+<td><code>${ResourcePrefix}-api</code>, <code>-process</code>, <code>-update-state</code>, <code>-pre-batch</code>, <code>-post-batch</code></td>
+</tr>
+<tr>
+<td>Workflow state machines</td>
+<td><code>${ResourcePrefix}-&lt;workflow&gt;</code>, one per workflow, in their own stacks</td>
+</tr>
+<tr>
+<td>Metrics log group and namespace</td>
+<td><code>${ResourcePrefix}-workflow-event-metrics</code>, <code>${ResourcePrefix}-workflow</code></td>
+</tr>
+</tbody>
+</table>
+<p>The prefix is 2 to 22 characters, starts with a letter, and contains only letters, digits, and hyphens.</p>
+<h3 id="resource-properties-the-code-depends-on">Resource properties the code depends on<a class="headerlink" href="#resource-properties-the-code-depends-on" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>State table</strong> keys: partition key <code>collections_workflow</code>, sort key <code>itemids</code>, both strings, with two global secondary indexes named <code>state_updated</code> and <code>updated</code> that share the partition key and sort on the attribute of the same name, projecting all attributes. See <a href="../state-database/#key-schema">State database: Key schema</a>.</li>
+<li><strong>Process queue</strong>: <code>process</code> is its only consumer, through an event source mapping with a batch size of 10. The templates set a visibility timeout of 180 seconds and redrive to the dead-letter queue after 5 receives.</li>
+<li><strong>Payload bucket</strong>: a lifecycle rule expiring <code>&lt;PayloadRootPrefix&gt;/tmp/</code> after 10 days. See <a href="../payload-bucket/#lifecycle-and-retention">Payload bucket: Lifecycle and retention</a>.</li>
+<li><strong>EventBridge rule</strong>: matches <code>detail-type</code> <code>Step Functions Execution Status Change</code> from source <code>aws.states</code>, with <code>detail.stateMachineArn</code> beginning <code>arn:aws:states:&lt;region&gt;:&lt;account&gt;:stateMachine:${ResourcePrefix}-</code> and <code>detail.status</code> in <code>SUCCEEDED</code>, <code>FAILED</code>, <code>ABORTED</code>, <code>TIMED_OUT</code>. Its target is <code>update-state</code>, with the <code>update-state</code> dead-letter queue as dead-letter target and a maximum event age of 1800 seconds.</li>
+<li><strong>Lambda functions</strong>: Python runtime, handlers <code>api.lambda_handler</code>, <code>process.lambda_handler</code>, <code>update_state.lambda_handler</code>, <code>pre_batch.lambda_handler</code>, <code>post_batch.lambda_handler</code> from the packaged distribution. The templates use a 15-second timeout, 256 MB, and reserve 16 concurrent executions for <code>process</code>. See <a href="../../operating/scaling/#process-lambda-concurrency">Scaling and quotas</a>.</li>
+</ul>
+<h2 id="main-stack-parameters">Main stack parameters<a class="headerlink" href="#main-stack-parameters" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ResourcePrefix</code></td>
+<td><code>cirrus-sandbox</code></td>
+<td>Prefix for every resource name</td>
+</tr>
+<tr>
+<td><code>LambdaPythonVersion</code></td>
+<td>none, required</td>
+<td>Python runtime version for the Lambda functions, for example <code>3.13</code></td>
+</tr>
+<tr>
+<td><code>LambdaArch</code></td>
+<td>none, required</td>
+<td>CPU architecture for the Lambda functions, <code>arm64</code> or <code>x86_64</code></td>
+</tr>
+<tr>
+<td><code>LogLevel</code></td>
+<td><code>DEBUG</code></td>
+<td>Value of <code>CIRRUS_LOG_LEVEL</code> on every function. One of <code>DEBUG</code>, <code>INFO</code>, <code>WARNING</code>, <code>ERROR</code>, <code>CRITICAL</code></td>
+</tr>
+<tr>
+<td><code>EnableVpc</code></td>
+<td><code>true</code></td>
+<td>Create the VPC stack and attach the Lambda functions to its private subnet</td>
+</tr>
+<tr>
+<td><code>VpcCidr</code></td>
+<td><code>10.1.0.0/16</code></td>
+<td>VPC CIDR block. Must be a <code>/16</code> inside <code>10.0.0.0/8</code></td>
+</tr>
+<tr>
+<td><code>PrivateSubnetCidr</code></td>
+<td><code>10.1.10.0/24</code></td>
+<td>Private subnet CIDR block</td>
+</tr>
+<tr>
+<td><code>PublicSubnetCidr</code></td>
+<td><code>10.1.1.0/24</code></td>
+<td>Public subnet CIDR block</td>
+</tr>
+<tr>
+<td><code>EnableWorkflowMetrics</code></td>
+<td><code>true</code></td>
+<td>Create the metrics stack and enable event logging on <code>process</code> and <code>update-state</code></td>
+</tr>
+<tr>
+<td><code>PayloadRootPrefix</code></td>
+<td><code>cirrus</code></td>
+<td>Root key prefix for every object Cirrus writes to the payload bucket</td>
+</tr>
+</tbody>
+</table>
+<p><code>EnableVpc</code> and <code>EnableWorkflowMetrics</code> gate the <code>CreateVpc</code> and <code>CreateWorkflowMetrics</code> conditions in <code>main.yaml</code>, which decide whether the corresponding nested stack exists at all.</p>
+<h3 id="vpc">VPC<a class="headerlink" href="#vpc" title="Permanent link">&para;</a></h3>
+<p><code>core/vpc.yaml</code> creates a VPC with one public and one private subnet in a single availability zone, an internet gateway, a NAT gateway with an Elastic IP in the public subnet, and S3 and DynamoDB gateway endpoints on the private route table.</p>
+<p>When <code>EnableVpc</code> is <code>true</code>, the functions stack attaches all five Lambda functions to the private subnet. The security group allows all inbound traffic from the VPC CIDR and all outbound traffic, and each role gets the <code>AWSLambdaVPCAccessExecutionRole</code> managed policy.</p>
+<p>When it is <code>false</code>:</p>
+<ul>
+<li>No VPC stack is created and the functions run without a <code>VpcConfig</code>.</li>
+<li>The <code>api</code>, <code>update-state</code>, <code>pre-batch</code>, and <code>post-batch</code> roles get <code>AWSLambdaBasicExecutionRole</code> instead. The <code>process</code> role carries <code>AWSLambdaVPCAccessExecutionRole</code> either way.</li>
+<li>The <code>VpcId</code>, <code>PrivateSubnetIds</code>, <code>PublicSubnetIds</code>, and <code>LambdaSecurityGroupId</code> stack outputs are omitted.</li>
+</ul>
+<p>The NAT gateway and Elastic IP are billed hourly whether or not traffic flows through them. Cirrus's own S3 and DynamoDB traffic uses the gateway endpoints and never crosses the NAT gateway, so the VPC is only needed when a function must reach a resource that is reachable only from inside one.</p>
+<h2 id="environment-variables">Environment variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
+<p>Cirrus code reads all configuration from <code>CIRRUS_*</code> environment variables. There is no configuration file. The table gives what each function must be given.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Required on</th>
+<th>Read by</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CIRRUS_LOG_LEVEL</code></td>
+<td>all five, optional</td>
+<td><code>cirrus.lib.logging</code></td>
+<td>Log level for the Cirrus loggers. Defaults to <code>DEBUG</code> when unset</td>
+</tr>
+<tr>
+<td><code>CIRRUS_DATA_BUCKET</code></td>
+<td><code>api</code></td>
+<td><code>api</code></td>
+<td>Bucket holding the <code>catalog.json</code> that the API root endpoint reads. The templates also set it on <code>process</code> and <code>update-state</code>, which do not read it</td>
+</tr>
+<tr>
+<td><code>CIRRUS_PAYLOAD_BUCKET</code></td>
+<td>all five</td>
+<td><code>PayloadBucket</code></td>
+<td>Bucket for execution, oversized, batch, and invalid payloads. <code>PayloadBucket.from_env</code> raises when unset</td>
+</tr>
+<tr>
+<td><code>CIRRUS_PAYLOAD_ROOT_PREFIX</code></td>
+<td>all five, optional</td>
+<td><code>PayloadBucket</code></td>
+<td>Root key prefix in the payload bucket. Defaults to <code>cirrus</code></td>
+</tr>
+<tr>
+<td><code>CIRRUS_STATE_DB</code></td>
+<td><code>api</code>, <code>process</code>, <code>update-state</code></td>
+<td><code>StateDB</code></td>
+<td>State table name. <code>StateDB</code> raises when unset</td>
+</tr>
+<tr>
+<td><code>CIRRUS_BASE_WORKFLOW_ARN</code></td>
+<td><code>process</code></td>
+<td><code>PayloadManagers</code></td>
+<td><code>arn:aws:states:&lt;region&gt;:&lt;account&gt;:stateMachine:${ResourcePrefix}-</code>, which the workflow name is appended to</td>
+</tr>
+<tr>
+<td><code>CIRRUS_WORKFLOW_EVENT_TOPIC_ARN</code></td>
+<td><code>process</code>, <code>update-state</code>, optional</td>
+<td><code>WorkflowEventManager</code></td>
+<td>Topic that workflow events are published to. Unset disables publishing</td>
+</tr>
+<tr>
+<td><code>CIRRUS_WORKFLOW_LOG_GROUP</code></td>
+<td><code>process</code>, <code>update-state</code>, optional</td>
+<td><code>WorkflowMetricLogger</code></td>
+<td>Log group that workflow events are written to for metric extraction. Empty or unset disables it</td>
+</tr>
+<tr>
+<td><code>CIRRUS_WORKFLOW_METRIC_NAMESPACE</code></td>
+<td><code>api</code>, optional</td>
+<td><code>WorkflowMetricReader</code></td>
+<td>Metrics namespace that <code>/stats</code> reads. Empty or unset disables it</td>
+</tr>
+<tr>
+<td><code>CIRRUS_PUBLISH_TOPIC_ARN</code></td>
+<td><code>update-state</code>, optional</td>
+<td><code>update-state</code></td>
+<td>Topic that output items are published to. Unset skips publishing</td>
+</tr>
+<tr>
+<td><code>CIRRUS_PROCESS_QUEUE_URL</code></td>
+<td><code>update-state</code>, optional</td>
+<td><code>update-state</code></td>
+<td>Queue that chained payloads are enqueued to. Unset skips chaining</td>
+</tr>
+<tr>
+<td><code>CIRRUS_EVENT_DB_AND_TABLE</code></td>
+<td>none</td>
+<td><code>EventDB</code></td>
+<td>Deprecated Timestream destination. Not set by any template. See <a href="../workflow-events/#timestream-event-database-deprecated">Workflow events</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="iam-grants">IAM grants<a class="headerlink" href="#iam-grants" title="Permanent link">&para;</a></h2>
+<p>Each function has its own role in <code>core/functions.yaml</code>. These are the grants the code exercises.</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Grants</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>process</code></td>
+<td><code>s3:GetObject</code>, <code>ListBucket</code>, <code>GetBucketLocation</code> on any bucket; <code>s3:PutObject</code> on the payload bucket; read and write on the state table and its indexes; <code>sqs:ReceiveMessage</code>, <code>DeleteMessage</code>, <code>GetQueueUrl</code>, <code>GetQueueAttributes</code> on the process queue; <code>sns:Publish</code> on the workflow event topic; <code>states:StartExecution</code> on <code>stateMachine:${ResourcePrefix}-*</code>; <code>logs:CreateLogStream</code>, <code>PutLogEvents</code>, <code>DescribeLogGroups</code>, <code>DescribeLogStreams</code> on the metrics log group when enabled</td>
+</tr>
+<tr>
+<td><code>update-state</code></td>
+<td>Read and write on the state table; <code>sqs:SendMessage</code> on the process queue; <code>s3:GetObject</code> and <code>PutObject</code> on the payload bucket; <code>sns:Publish</code> on the publish and workflow event topics; the same log grants as <code>process</code></td>
+</tr>
+<tr>
+<td><code>pre-batch</code></td>
+<td><code>s3:GetObject</code>, <code>ListBucket</code>, <code>GetBucketLocation</code> on any bucket; <code>s3:PutObject</code> on the payload bucket</td>
+</tr>
+<tr>
+<td><code>post-batch</code></td>
+<td>The same S3 grants as <code>pre-batch</code>; <code>logs:GetLogEvents</code> on <code>/aws/batch/*</code></td>
+</tr>
+<tr>
+<td><code>api</code></td>
+<td><code>s3:ListBucket</code>, <code>GetObject</code>, <code>GetBucketLocation</code> on the data bucket; <code>dynamodb:Query</code>, <code>Scan</code>, <code>GetItem</code>, <code>DescribeTable</code> on the state table and its indexes; <code>cloudwatch:GetMetricData</code>, <code>GetMetricStatistics</code>, <code>ListMetrics</code> when the metrics namespace is set</td>
+</tr>
+</tbody>
+</table>
+<p><code>process</code> and the Batch functions read from any bucket because a payload may arrive as a <code>{"url": ...}</code> reference to an object stored elsewhere. Each workflow's state machine role is the workflow author's; it must be allowed to invoke the workflow's Lambda functions and, for Batch tasks, <code>batch:SubmitJob</code> plus the EventBridge permissions that <code>submitJob.sync</code> needs.</p>
+<h2 id="parameter-store-entries">Parameter Store entries<a class="headerlink" href="#parameter-store-entries" title="Permanent link">&para;</a></h2>
+<p>The Cirrus CLI discovers a deployment through AWS Systems Manager Parameter Store. It reads a pointer at <code>/cirrus/deployments/&lt;name&gt;</code> whose value is <code>{"type": "parameter_store", "value": "/deployment/&lt;name&gt;/"}</code>, then every parameter under that path. <code>cli/ssm_parameters.yaml</code> creates them with <code>&lt;name&gt;</code> equal to <code>ResourcePrefix</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter under <code>/deployment/&lt;name&gt;/</code></th>
+<th>Required by the CLI</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CIRRUS_PAYLOAD_BUCKET</code></td>
+<td>yes</td>
+<td>Payload bucket name</td>
+</tr>
+<tr>
+<td><code>CIRRUS_STATE_DB</code></td>
+<td>yes</td>
+<td>State table name</td>
+</tr>
+<tr>
+<td><code>CIRRUS_PROCESS_QUEUE_URL</code></td>
+<td>yes</td>
+<td>Process queue URL</td>
+</tr>
+<tr>
+<td><code>CIRRUS_BASE_WORKFLOW_ARN</code></td>
+<td>yes</td>
+<td>The state machine ARN prefix, as on the functions</td>
+</tr>
+<tr>
+<td><code>CIRRUS_PREFIX</code></td>
+<td>yes</td>
+<td><code>${ResourcePrefix}-</code>, with the trailing hyphen, used to list and invoke the deployment's Lambda functions</td>
+</tr>
+<tr>
+<td><code>CIRRUS_DATA_BUCKET</code>, <code>CIRRUS_PUBLISH_TOPIC_ARN</code>, <code>CIRRUS_WORKFLOW_EVENT_TOPIC_ARN</code>, <code>CIRRUS_PAYLOAD_ROOT_PREFIX</code>, <code>CIRRUS_LOG_LEVEL</code></td>
+<td>no</td>
+<td>Same values as on the functions, loaded into the environment by <code>exec</code>, <code>call</code>, and <code>template-payload</code></td>
+</tr>
+<tr>
+<td><code>CIRRUS_CLI_IAM_ARN</code></td>
+<td>no</td>
+<td>A role for the CLI to assume. Not created by any template. See <a href="../../cli/using-the-cli/#assuming-a-role">Assuming a role</a></td>
+</tr>
+</tbody>
+</table>
+<p>The CLI fails with a message naming the missing entries if any required one is absent.</p>
+<h2 id="other-tooling">Other tooling<a class="headerlink" href="#other-tooling" title="Permanent link">&para;</a></h2>
+<p>Two Terraform alternatives to the CloudFormation templates are maintained by Element 84 in their own repositories. The <a href="https://github.com/Element84/filmdrop-aws-tf-modules">FilmDrop AWS Terraform modules</a> include a Cirrus module within a larger FilmDrop deployment. <a href="https://github.com/Element84/terraform-aws-cirrus-processing">terraform-aws-cirrus-processing</a> deploys pipeline components, meaning feeders, Batch compute environments, workflows, and tasks, on top of an existing Cirrus deployment.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.top", "search.suggest", "content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
